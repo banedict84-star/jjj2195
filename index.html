@@ -482,6 +482,7 @@ textarea.form-input{min-height:85px;resize:vertical;line-height:1.5}
   <button class="tb-btn gray" onclick="doCSV()">↓ CSV저장</button>
   <button class="tb-btn gray" onclick="importCSV()">↑ CSV가져오기</button>
   <button class="tb-btn" onclick="dlTemplate()">📋 양식</button>
+  <button class="tb-btn" style="background:#f59e0b;color:#fff;border-color:#f59e0b" onclick="recalcAllScores()">🔄 점수 재계산</button>
   <input type="file" id="csvFile" accept=".csv" style="display:none" onchange="onCSVFile(event)">
 </div>
 
@@ -1368,6 +1369,42 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
     }
     return cnt > 1 ? String(cnt) : '';
   }
+
+  /* ── 전체 점수 일괄 재계산 ── */
+  async function recalcAllScores() {
+    if (!confirm('모든 당원(' + data.length + '명)의 점수를 새 기준으로 재계산하고 서버에 저장합니다.\n계속하시겠습니까?')) return;
+
+    var indicator = document.getElementById('sync-indicator');
+    if (indicator) indicator.textContent = '🔄 재계산 중...';
+
+    var changed = [];
+    for (var i = 0; i < data.length; i++) {
+      var newScore = calcScore(data[i]);
+      if (data[i].score !== newScore) {
+        data[i].score = newScore;
+        changed.push(data[i]);
+      }
+    }
+
+    // localStorage 갱신
+    try { localStorage.setItem('dangwon_v8', JSON.stringify(data)); } catch(e) {}
+
+    // Firestore 배치 저장 (변경된 것만)
+    if (changed.length > 0 && typeof window.saveOneToFirestore === 'function') {
+      var total = changed.length;
+      for (var j = 0; j < changed.length; j++) {
+        await window.saveOneToFirestore(changed[j]);
+        if (indicator) indicator.textContent = '🔄 저장 중... ' + (j+1) + '/' + total;
+      }
+    }
+
+    if (indicator) indicator.textContent = '✅ 재계산 완료 (' + changed.length + '명 변경)';
+    setTimeout(function(){ if(indicator) indicator.textContent = '✅ 서버 연결됨'; }, 3000);
+
+    go(); // 화면 갱신
+    toast('점수 재계산 완료 — ' + changed.length + '명 변경', '#2e7d32');
+  }
+
 
   /* ── 저장소 ── */
   function persist(changedRec){
