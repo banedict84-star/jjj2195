@@ -121,46 +121,18 @@
       } catch(e) { console.error('공지 로드 실패:', e); return []; }
     };
 
-    // 중앙당 공지 불러오기 (CORS 프록시 경유 직접 크롤링)
+    // 중앙당 공지 불러오기 (Google Apps Script 프록시)
+    const GAS_PROXY_URL = 'https://script.google.com/macros/s/APPS_SCRIPT_ID_HERE/exec';
     window.loadPartyNotices = async function() {
       try {
-        const targetUrl = 'https://theminjoo.kr/main/sub/news/list.php?brd=1';
-        const proxyUrls = [
-          'https://api.allorigins.win/raw?url=' + encodeURIComponent(targetUrl),
-          'https://corsproxy.io/?' + encodeURIComponent(targetUrl),
-          'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(targetUrl)
-        ];
-        let html = '';
-        for (const proxyUrl of proxyUrls) {
-          try {
-            const resp = await fetch(proxyUrl, { headers: { 'Accept': 'text/html' } });
-            if (resp.ok) { html = await resp.text(); break; }
-          } catch(e) { continue; }
+        if (GAS_PROXY_URL.includes('APPS_SCRIPT_ID_HERE')) {
+          console.warn('Google Apps Script URL이 설정되지 않았습니다.');
+          return [];
         }
-        if (!html) return [];
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-        const notices = [];
-        const rows = doc.querySelectorAll('.board_list tbody tr, .bbs_list tbody tr, table tbody tr, .list_item, .news_list li, ul.list > li');
-        rows.forEach(function(row, i) {
-          if (i >= 30) return;
-          const a = row.querySelector('a');
-          if (!a) return;
-          let title = a.textContent.trim().replace(/\s+/g, ' ');
-          if (!title || title.length <= 1) return;
-          let link = a.getAttribute('href') || '';
-          if (link && !link.startsWith('http')) {
-            link = 'https://theminjoo.kr' + (link.startsWith('/') ? '' : '/') + link;
-          }
-          let date = '', no = '';
-          row.querySelectorAll('td, span, div').forEach(function(el) {
-            const txt = el.textContent.trim();
-            if (/^\d{4}[.\-\/]\d{2}[.\-\/]\d{2}$/.test(txt)) date = txt.replace(/\./g, '-');
-            if (!no && /^\d+$/.test(txt) && parseInt(txt) > 0) no = txt;
-          });
-          notices.push({ no: no, title: title, link: link, date: date, source: '민주당 중앙당' });
-        });
-        return notices;
+        const resp = await fetch(GAS_PROXY_URL);
+        if (!resp.ok) return [];
+        const notices = await resp.json();
+        return Array.isArray(notices) ? notices : [];
       } catch(e) { console.error('중앙당 공지 로드 실패:', e); return []; }
     };
 
@@ -2189,7 +2161,7 @@ async function loadPartyNoticeList() {
   list.innerHTML = '<div style="text-align:center;padding:20px;color:#aaa">불러오는 중...</div>';
   var notices = await window.loadPartyNotices();
   if (notices.length === 0) {
-    list.innerHTML = '<div class="notice-empty">중앙당 공지를 불러올 수 없습니다.<br><span style="font-size:12px;color:#bbb">네트워크 연결을 확인해주세요.</span></div>';
+    list.innerHTML = '<div class="notice-empty">중앙당 공지를 불러올 수 없습니다.<br><span style="font-size:12px;color:#bbb">Google Apps Script 설정을 확인해주세요.</span></div>';
     return;
   }
   var html = '';
