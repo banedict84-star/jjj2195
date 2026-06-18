@@ -159,10 +159,12 @@
             localStorage.setItem('crm_v4', JSON.stringify(fsData));
             if (indicator) indicator.textContent = '✅ 서버 연결됨';
             if (typeof window.reloadData === 'function') window.reloadData();
+            if (typeof window.loadNoticeList === 'function') window.loadNoticeList();
           } else {
             // Firestore 비어있으면 localStorage 데이터 업로드
             if (indicator) indicator.textContent = '🔄 초기 데이터 업로드 중...';
             if (typeof window.reloadData === 'function') window.reloadData();
+            if (typeof window.loadNoticeList === 'function') window.loadNoticeList();
             const localStr = localStorage.getItem('crm_v4');
             if (localStr) {
               const localData = JSON.parse(localStr);
@@ -2085,6 +2087,7 @@ async function submitNotice() {
   backToNoticeList();
 }
 
+window.loadNoticeList = loadNoticeList;
 async function loadNoticeList() {
   var list = document.getElementById('notice-list');
   list.innerHTML = '<div style="text-align:center;padding:20px;color:#aaa">불러오는 중...</div>';
