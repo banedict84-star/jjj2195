@@ -180,12 +180,13 @@ html,body{height:100%;overflow:hidden;font-family:'Apple SD Gothic Neo','Malgun 
 }
 .sidebar.collapsed{width:56px}
 .sidebar-collapse-btn{
-  background:none;border:none;color:#a5b4fc;cursor:pointer;
-  padding:14px 18px;display:flex;align-items:center;gap:10px;
-  font-size:18px;transition:all .15s;width:100%;
+  background:none;border:none;color:#e0e7ff;cursor:pointer;
+  padding:12px 18px;display:flex;align-items:center;gap:10px;
+  font-size:14px;transition:all .15s;width:100%;
+  border-bottom:1px solid #312e81;
 }
 .sidebar-collapse-btn:hover{background:#312e81;color:#fff}
-.sidebar.collapsed .sidebar-collapse-btn{justify-content:center;padding:14px 0}
+.sidebar.collapsed .sidebar-collapse-btn{justify-content:center;padding:12px 0}
 .sidebar-brand{padding:12px 18px;border-bottom:1px solid #312e81;display:flex;align-items:center;gap:10px;min-height:56px}
 .sidebar-brand-logo{
   width:32px;height:32px;min-width:32px;border-radius:8px;
@@ -238,7 +239,7 @@ html,body{height:100%;overflow:hidden;font-family:'Apple SD Gothic Neo','Malgun 
 
 /* ─── 페이지 컨테이너 ─── */
 .page-container{display:none}
-.page-container.active{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+.page-container.active{display:block;min-height:100vh}
 
 /* ─── 공지사항 게시판 ─── */
 .notice-page{padding:24px 28px;overflow-y:auto;flex:1;background:#f5f7fa}
