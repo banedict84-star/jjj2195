@@ -1164,22 +1164,19 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
   function fmtJumin(el) {
     var raw = el.value.replace(/[^0-9\*]/g, '');
     if (raw.length <= 6) {
-      // 6자리 이하: 그냥 표시
       el.value = raw;
-    } else if (raw.length === 7) {
-      // 7자리: 840718-1******
-      el.value = raw.slice(0, 6) + '-' + raw.slice(6, 7) + '******';
     } else {
-      // 8자리 이상: 하이픈만 추가
       el.value = raw.slice(0, 6) + '-' + raw.slice(6, 13);
     }
   }
 
   function blurJumin(el) {
-    // 포커스 벗어날 때 6자리만 입력된 경우 마스킹
     var raw = el.value.replace(/[^0-9\*]/g, '');
-    if (raw.length === 6) {
-      el.value = raw + '-*******';
+    if (raw.length === 7) {
+      el.value = raw.slice(0, 6) + '-' + raw.slice(6, 7) + '******';
+    } else if (raw.length > 7 && raw.length < 13) {
+      var pad = 13 - raw.length;
+      el.value = raw.slice(0, 6) + '-' + raw.slice(6) + '*'.repeat(pad);
     }
   }
 
