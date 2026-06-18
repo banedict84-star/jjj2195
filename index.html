@@ -52,15 +52,14 @@
       await signOut(auth);
     };
 
-    // Firestore 저장 - 당원 1명당 문서 1개
+    // Firestore 저장 - 당원 1명당 문서 1개 (100개씩 배치)
     window.saveToFirestore = async function(data) {
       try {
-        const batch = [];
-        for (const r of data) {
-          const id = String(r._id);
-          batch.push(setDoc(doc(db, 'members', id), r));
+        const BATCH = 100;
+        for (let i = 0; i < data.length; i += BATCH) {
+          const chunk = data.slice(i, i + BATCH);
+          await Promise.all(chunk.map(r => setDoc(doc(db, 'members', String(r._id)), r)));
         }
-        await Promise.all(batch);
       } catch(e) {
         console.error('Firestore 저장 실패:', e);
       }
@@ -122,8 +121,17 @@
             if (indicator) indicator.textContent = '✅ 서버 연결됨';
             if (typeof window.reloadData === 'function') window.reloadData();
           } else {
-            if (indicator) indicator.textContent = '✅ 서버 연결됨 (초기 데이터)';
+            // Firestore 비어있으면 localStorage 데이터 업로드
+            if (indicator) indicator.textContent = '🔄 초기 데이터 업로드 중...';
             if (typeof window.reloadData === 'function') window.reloadData();
+            const localStr = localStorage.getItem('crm_v4');
+            if (localStr) {
+              const localData = JSON.parse(localStr);
+              if (localData && localData.length > 0) {
+                await window.saveToFirestore(localData);
+              }
+            }
+            if (indicator) indicator.textContent = '✅ 서버 연결됨';
           }
         }
       } else {
