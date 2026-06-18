@@ -175,71 +175,119 @@ html,body{height:100%;overflow:hidden;font-family:'Apple SD Gothic Neo','Malgun 
 .sidebar{
   width:220px;flex-shrink:0;background:#1e1b4b;color:#fff;
   display:flex;flex-direction:column;height:100vh;position:fixed;left:0;top:0;z-index:200;
-  transition:transform .2s;
+  transition:width .25s cubic-bezier(.4,0,.2,1);
+  overflow:hidden;
 }
-.sidebar-brand{padding:16px 18px;border-bottom:1px solid #312e81;display:flex;align-items:center;gap:10px}
+.sidebar.collapsed{width:56px}
+.sidebar-collapse-btn{
+  background:none;border:none;color:#a5b4fc;cursor:pointer;
+  padding:14px 18px;display:flex;align-items:center;gap:10px;
+  font-size:18px;transition:all .15s;width:100%;
+}
+.sidebar-collapse-btn:hover{background:#312e81;color:#fff}
+.sidebar.collapsed .sidebar-collapse-btn{justify-content:center;padding:14px 0}
+.sidebar-brand{padding:12px 18px;border-bottom:1px solid #312e81;display:flex;align-items:center;gap:10px;min-height:56px}
 .sidebar-brand-logo{
-  width:36px;height:36px;border-radius:10px;
+  width:32px;height:32px;min-width:32px;border-radius:8px;
   background:linear-gradient(135deg,#6366f1,#8b5cf6);
   display:flex;align-items:center;justify-content:center;
-  color:#fff;font-weight:800;font-size:15px;
+  color:#fff;font-weight:800;font-size:14px;
 }
-.sidebar-brand-name{font-size:14px;font-weight:700;color:#e0e7ff}
-.sidebar-brand-sub{font-size:10px;color:#a5b4fc;margin-top:2px}
-.sidebar-nav{flex:1;padding:12px 0;overflow-y:auto}
+.sidebar-brand-text{white-space:nowrap;overflow:hidden;transition:opacity .2s}
+.sidebar.collapsed .sidebar-brand-text{opacity:0;width:0}
+.sidebar.collapsed .sidebar-brand{justify-content:center;padding:12px 0}
+.sidebar-brand-name{font-size:13px;font-weight:700;color:#e0e7ff}
+.sidebar-brand-sub{font-size:10px;color:#a5b4fc;margin-top:1px}
+.sidebar-nav{flex:1;padding:8px 0;overflow-y:auto}
 .sidebar-item{
   display:flex;align-items:center;gap:10px;padding:10px 18px;
   cursor:pointer;color:#c7d2fe;font-size:13px;font-weight:500;
   transition:all .12s;border-left:3px solid transparent;
+  white-space:nowrap;overflow:hidden;
 }
+.sidebar.collapsed .sidebar-item{justify-content:center;padding:10px 0;border-left:none}
 .sidebar-item:hover{background:#312e81;color:#fff}
 .sidebar-item.active{background:#312e81;color:#fff;border-left-color:#6366f1;font-weight:700}
-.sidebar-item .si-icon{font-size:16px;width:22px;text-align:center}
+.sidebar.collapsed .sidebar-item.active{border-left:none;border-bottom:2px solid #6366f1}
+.sidebar-item .si-icon{font-size:16px;min-width:22px;text-align:center}
+.sidebar-item .si-label{overflow:hidden;transition:opacity .2s}
+.sidebar.collapsed .sidebar-item .si-label{opacity:0;width:0}
 .sidebar-item .si-badge{
   margin-left:auto;background:#6366f1;color:#fff;font-size:10px;
   padding:1px 7px;border-radius:10px;font-weight:700;
+  transition:opacity .2s;
 }
-.sidebar-bottom{padding:12px 18px;border-top:1px solid #312e81;font-size:11px;color:#818cf8}
+.sidebar.collapsed .sidebar-item .si-badge{opacity:0;width:0;padding:0;overflow:hidden}
+.sidebar-bottom{padding:10px 18px;border-top:1px solid #312e81;font-size:11px;color:#818cf8;white-space:nowrap;overflow:hidden}
+.sidebar.collapsed .sidebar-bottom{padding:10px 4px;text-align:center}
+.sidebar.collapsed .sb-text{display:none}
 .sidebar-toggle{
   display:none;position:fixed;top:10px;left:10px;z-index:201;
   background:#1e1b4b;color:#fff;border:none;border-radius:8px;
   width:36px;height:36px;font-size:18px;cursor:pointer;
 }
 @media(max-width:900px){
-  .sidebar{transform:translateX(-100%)}
+  .sidebar{position:fixed;transform:translateX(-100%);width:220px!important}
   .sidebar.open{transform:translateX(0)}
+  .sidebar.collapsed{width:220px!important}
   .sidebar-toggle{display:flex;align-items:center;justify-content:center}
+  .with-sidebar{margin-left:0!important}
 }
-.with-sidebar{margin-left:220px}
-@media(max-width:900px){.with-sidebar{margin-left:0}}
+.with-sidebar{margin-left:220px;transition:margin-left .25s cubic-bezier(.4,0,.2,1)}
+.with-sidebar.sb-collapsed{margin-left:56px}
 
 /* ─── 페이지 컨테이너 ─── */
 .page-container{display:none}
 .page-container.active{display:flex;flex-direction:column;height:100vh;overflow:hidden}
 
-/* ─── 공지사항 ─── */
-.notice-page{padding:20px;overflow-y:auto;flex:1;background:#f5f7fa}
-.notice-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
-.notice-header h2{font-size:18px;font-weight:800;color:#1e1b4b}
-.notice-card{
-  background:#fff;border-radius:12px;padding:16px 20px;margin-bottom:10px;
-  box-shadow:0 1px 4px rgba(0,0,0,.06);border-left:4px solid #6366f1;
-  transition:all .12s;
+/* ─── 공지사항 게시판 ─── */
+.notice-page{padding:24px 28px;overflow-y:auto;flex:1;background:#f5f7fa}
+.notice-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.notice-header h2{font-size:20px;font-weight:800;color:#1e1b4b}
+.notice-board{
+  background:#fff;border-radius:12px;overflow:hidden;
+  box-shadow:0 1px 4px rgba(0,0,0,.06);
 }
-.notice-card:hover{box-shadow:0 4px 12px rgba(0,0,0,.1)}
-.notice-card-title{font-size:14px;font-weight:700;color:#1e1b4b;margin-bottom:4px}
-.notice-card-date{font-size:11px;color:#999;margin-bottom:8px}
-.notice-card-body{font-size:13px;color:#444;line-height:1.7;white-space:pre-wrap}
-.notice-card-actions{margin-top:10px;display:flex;gap:6px;justify-content:flex-end}
-.notice-form{background:#fff;border-radius:12px;padding:20px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
-.notice-form input,.notice-form textarea{
-  width:100%;padding:8px 12px;border:1px solid #e0e0e0;border-radius:8px;
-  font-size:13px;margin-bottom:8px;font-family:inherit;
+.notice-board-head{
+  display:grid;grid-template-columns:60px 1fr 120px 100px;
+  background:#f8f9fa;border-bottom:2px solid #e8eaed;
+  font-size:12px;font-weight:700;color:#666;text-align:center;
 }
-.notice-form textarea{min-height:120px;resize:vertical;line-height:1.6}
+.notice-board-head>div{padding:10px 8px}
+.notice-row{
+  display:grid;grid-template-columns:60px 1fr 120px 100px;
+  border-bottom:1px solid #f0f2f5;font-size:13px;cursor:pointer;
+  transition:background .08s;align-items:center;
+}
+.notice-row:last-child{border-bottom:none}
+.notice-row:hover{background:#f5f7ff}
+.notice-row>div{padding:12px 8px}
+.notice-row .nr-no{text-align:center;color:#999;font-size:12px}
+.notice-row .nr-title{font-weight:600;color:#1e1b4b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.notice-row .nr-title:hover{color:#4f46e5}
+.notice-row .nr-date{text-align:center;color:#999;font-size:12px}
+.notice-row .nr-author{text-align:center;color:#777;font-size:12px}
+.notice-view{
+  background:#fff;border-radius:12px;padding:28px 32px;
+  box-shadow:0 1px 4px rgba(0,0,0,.06);
+}
+.notice-view-title{font-size:18px;font-weight:800;color:#1e1b4b;margin-bottom:8px}
+.notice-view-meta{font-size:12px;color:#999;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid #e8eaed;display:flex;gap:16px}
+.notice-view-body{font-size:14px;color:#333;line-height:1.8;white-space:pre-wrap;min-height:200px}
+.notice-view-actions{margin-top:24px;padding-top:14px;border-top:1px solid #e8eaed;display:flex;gap:8px;justify-content:flex-end}
+.notice-form{background:#fff;border-radius:12px;padding:24px 28px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.notice-form input{
+  width:100%;padding:10px 14px;border:1px solid #e0e0e0;border-radius:8px;
+  font-size:14px;margin-bottom:12px;font-family:inherit;
+}
+.notice-form input:focus,.notice-form textarea:focus{border-color:#4f46e5;outline:none;box-shadow:0 0 0 3px rgba(79,70,229,.1)}
+.notice-form textarea{
+  width:100%;padding:12px 14px;border:1px solid #e0e0e0;border-radius:8px;
+  font-size:13px;margin-bottom:12px;font-family:inherit;
+  min-height:240px;resize:vertical;line-height:1.7;
+}
 .notice-form-btns{display:flex;gap:8px;justify-content:flex-end}
 .notice-empty{text-align:center;padding:60px 20px;color:#aaa;font-size:14px}
-.notice-pin{color:#f59e0b;margin-right:4px}
 
 /* ─── 헤더 ─── */
 .app-header{
@@ -483,34 +531,42 @@ textarea.form-input{min-height:85px;resize:vertical;line-height:1.5}
 
 <!-- 사이드바 -->
 <button class="sidebar-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
-<div class="sidebar">
+<div class="sidebar" id="sidebar">
+  <button class="sidebar-collapse-btn" onclick="toggleSidebar()" title="사이드바 접기/펴기">
+    <span id="sb-toggle-icon">◀</span>
+    <span class="si-label">메뉴 접기</span>
+  </button>
   <div class="sidebar-brand">
     <div class="sidebar-brand-logo">장</div>
-    <div>
+    <div class="sidebar-brand-text">
       <div class="sidebar-brand-name">당원 관리 시스템</div>
       <div class="sidebar-brand-sub">경기도의원 장윤정</div>
     </div>
   </div>
   <div class="sidebar-nav">
-    <div class="sidebar-item active" onclick="switchPage('members',this)">
-      <span class="si-icon">👥</span> 당원 관리
+    <div class="sidebar-item active" onclick="switchPage('members',this)" title="당원 관리">
+      <span class="si-icon">👥</span>
+      <span class="si-label">당원 관리</span>
     </div>
-    <div class="sidebar-item" onclick="switchPage('notices',this)">
-      <span class="si-icon">📢</span> 공지사항
+    <div class="sidebar-item" onclick="switchPage('notices',this)" title="공지사항">
+      <span class="si-icon">📢</span>
+      <span class="si-label">공지사항</span>
       <span class="si-badge" id="notice-count" style="display:none">0</span>
     </div>
-    <div class="sidebar-item" onclick="switchPage('schedule',this)">
-      <span class="si-icon">📅</span> 일정 관리
+    <div class="sidebar-item" onclick="switchPage('schedule',this)" title="일정 관리">
+      <span class="si-icon">📅</span>
+      <span class="si-label">일정 관리</span>
       <span class="si-badge" style="background:#f59e0b">준비중</span>
     </div>
-    <div class="sidebar-item" onclick="switchPage('stats',this)">
-      <span class="si-icon">📊</span> 통계/분석
+    <div class="sidebar-item" onclick="switchPage('stats',this)" title="통계/분석">
+      <span class="si-icon">📊</span>
+      <span class="si-label">통계/분석</span>
       <span class="si-badge" style="background:#f59e0b">준비중</span>
     </div>
   </div>
   <div class="sidebar-bottom">
-    <div id="sidebar-user" style="margin-bottom:6px"></div>
-    <button onclick="window.doLogout()" style="
+    <div id="sidebar-user" class="sb-text" style="margin-bottom:6px"></div>
+    <button onclick="window.doLogout()" class="sb-text" style="
       font-size:11px;padding:4px 10px;border:1px solid #6366f1;border-radius:6px;
       background:transparent;color:#a5b4fc;cursor:pointer;width:100%;
     ">로그아웃</button>
@@ -891,19 +947,49 @@ textarea.form-input{min-height:85px;resize:vertical;line-height:1.5}
 <!-- 페이지: 공지사항 -->
 <div class="with-sidebar page-container" id="page-notices">
   <div class="notice-page">
-    <div class="notice-header">
-      <h2>📢 공지사항</h2>
-      <button class="tb-btn primary" id="btn-new-notice" onclick="toggleNoticeForm()">+ 새 공지 작성</button>
-    </div>
-    <div class="notice-form" id="notice-form" style="display:none">
-      <input type="text" id="notice-title" placeholder="공지 제목을 입력하세요">
-      <textarea id="notice-body" placeholder="공지 내용을 입력하세요"></textarea>
-      <div class="notice-form-btns">
-        <button class="tb-btn" onclick="cancelNotice()">취소</button>
-        <button class="tb-btn primary" onclick="submitNotice()">등록</button>
+    <!-- 목록 뷰 -->
+    <div id="notice-list-view">
+      <div class="notice-header">
+        <h2>📢 공지사항</h2>
+        <button class="tb-btn primary" onclick="showNoticeForm()">+ 새 공지 작성</button>
+      </div>
+      <div class="notice-board" id="notice-board">
+        <div class="notice-board-head">
+          <div>번호</div><div>제목</div><div>작성일</div><div>작성자</div>
+        </div>
+        <div id="notice-list"></div>
       </div>
     </div>
-    <div id="notice-list"></div>
+    <!-- 글 보기 뷰 -->
+    <div id="notice-detail-view" style="display:none">
+      <div style="margin-bottom:16px">
+        <button class="tb-btn" onclick="backToNoticeList()">← 목록으로</button>
+      </div>
+      <div class="notice-view">
+        <div class="notice-view-title" id="nv-title"></div>
+        <div class="notice-view-meta">
+          <span id="nv-date"></span>
+          <span id="nv-author"></span>
+        </div>
+        <div class="notice-view-body" id="nv-body"></div>
+        <div class="notice-view-actions" id="nv-actions"></div>
+      </div>
+    </div>
+    <!-- 작성/수정 뷰 -->
+    <div id="notice-form-view" style="display:none">
+      <div style="margin-bottom:16px">
+        <button class="tb-btn" onclick="backToNoticeList()">← 목록으로</button>
+      </div>
+      <div class="notice-form">
+        <div style="font-size:16px;font-weight:700;color:#1e1b4b;margin-bottom:16px" id="notice-form-label">새 공지 작성</div>
+        <input type="text" id="notice-title" placeholder="제목을 입력하세요">
+        <textarea id="notice-body" placeholder="내용을 입력하세요"></textarea>
+        <div class="notice-form-btns">
+          <button class="tb-btn" onclick="backToNoticeList()">취소</button>
+          <button class="tb-btn primary" onclick="submitNotice()">등록</button>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1864,6 +1950,17 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
 </div><!-- wrap -->
 
 <script>
+/* ── 사이드바 접기/펴기 ── */
+function toggleSidebar() {
+  var sb = document.getElementById('sidebar');
+  sb.classList.toggle('collapsed');
+  var icon = document.getElementById('sb-toggle-icon');
+  icon.textContent = sb.classList.contains('collapsed') ? '▶' : '◀';
+  document.querySelectorAll('.with-sidebar').forEach(function(el){
+    el.classList.toggle('sb-collapsed', sb.classList.contains('collapsed'));
+  });
+}
+
 /* ── 사이드바 페이지 전환 ── */
 function switchPage(pageId, el) {
   document.querySelectorAll('.page-container').forEach(function(p){ p.classList.remove('active'); });
@@ -1872,27 +1969,38 @@ function switchPage(pageId, el) {
   document.querySelectorAll('.sidebar-item').forEach(function(s){ s.classList.remove('active'); });
   if (el) el.classList.add('active');
   document.querySelector('.sidebar').classList.remove('open');
-  if (pageId === 'notices') loadNoticeList();
+  if (pageId === 'notices') { backToNoticeList(); }
 }
 
-/* ── 공지사항 기능 ── */
+/* ── 공지사항 게시판 ── */
 var noticeEditId = null;
+var noticeCache = [];
 
-function toggleNoticeForm() {
-  var form = document.getElementById('notice-form');
-  if (form.style.display === 'none') {
-    form.style.display = 'block';
-    noticeEditId = null;
-    document.getElementById('notice-title').value = '';
-    document.getElementById('notice-body').value = '';
-  } else {
-    form.style.display = 'none';
-  }
+function showNoticeView(viewName) {
+  ['notice-list-view','notice-detail-view','notice-form-view'].forEach(function(id){
+    document.getElementById(id).style.display = (id === viewName) ? 'block' : 'none';
+  });
 }
 
-function cancelNotice() {
-  document.getElementById('notice-form').style.display = 'none';
+function showNoticeForm(id) {
+  noticeEditId = id || null;
+  document.getElementById('notice-title').value = '';
+  document.getElementById('notice-body').value = '';
+  document.getElementById('notice-form-label').textContent = id ? '공지 수정' : '새 공지 작성';
+  if (id) {
+    var n = noticeCache.find(function(x){ return x.id === id; });
+    if (n) {
+      document.getElementById('notice-title').value = n.title;
+      document.getElementById('notice-body').value = n.body;
+    }
+  }
+  showNoticeView('notice-form-view');
+}
+
+function backToNoticeList() {
   noticeEditId = null;
+  showNoticeView('notice-list-view');
+  loadNoticeList();
 }
 
 async function submitNotice() {
@@ -1904,49 +2012,45 @@ async function submitNotice() {
     id: noticeEditId || String(Date.now()),
     title: title,
     body: body,
-    created: noticeEditId ? undefined : Date.now(),
     updated: Date.now(),
-    author: 'admin'
+    author: '관리자'
   };
   if (noticeEditId) {
-    var existing = (await window.loadNotices()).find(function(n){ return n.id === noticeEditId; });
+    var existing = noticeCache.find(function(n){ return n.id === noticeEditId; });
     if (existing) notice.created = existing.created;
   } else {
     notice.created = Date.now();
   }
   await window.saveNotice(notice);
-  document.getElementById('notice-form').style.display = 'none';
   noticeEditId = null;
-  loadNoticeList();
+  backToNoticeList();
 }
 
 async function loadNoticeList() {
   var list = document.getElementById('notice-list');
   list.innerHTML = '<div style="text-align:center;padding:20px;color:#aaa">불러오는 중...</div>';
-  var notices = await window.loadNotices();
+  noticeCache = await window.loadNotices();
   var badge = document.getElementById('notice-count');
-  if (notices.length > 0) {
-    badge.textContent = String(notices.length);
+  if (noticeCache.length > 0) {
+    badge.textContent = String(noticeCache.length);
     badge.style.display = 'inline-block';
   } else {
     badge.style.display = 'none';
   }
-  if (notices.length === 0) {
+  if (noticeCache.length === 0) {
     list.innerHTML = '<div class="notice-empty">등록된 공지사항이 없습니다.</div>';
     return;
   }
   var html = '';
-  notices.forEach(function(n) {
+  noticeCache.forEach(function(n, i) {
     var d = new Date(n.created);
-    var dateStr = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
-    html += '<div class="notice-card">'
-      + '<div class="notice-card-title">' + escapeHtml(n.title) + '</div>'
-      + '<div class="notice-card-date">' + dateStr + '</div>'
-      + '<div class="notice-card-body">' + escapeHtml(n.body) + '</div>'
-      + '<div class="notice-card-actions">'
-      + '<button class="tb-btn" onclick="editNotice(\'' + n.id + '\')">수정</button>'
-      + '<button class="tb-btn danger" onclick="delNotice(\'' + n.id + '\')">삭제</button>'
-      + '</div></div>';
+    var dateStr = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    html += '<div class="notice-row" onclick="viewNotice(\'' + n.id + '\')">'
+      + '<div class="nr-no">' + (noticeCache.length - i) + '</div>'
+      + '<div class="nr-title">' + escapeHtml(n.title) + '</div>'
+      + '<div class="nr-date">' + dateStr + '</div>'
+      + '<div class="nr-author">' + escapeHtml(n.author || '관리자') + '</div>'
+      + '</div>';
   });
   list.innerHTML = html;
 }
@@ -1957,21 +2061,25 @@ function escapeHtml(s) {
   return d.innerHTML;
 }
 
-async function editNotice(id) {
-  var notices = await window.loadNotices();
-  var n = notices.find(function(x){ return x.id === id; });
+function viewNotice(id) {
+  var n = noticeCache.find(function(x){ return x.id === id; });
   if (!n) return;
-  noticeEditId = id;
-  document.getElementById('notice-title').value = n.title;
-  document.getElementById('notice-body').value = n.body;
-  document.getElementById('notice-form').style.display = 'block';
-  window.scrollTo(0,0);
+  var d = new Date(n.created);
+  var dateStr = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+  document.getElementById('nv-title').textContent = n.title;
+  document.getElementById('nv-date').textContent = dateStr;
+  document.getElementById('nv-author').textContent = n.author || '관리자';
+  document.getElementById('nv-body').textContent = n.body;
+  document.getElementById('nv-actions').innerHTML =
+    '<button class="tb-btn" onclick="showNoticeForm(\'' + n.id + '\')">수정</button>'
+    + '<button class="tb-btn danger" onclick="delNotice(\'' + n.id + '\')">삭제</button>';
+  showNoticeView('notice-detail-view');
 }
 
 async function delNotice(id) {
   if (!confirm('이 공지를 삭제하시겠습니까?')) return;
   await window.deleteNotice(id);
-  loadNoticeList();
+  backToNoticeList();
 }
 </script>
 
