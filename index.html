@@ -9,7 +9,7 @@
   <!-- Firebase SDK -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, getDoc, getDocs, collection, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
     import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
     const firebaseConfig = {
@@ -52,21 +52,46 @@
       await signOut(auth);
     };
 
-    // Firestore 저장
+    // Firestore 저장 - 당원 1명당 문서 1개
     window.saveToFirestore = async function(data) {
       try {
-        await setDoc(doc(db, 'crm', 'members'), { data: JSON.stringify(data) });
+        const batch = [];
+        for (const r of data) {
+          const id = String(r._id);
+          batch.push(setDoc(doc(db, 'members', id), r));
+        }
+        await Promise.all(batch);
       } catch(e) {
         console.error('Firestore 저장 실패:', e);
       }
     };
 
-    // Firestore 불러오기
+    // Firestore 단건 저장 (신규/수정 시)
+    window.saveOneToFirestore = async function(r) {
+      try {
+        await setDoc(doc(db, 'members', String(r._id)), r);
+      } catch(e) {
+        console.error('Firestore 단건 저장 실패:', e);
+      }
+    };
+
+    // Firestore 단건 삭제
+    window.deleteOneFromFirestore = async function(id) {
+      try {
+        await deleteDoc(doc(db, 'members', String(id)));
+      } catch(e) {
+        console.error('Firestore 삭제 실패:', e);
+      }
+    };
+
+    // Firestore 전체 불러오기
     window.loadFromFirestore = async function() {
       try {
-        const snap = await getDoc(doc(db, 'crm', 'members'));
-        if (snap.exists()) return JSON.parse(snap.data().data);
-        return null;
+        const snap = await getDocs(collection(db, 'members'));
+        if (snap.empty) return null;
+        const result = [];
+        snap.forEach(d => result.push(d.data()));
+        return result;
       } catch(e) {
         console.error('Firestore 로드 실패:', e);
         return null;
@@ -1137,7 +1162,7 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
     else{for(var i=0;i<data.length;i++){if(data[i]._id===selId){data[i]=r;break;}}toast('저장 완료: '+r.name+' (점수:'+r.score+')','#1a3a5c');}
     // 같은 주소 전체 가족수 갱신
     calcFamilyCounts();
-    persist();
+    persist(r);
     document.getElementById('total').textContent=data.length.toLocaleString();
     document.getElementById('ebar').className='ebar';
     document.getElementById('pt').textContent=r.name;
@@ -1155,8 +1180,13 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
   }
   function doDel(){
     var r=findById(selId);
+    var delId=selId;
     var nd=[];for(var i=0;i<data.length;i++){if(data[i]._id!==selId)nd.push(data[i]);}data=nd;
-    closeOv();persist();
+    closeOv();persist(null);
+    // Firestore에서 삭제
+    if(typeof window.deleteOneFromFirestore === 'function'){
+      window.deleteOneFromFirestore(delId);
+    }
     selId=-1;isNew=false;
     document.getElementById('total').textContent=data.length.toLocaleString();
     document.getElementById('ebar').className='ebar';
@@ -1197,14 +1227,14 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
   }
 
   /* ── 저장소 ── */
-  function persist(){
+  function persist(changedRec){
     try{localStorage.setItem(SKEY,JSON.stringify(data));}
     catch(e){toast('저장공간 부족 — CSV 백업 권장','#c62828');}
-    // Firestore 동기화
-    if(typeof window.saveToFirestore === 'function'){
+    // Firestore 단건 저장
+    if(changedRec && typeof window.saveOneToFirestore === 'function'){
       var indicator = document.getElementById('sync-indicator');
       if(indicator) indicator.textContent = '🔄 서버 저장 중...';
-      window.saveToFirestore(data).then(function(){
+      window.saveOneToFirestore(changedRec).then(function(){
         if(indicator) indicator.textContent = '✅ 서버 저장 완료';
         setTimeout(function(){ if(indicator) indicator.textContent = '✅ 서버 연결됨'; }, 2000);
       });
@@ -1317,7 +1347,18 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
     if(!pendingRows.length)return;
     for(var i=0;i<pendingRows.length;i++){pendingRows[i]._id=nid++;data.push(pendingRows[i]);}
     calcFamilyCounts();
-    persist();closeOvCSV();
+    // localStorage 저장
+    try{localStorage.setItem(SKEY,JSON.stringify(data));}catch(e){}
+    // Firestore 일괄 저장
+    if(typeof window.saveToFirestore === 'function'){
+      var indicator = document.getElementById('sync-indicator');
+      if(indicator) indicator.textContent = '🔄 서버 저장 중...';
+      window.saveToFirestore(data).then(function(){
+        if(indicator) indicator.textContent = '✅ 서버 저장 완료';
+        setTimeout(function(){ if(indicator) indicator.textContent = '✅ 서버 연결됨'; }, 2000);
+      });
+    }
+    closeOvCSV();
     document.getElementById('total').textContent=data.length.toLocaleString();
     toast(pendingRows.length+'명 추가 완료','#2e7d32');
     pendingRows=[];go();
