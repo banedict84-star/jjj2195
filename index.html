@@ -1205,8 +1205,11 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
       swTabById('p1'); return;
     }
 
+    // 현재 편집 모드 판단: selId가 -1이거나 isNew면 신규
+    var addingNew = (isNew || selId < 0 || !findById(selId));
+
     // 신규 등록 시 이름+연락처 중복 체크
-    if(isNew){
+    if(addingNew){
       var dup = null;
       var rPhone = r.phone.replace(/-/g,'');
       for(var i=0;i<data.length;i++){
@@ -1224,28 +1227,31 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
           (dup.recommender?'👋 추천인: '+esc(dup.recommender):'');
         document.getElementById('ov-dup').style.display='flex';
         window._pendingRec = r;
-        window._pendingIsNew = true; // 신규 플래그 보존
+        window._pendingIsNew = true;
         return;
       }
     }
 
-    doSaveRec(r, isNew);
+    doSaveRec(r, addingNew);
   }
 
   function doSaveRec(r, addAsNew){
-    // 저장 전 가족수 자동 계산
     r.family_cnt = getAddrFamily(r.address);
     r.score = calcScore(r);
     document.getElementById('fsc').value = r.score;
     if(addAsNew){
-      r._id = nid; // 새 ID 부여
-      data.push(r);
+      r._id = nid;
       nid++;
+      data.push(r);
       selId=r._id;
       isNew=false;
       toast('신규 추가: '+r.name+' (점수:'+r.score+')','#2e7d32');
     } else {
-      for(var i=0;i<data.length;i++){if(data[i]._id===selId){data[i]=r;break;}}
+      var found=false;
+      for(var i=0;i<data.length;i++){
+        if(data[i]._id===selId){data[i]=r;found=true;break;}
+      }
+      if(!found){toast('저장 오류: 대상을 찾을 수 없습니다','#c62828');return;}
       toast('저장 완료: '+r.name+' (점수:'+r.score+')','#1a3a5c');
     }
     calcFamilyCounts();
