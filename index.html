@@ -622,6 +622,12 @@ textarea.form-input{min-height:85px;resize:vertical;line-height:1.5}
       <span class="si-label">통계 / 분석</span>
       <span class="si-badge-warn">곧 출시</span>
     </div>
+    <div class="sidebar-divider" style="margin:8px 8px"></div>
+    <div class="sidebar-section-label">시스템</div>
+    <div class="sidebar-item" onclick="switchPage('admin',this)">
+      <span class="si-icon">⚙️</span>
+      <span class="si-label">관리자 설정</span>
+    </div>
   </div>
   <div class="sidebar-bottom">
     <div class="sb-email" id="sidebar-user"></div>
@@ -1086,6 +1092,87 @@ textarea.form-input{min-height:85px;resize:vertical;line-height:1.5}
       <div style="font-size:18px;font-weight:700;color:#666;margin-bottom:8px">통계 / 분석</div>
       <div style="font-size:14px">준비 중입니다. 곧 업데이트됩니다!</div>
     </div>
+  </div>
+</div>
+
+<!-- 페이지: 관리자 설정 -->
+<div class="with-sidebar page-container" id="page-admin">
+  <div style="max-width:800px;margin:0 auto;padding:32px 24px">
+    <h2 style="font-size:22px;font-weight:700;color:#1a1a1a;margin-bottom:24px">⚙️ 관리자 설정</h2>
+
+    <!-- 사이트 기본 정보 -->
+    <div style="background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:24px;margin-bottom:20px">
+      <h3 style="font-size:16px;font-weight:700;color:#333;margin:0 0 16px">🏛️ 사이트 정보</h3>
+      <div style="margin-bottom:12px">
+        <label style="display:block;font-size:13px;font-weight:600;color:#555;margin-bottom:4px">사이트 이름</label>
+        <input id="admin-site-name" type="text" placeholder="예: 제3선거구 당원 관리" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box">
+      </div>
+      <div style="margin-bottom:12px">
+        <label style="display:block;font-size:13px;font-weight:600;color:#555;margin-bottom:4px">대표 이름</label>
+        <input id="admin-rep-name" type="text" placeholder="예: 장윤정" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box">
+      </div>
+      <div style="margin-bottom:12px">
+        <label style="display:block;font-size:13px;font-weight:600;color:#555;margin-bottom:4px">소속 / 직책</label>
+        <input id="admin-position" type="text" placeholder="예: 경기도의원" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box">
+      </div>
+      <div style="margin-bottom:12px">
+        <label style="display:block;font-size:13px;font-weight:600;color:#555;margin-bottom:4px">연락처</label>
+        <input id="admin-phone" type="text" placeholder="예: 031-123-4567" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box">
+      </div>
+      <button onclick="saveAdminSettings()" style="padding:10px 24px;background:#4f46e5;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">💾 저장</button>
+      <span id="admin-save-msg" style="margin-left:12px;font-size:13px;color:#22c55e;display:none">저장되었습니다!</span>
+    </div>
+
+    <!-- 허용 이메일 관리 -->
+    <div style="background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:24px;margin-bottom:20px">
+      <h3 style="font-size:16px;font-weight:700;color:#333;margin:0 0 16px">🔐 접근 권한 관리</h3>
+      <p style="font-size:13px;color:#888;margin:0 0 12px">로그인 허용된 이메일 목록입니다.</p>
+      <div id="admin-email-list"></div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <input id="admin-new-email" type="email" placeholder="새 이메일 추가" style="flex:1;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">
+        <button onclick="addAdminEmail()" style="padding:10px 16px;background:#4f46e5;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap">+ 추가</button>
+      </div>
+    </div>
+
+    <!-- 중앙당 공지 수동 등록 -->
+    <div style="background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:24px;margin-bottom:20px">
+      <h3 style="font-size:16px;font-weight:700;color:#333;margin:0 0 16px">📰 중앙당 공지 수동 등록</h3>
+      <p style="font-size:13px;color:#888;margin:0 0 12px">민주당 중앙당 공지를 직접 등록할 수 있습니다.</p>
+      <div style="margin-bottom:12px">
+        <input id="admin-party-title" type="text" placeholder="공지 제목" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box">
+      </div>
+      <div style="margin-bottom:12px">
+        <input id="admin-party-link" type="url" placeholder="원문 링크 (https://...)" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box">
+      </div>
+      <div style="margin-bottom:12px">
+        <input id="admin-party-date" type="date" style="padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">
+      </div>
+      <button onclick="addPartyNotice()" style="padding:10px 24px;background:#4f46e5;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">📰 등록</button>
+      <span id="admin-party-msg" style="margin-left:12px;font-size:13px;color:#22c55e;display:none">등록되었습니다!</span>
+    </div>
+
+    <!-- 데이터 관리 -->
+    <div style="background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:24px;margin-bottom:20px">
+      <h3 style="font-size:16px;font-weight:700;color:#333;margin:0 0 16px">💾 데이터 관리</h3>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <button onclick="exportAllData()" style="padding:10px 20px;background:#059669;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">📤 당원 데이터 내보내기 (JSON)</button>
+        <button onclick="exportCSV()" style="padding:10px 20px;background:#0284c7;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">📊 당원 데이터 내보내기 (CSV)</button>
+      </div>
+    </div>
+
+    <!-- 시스템 정보 -->
+    <div style="background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:24px">
+      <h3 style="font-size:16px;font-weight:700;color:#333;margin:0 0 16px">ℹ️ 시스템 정보</h3>
+      <div style="font-size:13px;color:#666;line-height:2">
+        <div>버전: <strong>1.0.0</strong></div>
+        <div>호스팅: <strong>GitHub Pages</strong></div>
+        <div>데이터베이스: <strong>Firebase Firestore</strong></div>
+        <div>인증: <strong>Google OAuth</strong></div>
+        <div id="admin-member-count">총 당원 수: 로딩 중...</div>
+        <div id="admin-notice-count">총 공지 수: 로딩 중...</div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -2187,6 +2274,139 @@ async function loadPartyNoticeList() {
   });
   list.innerHTML = html;
 }
+
+/* ── 관리자 페이지 ── */
+function loadAdminPage() {
+  var data = JSON.parse(localStorage.getItem('crm_v4') || '[]');
+  document.getElementById('admin-member-count').textContent = '총 당원 수: ' + data.length + '명';
+  document.getElementById('admin-notice-count').textContent = '총 공지 수: ' + noticeCache.length + '건';
+
+  var settings = JSON.parse(localStorage.getItem('admin_settings') || '{}');
+  document.getElementById('admin-site-name').value = settings.siteName || '';
+  document.getElementById('admin-rep-name').value = settings.repName || '';
+  document.getElementById('admin-position').value = settings.position || '';
+  document.getElementById('admin-phone').value = settings.phone || '';
+
+  var emails = JSON.parse(localStorage.getItem('admin_emails') || '["banedict84@gmail.com"]');
+  renderEmailList(emails);
+}
+
+function saveAdminSettings() {
+  var settings = {
+    siteName: document.getElementById('admin-site-name').value,
+    repName: document.getElementById('admin-rep-name').value,
+    position: document.getElementById('admin-position').value,
+    phone: document.getElementById('admin-phone').value
+  };
+  localStorage.setItem('admin_settings', JSON.stringify(settings));
+  if (settings.siteName) document.title = settings.siteName;
+  if (settings.repName) {
+    var sub = document.querySelector('.sidebar-brand-sub');
+    if (sub) sub.textContent = (settings.position || '') + ' ' + settings.repName;
+  }
+  var msg = document.getElementById('admin-save-msg');
+  msg.style.display = 'inline';
+  setTimeout(function(){ msg.style.display = 'none'; }, 2000);
+}
+
+function renderEmailList(emails) {
+  var el = document.getElementById('admin-email-list');
+  el.innerHTML = emails.map(function(em, i) {
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#f9fafb;border-radius:8px;margin-bottom:6px">'
+      + '<span style="font-size:14px;color:#333">' + escapeHtml(em) + '</span>'
+      + (i === 0 ? '<span style="font-size:11px;color:#999;background:#e5e7eb;padding:2px 8px;border-radius:4px">관리자</span>'
+        : '<button onclick="removeAdminEmail('+i+')" style="padding:4px 10px;background:#ef4444;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer">삭제</button>')
+      + '</div>';
+  }).join('');
+}
+
+function addAdminEmail() {
+  var input = document.getElementById('admin-new-email');
+  var email = input.value.trim();
+  if (!email || !email.includes('@')) { alert('올바른 이메일을 입력하세요'); return; }
+  var emails = JSON.parse(localStorage.getItem('admin_emails') || '["banedict84@gmail.com"]');
+  if (emails.includes(email)) { alert('이미 등록된 이메일입니다'); return; }
+  emails.push(email);
+  localStorage.setItem('admin_emails', JSON.stringify(emails));
+  renderEmailList(emails);
+  input.value = '';
+}
+
+function removeAdminEmail(idx) {
+  var emails = JSON.parse(localStorage.getItem('admin_emails') || '["banedict84@gmail.com"]');
+  if (idx === 0) return;
+  emails.splice(idx, 1);
+  localStorage.setItem('admin_emails', JSON.stringify(emails));
+  renderEmailList(emails);
+}
+
+async function addPartyNotice() {
+  var title = document.getElementById('admin-party-title').value.trim();
+  var link = document.getElementById('admin-party-link').value.trim();
+  var date = document.getElementById('admin-party-date').value;
+  if (!title) { alert('제목을 입력하세요'); return; }
+  var id = 'party_' + Date.now();
+  var notice = { no: '', title: title, link: link, date: date, source: '민주당 중앙당', id: id, updated: Date.now() };
+  try {
+    var docRef = window.db_ref || null;
+    if (typeof setDoc !== 'undefined') {
+      // Firestore에 저장 시도
+    }
+    var stored = JSON.parse(localStorage.getItem('party_notices') || '[]');
+    stored.unshift(notice);
+    localStorage.setItem('party_notices', JSON.stringify(stored));
+    document.getElementById('admin-party-title').value = '';
+    document.getElementById('admin-party-link').value = '';
+    document.getElementById('admin-party-date').value = '';
+    var msg = document.getElementById('admin-party-msg');
+    msg.style.display = 'inline';
+    setTimeout(function(){ msg.style.display = 'none'; }, 2000);
+  } catch(e) { alert('등록 실패: ' + e.message); }
+}
+
+function exportAllData() {
+  var data = localStorage.getItem('crm_v4') || '[]';
+  var blob = new Blob([data], {type:'application/json'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '당원데이터_' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+}
+
+function exportCSV() {
+  var data = JSON.parse(localStorage.getItem('crm_v4') || '[]');
+  if (data.length === 0) { alert('내보낼 데이터가 없습니다'); return; }
+  var headers = ['이름','연락처','주소','가입일','메모'];
+  var keys = ['name','phone','addr','joinDate','memo'];
+  var csv = '﻿' + headers.join(',') + '\n';
+  data.forEach(function(r) {
+    csv += keys.map(function(k) {
+      var v = (r[k] || '').toString().replace(/"/g,'""');
+      return '"' + v + '"';
+    }).join(',') + '\n';
+  });
+  var blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '당원데이터_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+}
+
+// 관리자 페이지 진입 시 로드
+var origSwitchPage = switchPage;
+switchPage = function(pageId, el) {
+  origSwitchPage(pageId, el);
+  if (pageId === 'admin') loadAdminPage();
+};
+
+// 중앙당 공지에 수동 등록 데이터도 포함
+var origLoadPartyNotices = window.loadPartyNotices;
+window.loadPartyNotices = async function() {
+  var remote = [];
+  try { remote = await origLoadPartyNotices(); } catch(e) {}
+  var local = JSON.parse(localStorage.getItem('party_notices') || '[]');
+  return local.concat(remote);
+};
 </script>
 
 </body>
