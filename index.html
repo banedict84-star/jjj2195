@@ -1162,21 +1162,22 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
 
   /* ── 주민번호 자동 하이픈 + 마스킹 ── */
   function fmtJumin(el) {
-    var raw = el.value.replace(/[^0-9\*]/g, '');
-    if (raw.length <= 6) {
-      el.value = raw;
+    var digits = el.value.replace(/[^0-9]/g, '');
+    if (digits.length <= 6) {
+      el.value = digits;
     } else {
-      el.value = raw.slice(0, 6) + '-' + raw.slice(6, 13);
+      el.value = digits.slice(0, 6) + '-' + digits.slice(6, 13);
     }
   }
 
   function blurJumin(el) {
-    var raw = el.value.replace(/[^0-9\*]/g, '');
-    if (raw.length === 7) {
-      el.value = raw.slice(0, 6) + '-' + raw.slice(6, 7) + '******';
-    } else if (raw.length > 7 && raw.length < 13) {
-      var pad = 13 - raw.length;
-      el.value = raw.slice(0, 6) + '-' + raw.slice(6) + '*'.repeat(pad);
+    var digits = el.value.replace(/[^0-9]/g, '');
+    if (digits.length >= 7) {
+      var back = digits.slice(6, 13);
+      var pad = 7 - back.length;
+      el.value = digits.slice(0, 6) + '-' + back + (pad > 0 ? '*'.repeat(pad) : '');
+    } else if (digits.length === 6) {
+      el.value = digits + '-*******';
     }
   }
 
