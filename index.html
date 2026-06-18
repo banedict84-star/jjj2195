@@ -676,10 +676,7 @@ textarea.form-input{min-height:85px;resize:vertical;line-height:1.5}
 
 
 <!-- 점수 재계산 확인 모달 -->
-<div id="ov-recalc" style="
-  display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);
-  z-index:9999;align-items:center;justify-content:center;
-">
+<div id="ov-recalc" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center;">
   <div style="
     background:#fff;border-radius:16px;padding:32px 28px;
     width:340px;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center;
@@ -1399,18 +1396,22 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
 
   /* ── 전체 점수 일괄 재계산 ── */
   function recalcAllScores() {
-    // 팝업 열기
+    var ov = document.getElementById('ov-recalc');
     var msg = document.getElementById('recalc-msg');
     var prog = document.getElementById('recalc-progress');
     var btns = document.getElementById('recalc-btns');
-    if (msg) msg.textContent = '총 ' + data.length + '명의 점수를 새 기준으로 재계산하고 서버에 저장합니다.';
-    if (prog) prog.style.display = 'none';
-    if (btns) btns.style.display = 'flex';
-    document.getElementById('ov-recalc').style.display = 'flex';
+    // 초기 상태로 리셋
+    msg.textContent = '총 ' + data.length + '명의 점수를 새 기준으로 재계산합니다.';
+    prog.style.display = 'none';
+    prog.textContent = '';
+    btns.innerHTML = '<button onclick="closeRecalcOv()" style="padding:10px 24px;border:2px solid #e5e7eb;border-radius:10px;background:#fff;color:#374151;font-size:14px;font-weight:600;cursor:pointer;">취소</button>' +
+      '<button onclick="doRecalcConfirm()" style="padding:10px 24px;border:none;border-radius:10px;background:#f59e0b;color:#fff;font-size:14px;font-weight:600;cursor:pointer;">재계산 시작</button>';
+    // 팝업 표시
+    ov.style.cssText = 'display:flex;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center;';
   }
 
   function closeRecalcOv() {
-    document.getElementById('ov-recalc').style.display = 'none';
+    document.getElementById('ov-recalc').style.cssText = 'display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;';
   }
 
   async function doRecalcConfirm() {
