@@ -10,7 +10,8 @@
   <!-- Firebase SDK -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore, doc, setDoc, getDoc, getDocs, collection, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, getDoc, getDocs, collection, deleteDoc, onSnapshot, query, where, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
     import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
     const firebaseConfig = {
@@ -34,6 +35,74 @@
     const db = getFirestore(app);
     const auth = getAuth(app);
     const provider = new GoogleAuthProvider();
+
+    // ===== FCM 웹 푸시 알림 설정 =====
+    let messaging = null;
+    try { messaging = getMessaging(app); } catch(e) { console.warn('FCM 초기화 실패:', e); }
+
+    // FCM 토큰 요청 및 Firestore 저장
+    window.requestNotificationPermission = async function() {
+      if (!messaging) { alert('이 브라우저는 푸시 알림을 지원하지 않습니다.'); return; }
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') { alert('알림 권한이 거부되었습니다.'); return; }
+
+        // VAPID key: Firebase 콘솔 > 프로젝트 설정 > 클라우드 메시징 > 웹 푸시 인증서에서 가져와야 합니다
+        // TODO: 아래 값을 실제 VAPID 키로 교체하세요
+        const VAPID_KEY = 'YOUR_VAPID_KEY_HERE';
+        const token = await getToken(messaging, { vapidKey: VAPID_KEY });
+        if (token) {
+          // 토큰을 Firestore에 저장
+          await setDoc(doc(db, 'fcm_tokens', token), {
+            token: token,
+            userId: auth.currentUser?.email || 'anonymous',
+            created: Date.now(),
+            userAgent: navigator.userAgent
+          });
+          console.log('FCM 토큰 저장됨:', token.substring(0, 20) + '...');
+          return token;
+        }
+      } catch(e) { console.error('FCM 토큰 요청 실패:', e); }
+    };
+
+    // 포그라운드 메시지 수신 (FCM 서버 방식 사용시)
+    if (messaging) {
+      onMessage(messaging, (payload) => {
+        console.log('포그라운드 메시지:', payload);
+        const title = payload.notification?.title || payload.data?.title || '새 알림';
+        const body = payload.notification?.body || payload.data?.body || '';
+        if (Notification.permission === 'granted') {
+          new Notification(title, { body: body, icon: '/icon-192.png' });
+        }
+      });
+    }
+
+    // ===== Firestore 실시간 공지 알림 (서버 없이 작동) =====
+    // admin이 공지를 올리면 onSnapshot으로 실시간 감지 → 브라우저 알림 표시
+    window.startNoticeListener = function() {
+      const q = query(collection(db, 'admin_notices'), orderBy('created', 'desc'), limit(1));
+      let firstLoad = true;
+      onSnapshot(q, (snapshot) => {
+        if (firstLoad) { firstLoad = false; return; } // 첫 로드는 무시
+        snapshot.docChanges().forEach((change) => {
+          if (change.type === 'added') {
+            const notice = change.doc.data();
+            // 브라우저 알림 표시
+            if (Notification.permission === 'granted') {
+              new Notification('📢 새 공지: ' + (notice.title || ''), {
+                body: (notice.body || '').substring(0, 100),
+                icon: '/icon-192.png',
+                tag: 'notice-' + notice.id
+              });
+            }
+            // 페이지 내 알림 배너
+            if (typeof window.showInAppNotice === 'function') {
+              window.showInAppNotice(notice.title, notice.body);
+            }
+          }
+        });
+      });
+    };
 
     // 로그인
     window.doGoogleLogin = async function() {
@@ -211,6 +280,14 @@
 
         // 역할별 UI 조정
         window.applyRoleUI(roleInfo.role);
+
+        // 푸시 알림 권한 요청 + 실시간 공지 리스너 시작
+        if (Notification.permission === 'default') {
+          window.requestNotificationPermission();
+        } else if (Notification.permission === 'granted') {
+          window.requestNotificationPermission(); // 토큰 갱신
+        }
+        window.startNoticeListener();
 
         // 최초 1회만 Firestore에서 불러오기
         if (!dataLoaded) {
@@ -605,6 +682,24 @@ textarea.form-input{min-height:85px;resize:vertical;line-height:1.5}
 </style>
 </head>
 <body>
+
+<!-- 인앱 알림 배너 -->
+<div id="in-app-notice-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:#4f46e5;color:#fff;padding:14px 20px;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,.15);cursor:pointer;animation:slideDown .3s ease" onclick="this.style.display='none'">
+  <strong id="in-app-notice-title"></strong>
+  <div id="in-app-notice-body" style="font-size:13px;margin-top:4px;opacity:.9"></div>
+  <div style="font-size:11px;margin-top:4px;opacity:.6">탭하여 닫기</div>
+</div>
+<style>@keyframes slideDown{from{transform:translateY(-100%)}to{transform:translateY(0)}}</style>
+
+<script>
+window.showInAppNotice = function(title, body) {
+  var banner = document.getElementById('in-app-notice-banner');
+  document.getElementById('in-app-notice-title').textContent = '📢 ' + (title || '새 공지');
+  document.getElementById('in-app-notice-body').textContent = (body || '').substring(0, 200);
+  banner.style.display = 'block';
+  setTimeout(function(){ banner.style.display = 'none'; }, 10000);
+};
+</script>
 
 <!-- 로그인 화면 -->
 <div id="login-screen" style="

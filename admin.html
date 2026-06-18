@@ -76,7 +76,7 @@ textarea.form-input{resize:vertical;min-height:120px}
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, doc, setDoc, getDoc, getDocs, collection, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFirestore, doc, setDoc, getDoc, getDocs, collection, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
   import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
   const firebaseConfig = {
@@ -119,6 +119,14 @@ textarea.form-input{resize:vertical;min-height:120px}
     return result;
   };
   window.fbDeleteDoc = async function(path, id) { await deleteDoc(doc(db, path, id)); };
+
+  // FCM 토큰 수 확인
+  window.getFcmTokenCount = async function() {
+    try {
+      const snap = await getDocs(collection(db, 'fcm_tokens'));
+      return snap.size;
+    } catch(e) { return 0; }
+  };
 
   onAuthStateChanged(auth, async (user) => {
     if (user && user.email === SUPER_ADMIN) {
@@ -180,6 +188,10 @@ textarea.form-input{resize:vertical;min-height:120px}
           <div class="stat-num" id="stat-members">-</div>
           <div class="stat-label">관리자 당원 수</div>
         </div>
+        <div class="stat-card">
+          <div class="stat-num" id="stat-push">0</div>
+          <div class="stat-label">푸시 알림 구독자</div>
+        </div>
       </div>
 
       <div class="card">
@@ -221,7 +233,7 @@ textarea.form-input{resize:vertical;min-height:120px}
     <div class="tab-panel" id="panel-notices">
       <div class="card">
         <h3>📢 새 공지 작성</h3>
-        <p class="desc">여기서 작성한 공지는 모든 의원에게 자동으로 표시됩니다.</p>
+        <p class="desc">여기서 작성한 공지는 모든 의원에게 자동으로 표시됩니다. 의원용 페이지가 열려있으면 실시간 알림이 표시됩니다.</p>
         <div style="margin-bottom:10px">
           <input class="form-input" id="n-title" placeholder="공지 제목">
         </div>
@@ -298,6 +310,8 @@ async function loadDashboard() {
     document.getElementById('stat-tenants').textContent = tenants.length;
     document.getElementById('stat-notices').textContent = notices.length;
     document.getElementById('stat-members').textContent = members.length;
+    var pushCount = await window.getFcmTokenCount();
+    document.getElementById('stat-push').textContent = pushCount;
 
     var recent = tenants.sort(function(a,b){ return (b.created||0)-(a.created||0); }).slice(0,5);
     var el = document.getElementById('dash-recent-tenants');
