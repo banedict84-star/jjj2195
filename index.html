@@ -178,22 +178,26 @@ html,body{height:100%;overflow:hidden;font-family:'Apple SD Gothic Neo','Malgun 
   transition:width .3s cubic-bezier(.4,0,.2,1);
   overflow:hidden;border-right:1px solid #e5e7eb;
 }
-.sidebar.collapsed{width:0;border-right:none}
+.sidebar.collapsed{width:52px}
 .sidebar-top{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 8px;min-height:48px}
+.sidebar.collapsed .sidebar-top{justify-content:center;padding:12px 0 8px}
+.sidebar.collapsed .sidebar-top .sidebar-brand-logo{display:none}
+.sidebar.collapsed .sidebar-collapse-btn{border:none;font-size:16px}
+.sidebar.collapsed .sidebar-brand{display:none}
+.sidebar.collapsed .sidebar-divider{margin:0 8px}
+.sidebar.collapsed .sidebar-section-label{display:none}
+.sidebar.collapsed .sidebar-item{justify-content:center;padding:10px 0;margin:2px 6px;border-radius:8px}
+.sidebar.collapsed .sidebar-item .si-label,
+.sidebar.collapsed .sidebar-item .si-badge,
+.sidebar.collapsed .sidebar-item .si-badge-warn{display:none}
+.sidebar.collapsed .sidebar-bottom{display:none}
 .sidebar-collapse-btn{
   background:none;border:1px solid #e5e7eb;color:#6b7280;cursor:pointer;
   width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;
   font-size:14px;transition:all .15s;flex-shrink:0;
 }
 .sidebar-collapse-btn:hover{background:#f3f4f6;color:#374151;border-color:#d1d5db}
-.sb-open-btn{
-  position:fixed;top:16px;left:16px;z-index:201;
-  background:#fff;border:1px solid #e5e7eb;color:#6b7280;cursor:pointer;
-  width:36px;height:36px;border-radius:10px;display:none;align-items:center;justify-content:center;
-  font-size:16px;transition:all .15s;box-shadow:0 1px 3px rgba(0,0,0,.08);
-}
-.sb-open-btn:hover{background:#f9fafb;color:#374151;box-shadow:0 2px 6px rgba(0,0,0,.12)}
-.sb-open-btn.show{display:flex}
+.sb-open-btn{display:none!important}
 .sidebar-brand{padding:4px 16px 16px;display:flex;align-items:center;gap:10px}
 .sidebar-brand-logo{
   width:34px;height:34px;min-width:34px;border-radius:10px;
@@ -248,7 +252,7 @@ html,body{height:100%;overflow:hidden;font-family:'Apple SD Gothic Neo','Malgun 
   .sb-open-btn{display:none!important}
 }
 .with-sidebar{margin-left:260px;transition:margin-left .3s cubic-bezier(.4,0,.2,1)}
-.with-sidebar.sb-collapsed{margin-left:0}
+.with-sidebar.sb-collapsed{margin-left:52px}
 
 /* ─── 페이지 컨테이너 ─── */
 .page-container{display:none}
@@ -1970,7 +1974,9 @@ function toggleSidebar() {
   var sb = document.getElementById('sidebar');
   sb.classList.toggle('collapsed');
   var isCollapsed = sb.classList.contains('collapsed');
-  document.getElementById('sb-open-btn').classList.toggle('show', isCollapsed);
+  var btn = sb.querySelector('.sidebar-collapse-btn');
+  btn.textContent = isCollapsed ? '☰' : '✕';
+  btn.title = isCollapsed ? '메뉴 열기' : '메뉴 접기';
   document.querySelectorAll('.with-sidebar').forEach(function(el){
     el.classList.toggle('sb-collapsed', isCollapsed);
   });
