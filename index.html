@@ -762,6 +762,7 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
 <script>
 
 (function() {
+  function fmtJuminDisplay(s){if(!s)return '';if(s.indexOf('-')!==-1)return s;if(s.length>=6)return s.slice(0,6)+'-'+s.slice(6);return s;}
   var SKEY = 'crm_v4';
   var data = [], filtered = [], selId = -1, isNew = false, sc = 'score', sa = false, nid = 0;
   var pendingRows = [];
@@ -905,7 +906,7 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
         +'<td style="font-weight:800;color:#1d4ed8">'+esc(r.score)+'</td>'
         +'<td style="font-weight:600">'+esc(r.name)+'</td>'
         +'<td style="color:#0d47a1'+(phoneCnt[r.phone]>1?';background:#fff176':'')+'">' + esc(r.phone)+'</td>'
-        +'<td style="color:#555;font-size:11px">'+esc(r.jumin)+'</td>'
+        +'<td style="color:#555;font-size:11px">'+fmtJuminDisplay(r.jumin)+'</td>'
         +'<td>'+db(r.dong)+'</td>'
         +'<td>'+mb(r.member_type)+'</td>'
         +'<td style="width:76px;color:#444">'+esc(r.affiliation||'')+'</td>'
