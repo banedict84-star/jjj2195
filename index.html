@@ -564,14 +564,14 @@ textarea.form-input{min-height:85px;resize:vertical;line-height:1.5}
   <div class="sidebar-divider"></div>
   <div class="sidebar-nav">
     <div class="sidebar-section-label">메뉴</div>
-    <div class="sidebar-item active" onclick="switchPage('members',this)">
-      <span class="si-icon">👥</span>
-      <span class="si-label">당원 관리</span>
-    </div>
-    <div class="sidebar-item" onclick="switchPage('notices',this)">
+    <div class="sidebar-item active" onclick="switchPage('notices',this)">
       <span class="si-icon">📢</span>
       <span class="si-label">공지사항</span>
       <span class="si-badge" id="notice-count" style="display:none">0</span>
+    </div>
+    <div class="sidebar-item" onclick="switchPage('members',this)">
+      <span class="si-icon">👥</span>
+      <span class="si-label">당원 관리</span>
     </div>
     <div class="sidebar-divider" style="margin:8px 8px"></div>
     <div class="sidebar-section-label">준비중</div>
@@ -593,7 +593,7 @@ textarea.form-input{min-height:85px;resize:vertical;line-height:1.5}
 </div>
 
 <!-- 페이지: 당원 관리 -->
-<div class="with-sidebar page-container active" id="page-members">
+<div class="with-sidebar page-container" id="page-members">
 <div class="wrap">
 
 <!-- 헤더 -->
@@ -964,7 +964,7 @@ textarea.form-input{min-height:85px;resize:vertical;line-height:1.5}
 </div><!-- /page-members -->
 
 <!-- 페이지: 공지사항 -->
-<div class="with-sidebar page-container" id="page-notices">
+<div class="with-sidebar page-container active" id="page-notices">
   <div class="notice-page">
     <!-- 목록 뷰 -->
     <div id="notice-list-view">
