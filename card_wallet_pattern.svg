@@ -1,0 +1,519 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="420mm" height="297mm" viewBox="0 0 420 297">
+  <defs>
+    <style>
+      .cut-line { stroke: #000000; stroke-width: 0.3; fill: none; }
+      .fold-line { stroke: #0000FF; stroke-width: 0.2; fill: none; stroke-dasharray: 2,1; }
+      .stitch-line { stroke: #FF0000; stroke-width: 0.15; fill: none; stroke-dasharray: 0.8,0.8; }
+      .stitch-hole { fill: #FF0000; }
+      .glue-area { fill: #FFFFCC; fill-opacity: 0.3; stroke: #CCCC00; stroke-width: 0.1; stroke-dasharray: 1,1; }
+      .label { font-family: 'Arial', sans-serif; font-size: 3px; fill: #666666; }
+      .title { font-family: 'Arial', sans-serif; font-size: 5px; fill: #333333; font-weight: bold; }
+      .dimension { font-family: 'Arial', sans-serif; font-size: 2.5px; fill: #999999; }
+      .dim-line { stroke: #999999; stroke-width: 0.1; }
+      .dim-arrow { fill: #999999; }
+      .grain { stroke: #00AA00; stroke-width: 0.15; fill: none; }
+      .grain-arrow { fill: #00AA00; }
+    </style>
+  </defs>
+
+  <!-- Title Block -->
+  <text x="210" y="12" text-anchor="middle" class="title" style="font-size:7px;">가죽공예 카드지갑 패턴 (Card Wallet Pattern)</text>
+  <text x="210" y="18" text-anchor="middle" class="label" style="font-size:3px;">Scale 1:1 | 재단선(검정) | 접는선(파랑) | 바느질선(빨강) | 접착면(노랑)</text>
+  <text x="210" y="22" text-anchor="middle" class="dimension">카드 크기 기준: 86mm x 54mm | 가죽 두께 권장: 1.0~1.2mm</text>
+
+  <!-- ============================================ -->
+  <!-- PART A: 외피 (Outer Shell) -->
+  <!-- Size: 200mm x 100mm -->
+  <!-- ============================================ -->
+  <g transform="translate(15, 35)">
+    <text x="100" y="-3" text-anchor="middle" class="title">A. 외피 (Outer Shell) - 1장</text>
+    <text x="100" y="0" text-anchor="middle" class="dimension">200mm × 100mm (가죽 두께 1.0~1.2mm)</text>
+
+    <!-- Cut line -->
+    <rect x="0" y="5" width="200" height="100" rx="3" ry="3" class="cut-line"/>
+
+    <!-- Fold line (center) -->
+    <line x1="100" y1="5" x2="100" y2="105" class="fold-line"/>
+    <text x="100" y="112" text-anchor="middle" class="label">← 접는선 (Fold Line) →</text>
+
+    <!-- Stitch line (3mm inside) -->
+    <rect x="3" y="8" width="194" height="94" rx="2" ry="2" class="stitch-line"/>
+
+    <!-- Stitch holes (4mm interval) along stitch line -->
+    <!-- Top edge -->
+    <g>
+      <!-- Top stitch holes -->
+      <line x1="3" y1="8" x2="197" y2="8" class="stitch-line" stroke-dasharray="none" stroke-width="0"/>
+      <!-- Generate holes every 4mm along top -->
+      <circle cx="5" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="9" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="13" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="17" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="21" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="25" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="29" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="33" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="37" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="41" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="45" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="49" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="53" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="57" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="61" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="65" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="69" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="73" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="77" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="81" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="85" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="89" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="93" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="97" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="101" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="105" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="109" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="113" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="117" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="121" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="125" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="129" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="133" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="137" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="141" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="145" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="149" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="153" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="157" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="161" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="165" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="169" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="173" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="177" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="181" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="185" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="189" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="193" cy="8" r="0.4" class="stitch-hole"/>
+      <circle cx="197" cy="8" r="0.4" class="stitch-hole"/>
+
+      <!-- Bottom stitch holes -->
+      <circle cx="5" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="9" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="13" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="17" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="21" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="25" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="29" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="33" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="37" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="41" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="45" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="49" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="53" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="57" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="61" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="65" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="69" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="73" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="77" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="81" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="85" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="89" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="93" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="97" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="101" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="105" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="109" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="113" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="117" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="121" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="125" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="129" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="133" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="137" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="141" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="145" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="149" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="153" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="157" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="161" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="165" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="169" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="173" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="177" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="181" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="185" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="189" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="193" cy="102" r="0.4" class="stitch-hole"/>
+      <circle cx="197" cy="102" r="0.4" class="stitch-hole"/>
+
+      <!-- Left side stitch holes -->
+      <circle cx="3" cy="12" r="0.4" class="stitch-hole"/>
+      <circle cx="3" cy="16" r="0.4" class="stitch-hole"/>
+      <circle cx="3" cy="20" r="0.4" class="stitch-hole"/>
+      <circle cx="3" cy="24" r="0.4" class="stitch-hole"/>
+      <circle cx="3" cy="28" r="0.4" class="stitch-hole"/>
+      <circle cx="3" cy="32" r="0.4" class="stitch-hole"/>
+      <circle cx="3" cy="36" r="0.4" class="stitch-hole"/>
+      <circle cx="3" cy="40" r="0.4" class="stitch-hole"/>
+      <circle cx="3" cy="44" r="0.4" class="stitch-hole"/>
+      <circle cx="3" cy="48" r="0.4" class="stitch-hole"/>
+      <circle cx="3" cy="52" r="0.4" class="stitch-hole"/>
+      <circle cx="3" cy="56" r="0.4" class="stitch-hole"/>
+      <circle cx="3" cy="60" r="0.4" class="stitch-hole"/>
+      <circle cx="3" cy="64" r="0.4" class="stitch-hole"/>
+      <circle cx="3" cy="68" r="0.4" class="stitch-hole"/>
+      <circle cx="3" cy="72" r="0.4" class="stitch-hole"/>
+      <circle cx="3" cy="76" r="0.4" class="stitch-hole"/>
+      <circle cx="3" cy="80" r="0.4" class="stitch-hole"/>
+      <circle cx="3" cy="84" r="0.4" class="stitch-hole"/>
+      <circle cx="3" cy="88" r="0.4" class="stitch-hole"/>
+      <circle cx="3" cy="92" r="0.4" class="stitch-hole"/>
+      <circle cx="3" cy="96" r="0.4" class="stitch-hole"/>
+      <circle cx="3" cy="100" r="0.4" class="stitch-hole"/>
+
+      <!-- Right side stitch holes -->
+      <circle cx="197" cy="12" r="0.4" class="stitch-hole"/>
+      <circle cx="197" cy="16" r="0.4" class="stitch-hole"/>
+      <circle cx="197" cy="20" r="0.4" class="stitch-hole"/>
+      <circle cx="197" cy="24" r="0.4" class="stitch-hole"/>
+      <circle cx="197" cy="28" r="0.4" class="stitch-hole"/>
+      <circle cx="197" cy="32" r="0.4" class="stitch-hole"/>
+      <circle cx="197" cy="36" r="0.4" class="stitch-hole"/>
+      <circle cx="197" cy="40" r="0.4" class="stitch-hole"/>
+      <circle cx="197" cy="44" r="0.4" class="stitch-hole"/>
+      <circle cx="197" cy="48" r="0.4" class="stitch-hole"/>
+      <circle cx="197" cy="52" r="0.4" class="stitch-hole"/>
+      <circle cx="197" cy="56" r="0.4" class="stitch-hole"/>
+      <circle cx="197" cy="60" r="0.4" class="stitch-hole"/>
+      <circle cx="197" cy="64" r="0.4" class="stitch-hole"/>
+      <circle cx="197" cy="68" r="0.4" class="stitch-hole"/>
+      <circle cx="197" cy="72" r="0.4" class="stitch-hole"/>
+      <circle cx="197" cy="76" r="0.4" class="stitch-hole"/>
+      <circle cx="197" cy="80" r="0.4" class="stitch-hole"/>
+      <circle cx="197" cy="84" r="0.4" class="stitch-hole"/>
+      <circle cx="197" cy="88" r="0.4" class="stitch-hole"/>
+      <circle cx="197" cy="92" r="0.4" class="stitch-hole"/>
+      <circle cx="197" cy="96" r="0.4" class="stitch-hole"/>
+      <circle cx="197" cy="100" r="0.4" class="stitch-hole"/>
+    </g>
+
+    <!-- Grain direction -->
+    <line x1="50" y1="50" x2="50" y2="65" class="grain"/>
+    <polygon points="48,65 50,69 52,65" class="grain-arrow"/>
+    <text x="55" y="60" class="dimension" fill="#00AA00">결방향 ↓</text>
+
+    <!-- Dimensions -->
+    <!-- Width -->
+    <line x1="0" y1="118" x2="200" y2="118" class="dim-line"/>
+    <line x1="0" y1="105" x2="0" y2="120" class="dim-line"/>
+    <line x1="200" y1="105" x2="200" y2="120" class="dim-line"/>
+    <text x="100" y="122" text-anchor="middle" class="dimension">200mm</text>
+
+    <!-- Height -->
+    <line x1="210" y1="5" x2="210" y2="105" class="dim-line"/>
+    <line x1="200" y1="5" x2="213" y2="5" class="dim-line"/>
+    <line x1="200" y1="105" x2="213" y2="105" class="dim-line"/>
+    <text x="215" y="58" class="dimension" transform="rotate(90,215,58)">100mm</text>
+
+    <!-- Half width -->
+    <line x1="0" y1="126" x2="100" y2="126" class="dim-line"/>
+    <text x="50" y="130" text-anchor="middle" class="dimension">100mm (반접기)</text>
+  </g>
+
+  <!-- ============================================ -->
+  <!-- PART B: 카드슬롯 패널 (Card Slot Panel) -->
+  <!-- Size: 95mm x 90mm, 3 slots -->
+  <!-- ============================================ -->
+  <g transform="translate(15, 175)">
+    <text x="47" y="-3" text-anchor="middle" class="title">B. 카드슬롯 패널 - 2장</text>
+    <text x="47" y="0" text-anchor="middle" class="dimension">95mm × 90mm (좌/우 각 1장)</text>
+
+    <!-- Cut line -->
+    <rect x="0" y="5" width="95" height="90" rx="2" ry="2" class="cut-line"/>
+
+    <!-- Glue area (bottom 10mm) -->
+    <rect x="0" y="85" width="95" height="10" rx="0" ry="0" class="glue-area"/>
+    <text x="47" y="92" text-anchor="middle" class="dimension">접착면 (10mm)</text>
+
+    <!-- Card slot lines (openings on top, offset by 15mm each) -->
+    <!-- Slot 1: top card -->
+    <line x1="15" y1="25" x2="95" y2="25" class="cut-line" stroke-width="0.2"/>
+    <text x="55" y="17" text-anchor="middle" class="label">카드슬롯 1</text>
+    <!-- Finger notch -->
+    <path d="M 50,25 Q 55,20 60,25" class="cut-line" stroke-width="0.2"/>
+
+    <!-- Slot 2 -->
+    <line x1="15" y1="45" x2="95" y2="45" class="cut-line" stroke-width="0.2"/>
+    <text x="55" y="37" text-anchor="middle" class="label">카드슬롯 2</text>
+    <path d="M 50,45 Q 55,40 60,45" class="cut-line" stroke-width="0.2"/>
+
+    <!-- Slot 3 -->
+    <line x1="15" y1="65" x2="95" y2="65" class="cut-line" stroke-width="0.2"/>
+    <text x="55" y="57" text-anchor="middle" class="label">카드슬롯 3</text>
+    <path d="M 50,65 Q 55,60 60,65" class="cut-line" stroke-width="0.2"/>
+
+    <!-- Stitch line (sides and bottom, 3mm inset) -->
+    <path d="M 3,5 L 3,92 L 92,92 L 92,5" class="stitch-line" fill="none"/>
+
+    <!-- Stitch holes on sides -->
+    <circle cx="3" cy="9" r="0.4" class="stitch-hole"/>
+    <circle cx="3" cy="13" r="0.4" class="stitch-hole"/>
+    <circle cx="3" cy="17" r="0.4" class="stitch-hole"/>
+    <circle cx="3" cy="21" r="0.4" class="stitch-hole"/>
+    <circle cx="3" cy="25" r="0.4" class="stitch-hole"/>
+    <circle cx="3" cy="29" r="0.4" class="stitch-hole"/>
+    <circle cx="3" cy="33" r="0.4" class="stitch-hole"/>
+    <circle cx="3" cy="37" r="0.4" class="stitch-hole"/>
+    <circle cx="3" cy="41" r="0.4" class="stitch-hole"/>
+    <circle cx="3" cy="45" r="0.4" class="stitch-hole"/>
+    <circle cx="3" cy="49" r="0.4" class="stitch-hole"/>
+    <circle cx="3" cy="53" r="0.4" class="stitch-hole"/>
+    <circle cx="3" cy="57" r="0.4" class="stitch-hole"/>
+    <circle cx="3" cy="61" r="0.4" class="stitch-hole"/>
+    <circle cx="3" cy="65" r="0.4" class="stitch-hole"/>
+    <circle cx="3" cy="69" r="0.4" class="stitch-hole"/>
+    <circle cx="3" cy="73" r="0.4" class="stitch-hole"/>
+    <circle cx="3" cy="77" r="0.4" class="stitch-hole"/>
+    <circle cx="3" cy="81" r="0.4" class="stitch-hole"/>
+    <circle cx="3" cy="85" r="0.4" class="stitch-hole"/>
+    <circle cx="3" cy="89" r="0.4" class="stitch-hole"/>
+    <circle cx="3" cy="92" r="0.4" class="stitch-hole"/>
+
+    <circle cx="92" cy="9" r="0.4" class="stitch-hole"/>
+    <circle cx="92" cy="13" r="0.4" class="stitch-hole"/>
+    <circle cx="92" cy="17" r="0.4" class="stitch-hole"/>
+    <circle cx="92" cy="21" r="0.4" class="stitch-hole"/>
+    <circle cx="92" cy="25" r="0.4" class="stitch-hole"/>
+    <circle cx="92" cy="29" r="0.4" class="stitch-hole"/>
+    <circle cx="92" cy="33" r="0.4" class="stitch-hole"/>
+    <circle cx="92" cy="37" r="0.4" class="stitch-hole"/>
+    <circle cx="92" cy="41" r="0.4" class="stitch-hole"/>
+    <circle cx="92" cy="45" r="0.4" class="stitch-hole"/>
+    <circle cx="92" cy="49" r="0.4" class="stitch-hole"/>
+    <circle cx="92" cy="53" r="0.4" class="stitch-hole"/>
+    <circle cx="92" cy="57" r="0.4" class="stitch-hole"/>
+    <circle cx="92" cy="61" r="0.4" class="stitch-hole"/>
+    <circle cx="92" cy="65" r="0.4" class="stitch-hole"/>
+    <circle cx="92" cy="69" r="0.4" class="stitch-hole"/>
+    <circle cx="92" cy="73" r="0.4" class="stitch-hole"/>
+    <circle cx="92" cy="77" r="0.4" class="stitch-hole"/>
+    <circle cx="92" cy="81" r="0.4" class="stitch-hole"/>
+    <circle cx="92" cy="85" r="0.4" class="stitch-hole"/>
+    <circle cx="92" cy="89" r="0.4" class="stitch-hole"/>
+    <circle cx="92" cy="92" r="0.4" class="stitch-hole"/>
+
+    <!-- Bottom stitch holes -->
+    <circle cx="7" cy="92" r="0.4" class="stitch-hole"/>
+    <circle cx="11" cy="92" r="0.4" class="stitch-hole"/>
+    <circle cx="15" cy="92" r="0.4" class="stitch-hole"/>
+    <circle cx="19" cy="92" r="0.4" class="stitch-hole"/>
+    <circle cx="23" cy="92" r="0.4" class="stitch-hole"/>
+    <circle cx="27" cy="92" r="0.4" class="stitch-hole"/>
+    <circle cx="31" cy="92" r="0.4" class="stitch-hole"/>
+    <circle cx="35" cy="92" r="0.4" class="stitch-hole"/>
+    <circle cx="39" cy="92" r="0.4" class="stitch-hole"/>
+    <circle cx="43" cy="92" r="0.4" class="stitch-hole"/>
+    <circle cx="47" cy="92" r="0.4" class="stitch-hole"/>
+    <circle cx="51" cy="92" r="0.4" class="stitch-hole"/>
+    <circle cx="55" cy="92" r="0.4" class="stitch-hole"/>
+    <circle cx="59" cy="92" r="0.4" class="stitch-hole"/>
+    <circle cx="63" cy="92" r="0.4" class="stitch-hole"/>
+    <circle cx="67" cy="92" r="0.4" class="stitch-hole"/>
+    <circle cx="71" cy="92" r="0.4" class="stitch-hole"/>
+    <circle cx="75" cy="92" r="0.4" class="stitch-hole"/>
+    <circle cx="79" cy="92" r="0.4" class="stitch-hole"/>
+    <circle cx="83" cy="92" r="0.4" class="stitch-hole"/>
+    <circle cx="87" cy="92" r="0.4" class="stitch-hole"/>
+
+    <!-- Dimensions -->
+    <line x1="0" y1="108" x2="95" y2="108" class="dim-line"/>
+    <line x1="0" y1="95" x2="0" y2="110" class="dim-line"/>
+    <line x1="95" y1="95" x2="95" y2="110" class="dim-line"/>
+    <text x="47" y="112" text-anchor="middle" class="dimension">95mm</text>
+
+    <line x1="105" y1="5" x2="105" y2="95" class="dim-line"/>
+    <line x1="95" y1="5" x2="108" y2="5" class="dim-line"/>
+    <line x1="95" y1="95" x2="108" y2="95" class="dim-line"/>
+    <text x="110" y="53" class="dimension" transform="rotate(90,110,53)">90mm</text>
+
+    <!-- Slot spacing dimensions -->
+    <line x1="110" y1="5" x2="110" y2="25" class="dim-line"/>
+    <text x="115" y="17" class="dimension">20mm</text>
+    <line x1="110" y1="25" x2="110" y2="45" class="dim-line"/>
+    <text x="115" y="37" class="dimension">20mm</text>
+    <line x1="110" y1="45" x2="110" y2="65" class="dim-line"/>
+    <text x="115" y="57" class="dimension">20mm</text>
+
+    <!-- Grain -->
+    <line x1="80" y1="35" x2="80" y2="50" class="grain"/>
+    <polygon points="78,50 80,54 82,50" class="grain-arrow"/>
+    <text x="70" y="44" class="dimension" fill="#00AA00">결 ↓</text>
+  </g>
+
+  <!-- ============================================ -->
+  <!-- PART C: 중앙 포켓 (Center Pocket - optional) -->
+  <!-- Size: 95mm x 80mm -->
+  <!-- ============================================ -->
+  <g transform="translate(150, 175)">
+    <text x="47" y="-3" text-anchor="middle" class="title">C. 중앙 포켓 - 1장 (선택)</text>
+    <text x="47" y="0" text-anchor="middle" class="dimension">95mm × 80mm (영수증/명함 포켓)</text>
+
+    <!-- Cut line -->
+    <rect x="0" y="5" width="95" height="80" rx="2" ry="2" class="cut-line"/>
+
+    <!-- Glue area -->
+    <rect x="0" y="75" width="95" height="10" rx="0" ry="0" class="glue-area"/>
+    <text x="47" y="82" text-anchor="middle" class="dimension">접착면 (10mm)</text>
+
+    <!-- Finger notch at top -->
+    <path d="M 42,5 Q 47,0 52,5" class="cut-line" stroke-width="0.2"/>
+
+    <!-- Stitch line -->
+    <path d="M 3,5 L 3,82 L 92,82 L 92,5" class="stitch-line" fill="none"/>
+
+    <!-- Stitch holes - left -->
+    <circle cx="3" cy="9" r="0.4" class="stitch-hole"/>
+    <circle cx="3" cy="13" r="0.4" class="stitch-hole"/>
+    <circle cx="3" cy="17" r="0.4" class="stitch-hole"/>
+    <circle cx="3" cy="21" r="0.4" class="stitch-hole"/>
+    <circle cx="3" cy="25" r="0.4" class="stitch-hole"/>
+    <circle cx="3" cy="29" r="0.4" class="stitch-hole"/>
+    <circle cx="3" cy="33" r="0.4" class="stitch-hole"/>
+    <circle cx="3" cy="37" r="0.4" class="stitch-hole"/>
+    <circle cx="3" cy="41" r="0.4" class="stitch-hole"/>
+    <circle cx="3" cy="45" r="0.4" class="stitch-hole"/>
+    <circle cx="3" cy="49" r="0.4" class="stitch-hole"/>
+    <circle cx="3" cy="53" r="0.4" class="stitch-hole"/>
+    <circle cx="3" cy="57" r="0.4" class="stitch-hole"/>
+    <circle cx="3" cy="61" r="0.4" class="stitch-hole"/>
+    <circle cx="3" cy="65" r="0.4" class="stitch-hole"/>
+    <circle cx="3" cy="69" r="0.4" class="stitch-hole"/>
+    <circle cx="3" cy="73" r="0.4" class="stitch-hole"/>
+    <circle cx="3" cy="77" r="0.4" class="stitch-hole"/>
+    <circle cx="3" cy="82" r="0.4" class="stitch-hole"/>
+
+    <!-- Stitch holes - right -->
+    <circle cx="92" cy="9" r="0.4" class="stitch-hole"/>
+    <circle cx="92" cy="13" r="0.4" class="stitch-hole"/>
+    <circle cx="92" cy="17" r="0.4" class="stitch-hole"/>
+    <circle cx="92" cy="21" r="0.4" class="stitch-hole"/>
+    <circle cx="92" cy="25" r="0.4" class="stitch-hole"/>
+    <circle cx="92" cy="29" r="0.4" class="stitch-hole"/>
+    <circle cx="92" cy="33" r="0.4" class="stitch-hole"/>
+    <circle cx="92" cy="37" r="0.4" class="stitch-hole"/>
+    <circle cx="92" cy="41" r="0.4" class="stitch-hole"/>
+    <circle cx="92" cy="45" r="0.4" class="stitch-hole"/>
+    <circle cx="92" cy="49" r="0.4" class="stitch-hole"/>
+    <circle cx="92" cy="53" r="0.4" class="stitch-hole"/>
+    <circle cx="92" cy="57" r="0.4" class="stitch-hole"/>
+    <circle cx="92" cy="61" r="0.4" class="stitch-hole"/>
+    <circle cx="92" cy="65" r="0.4" class="stitch-hole"/>
+    <circle cx="92" cy="69" r="0.4" class="stitch-hole"/>
+    <circle cx="92" cy="73" r="0.4" class="stitch-hole"/>
+    <circle cx="92" cy="77" r="0.4" class="stitch-hole"/>
+    <circle cx="92" cy="82" r="0.4" class="stitch-hole"/>
+
+    <!-- Bottom stitch holes -->
+    <circle cx="7" cy="82" r="0.4" class="stitch-hole"/>
+    <circle cx="11" cy="82" r="0.4" class="stitch-hole"/>
+    <circle cx="15" cy="82" r="0.4" class="stitch-hole"/>
+    <circle cx="19" cy="82" r="0.4" class="stitch-hole"/>
+    <circle cx="23" cy="82" r="0.4" class="stitch-hole"/>
+    <circle cx="27" cy="82" r="0.4" class="stitch-hole"/>
+    <circle cx="31" cy="82" r="0.4" class="stitch-hole"/>
+    <circle cx="35" cy="82" r="0.4" class="stitch-hole"/>
+    <circle cx="39" cy="82" r="0.4" class="stitch-hole"/>
+    <circle cx="43" cy="82" r="0.4" class="stitch-hole"/>
+    <circle cx="47" cy="82" r="0.4" class="stitch-hole"/>
+    <circle cx="51" cy="82" r="0.4" class="stitch-hole"/>
+    <circle cx="55" cy="82" r="0.4" class="stitch-hole"/>
+    <circle cx="59" cy="82" r="0.4" class="stitch-hole"/>
+    <circle cx="63" cy="82" r="0.4" class="stitch-hole"/>
+    <circle cx="67" cy="82" r="0.4" class="stitch-hole"/>
+    <circle cx="71" cy="82" r="0.4" class="stitch-hole"/>
+    <circle cx="75" cy="82" r="0.4" class="stitch-hole"/>
+    <circle cx="79" cy="82" r="0.4" class="stitch-hole"/>
+    <circle cx="83" cy="82" r="0.4" class="stitch-hole"/>
+    <circle cx="87" cy="82" r="0.4" class="stitch-hole"/>
+
+    <!-- Dimensions -->
+    <line x1="0" y1="98" x2="95" y2="98" class="dim-line"/>
+    <line x1="0" y1="85" x2="0" y2="100" class="dim-line"/>
+    <line x1="95" y1="85" x2="95" y2="100" class="dim-line"/>
+    <text x="47" y="102" text-anchor="middle" class="dimension">95mm</text>
+
+    <line x1="105" y1="5" x2="105" y2="85" class="dim-line"/>
+    <line x1="95" y1="5" x2="108" y2="5" class="dim-line"/>
+    <line x1="95" y1="85" x2="108" y2="85" class="dim-line"/>
+    <text x="110" y="48" class="dimension" transform="rotate(90,110,48)">80mm</text>
+  </g>
+
+  <!-- ============================================ -->
+  <!-- Assembly Guide -->
+  <!-- ============================================ -->
+  <g transform="translate(280, 175)">
+    <text x="60" y="-3" text-anchor="middle" class="title">조립 순서 (Assembly Guide)</text>
+
+    <text x="0" y="8" class="label" style="font-size:2.8px; fill:#333;">1. 외피(A) 은면에 카드슬롯 패널(B) 2장을</text>
+    <text x="0" y="13" class="label" style="font-size:2.8px; fill:#333;">   좌우에 접착합니다. (접착면 기준)</text>
+
+    <text x="0" y="21" class="label" style="font-size:2.8px; fill:#333;">2. 중앙 포켓(C)을 원하는 쪽에 접착합니다.</text>
+    <text x="0" y="26" class="label" style="font-size:2.8px; fill:#333;">   (선택사항)</text>
+
+    <text x="0" y="34" class="label" style="font-size:2.8px; fill:#333;">3. 외피를 접는선 기준으로 반으로 접어</text>
+    <text x="0" y="39" class="label" style="font-size:2.8px; fill:#333;">   양쪽 가장자리를 새들스티치합니다.</text>
+
+    <text x="0" y="47" class="label" style="font-size:2.8px; fill:#333;">4. 코바를 정리하고 마감합니다.</text>
+
+    <!-- Mini assembly diagram -->
+    <g transform="translate(10, 55)">
+      <!-- Outer shell folded -->
+      <rect x="0" y="0" width="50" height="35" rx="2" ry="2" fill="#D4A574" stroke="#8B6914" stroke-width="0.3"/>
+      <line x1="25" y1="0" x2="25" y2="35" stroke="#8B6914" stroke-width="0.2" stroke-dasharray="1,1"/>
+      <text x="25" y="42" text-anchor="middle" class="dimension">완성 모습 (접은 상태)</text>
+      <text x="25" y="46" text-anchor="middle" class="dimension">약 100mm × 100mm</text>
+
+      <!-- Card slots indicated -->
+      <rect x="2" y="5" width="21" height="12" rx="1" ry="1" fill="none" stroke="#fff" stroke-width="0.2"/>
+      <rect x="2" y="9" width="21" height="12" rx="1" ry="1" fill="none" stroke="#fff" stroke-width="0.2"/>
+      <rect x="2" y="13" width="21" height="12" rx="1" ry="1" fill="none" stroke="#fff" stroke-width="0.2"/>
+
+      <rect x="27" y="5" width="21" height="12" rx="1" ry="1" fill="none" stroke="#fff" stroke-width="0.2"/>
+      <rect x="27" y="9" width="21" height="12" rx="1" ry="1" fill="none" stroke="#fff" stroke-width="0.2"/>
+      <rect x="27" y="13" width="21" height="12" rx="1" ry="1" fill="none" stroke="#fff" stroke-width="0.2"/>
+    </g>
+
+    <!-- Materials list -->
+    <text x="0" y="110" class="title" style="font-size:3.5px;">준비물</text>
+    <text x="0" y="115" class="label" style="font-size:2.5px; fill:#555;">- 가죽: 1.0~1.2mm 두께 (약 2ds)</text>
+    <text x="0" y="119" class="label" style="font-size:2.5px; fill:#555;">- 실: 0.6mm 린넨사 또는 폴리사</text>
+    <text x="0" y="123" class="label" style="font-size:2.5px; fill:#555;">- 바늘: 새들스티치용 2개</text>
+    <text x="0" y="127" class="label" style="font-size:2.5px; fill:#555;">- 프릭킹 아이언: 4mm 간격</text>
+    <text x="0" y="131" class="label" style="font-size:2.5px; fill:#555;">- 가죽본드, 코바 마감제</text>
+  </g>
+
+  <!-- Legend -->
+  <g transform="translate(280, 35)">
+    <text x="0" y="0" class="title">범례 (Legend)</text>
+    <line x1="0" y1="8" x2="20" y2="8" class="cut-line"/>
+    <text x="25" y="10" class="label">재단선 (Cut Line)</text>
+
+    <line x1="0" y1="18" x2="20" y2="18" class="fold-line"/>
+    <text x="25" y="20" class="label">접는선 (Fold Line)</text>
+
+    <line x1="0" y1="28" x2="20" y2="28" class="stitch-line"/>
+    <text x="25" y="30" class="label">바느질선 (Stitch Line)</text>
+
+    <circle cx="3" cy="38" r="1" class="stitch-hole"/>
+    <text x="25" y="40" class="label">바늘구멍 (Stitch Hole, 4mm)</text>
+
+    <rect x="0" y="45" width="20" height="8" class="glue-area"/>
+    <text x="25" y="51" class="label">접착면 (Glue Area)</text>
+
+    <line x1="0" y1="62" x2="10" y2="62" class="grain"/>
+    <polygon points="8,68 10,72 12,68" class="grain-arrow"/>
+    <text x="25" y="66" class="label">결방향 (Grain Direction)</text>
+  </g>
+
+</svg>
