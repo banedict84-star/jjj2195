@@ -23,10 +23,12 @@
       measurementId: "G-D1R6WDHP0F"
     };
 
-    // 허용된 이메일 목록
-    const ALLOWED_EMAILS = [
-      'banedict84@gmail.com'
-    ];
+    // 슈퍼관리자 이메일
+    const SUPER_ADMIN = 'banedict84@gmail.com';
+
+    // 현재 로그인 사용자 역할 정보
+    window.currentUserRole = null; // 'admin' 또는 'tenant'
+    window.currentTenantId = null; // 테넌트 ID
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
@@ -53,67 +55,101 @@
       await signOut(auth);
     };
 
-    // Firestore 저장 - 당원 1명당 문서 1개 (100개씩 배치)
+    // 사용자 역할 확인
+    window.checkUserRole = async function(email) {
+      if (email === SUPER_ADMIN) return { role: 'admin', tenantId: 'admin' };
+      try {
+        const userDoc = await getDoc(doc(db, 'users', email));
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          return { role: data.role || 'tenant', tenantId: data.tenantId || email.split('@')[0] };
+        }
+        return null;
+      } catch(e) { console.error('역할 확인 실패:', e); return null; }
+    };
+
+    // 테넌트(의원) 등록
+    window.registerTenant = async function(tenantData) {
+      try {
+        await setDoc(doc(db, 'tenants', tenantData.id), tenantData);
+        await setDoc(doc(db, 'users', tenantData.email), {
+          role: 'tenant', tenantId: tenantData.id, name: tenantData.name, email: tenantData.email, created: Date.now()
+        });
+      } catch(e) { console.error('테넌트 등록 실패:', e); }
+    };
+
+    // 테넌트 목록 불러오기
+    window.loadTenants = async function() {
+      try {
+        const snap = await getDocs(collection(db, 'tenants'));
+        if (snap.empty) return [];
+        const result = [];
+        snap.forEach(d => result.push(d.data()));
+        return result;
+      } catch(e) { console.error('테넌트 로드 실패:', e); return []; }
+    };
+
+    // 테넌트 삭제
+    window.deleteTenant = async function(id, email) {
+      try {
+        await deleteDoc(doc(db, 'tenants', id));
+        if (email) await deleteDoc(doc(db, 'users', email));
+      } catch(e) { console.error('테넌트 삭제 실패:', e); }
+    };
+
+    // 당원 데이터 - 테넌트별 분리
+    function getMemberPath() {
+      if (window.currentUserRole === 'admin') return 'members';
+      return 'tenants/' + window.currentTenantId + '/members';
+    }
+
     window.saveToFirestore = async function(data) {
       try {
+        const path = getMemberPath();
         const BATCH = 100;
         for (let i = 0; i < data.length; i += BATCH) {
           const chunk = data.slice(i, i + BATCH);
-          await Promise.all(chunk.map(r => setDoc(doc(db, 'members', String(r._id)), r)));
+          await Promise.all(chunk.map(r => setDoc(doc(db, path, String(r._id)), r)));
         }
-      } catch(e) {
-        console.error('Firestore 저장 실패:', e);
-      }
+      } catch(e) { console.error('Firestore 저장 실패:', e); }
     };
 
-    // Firestore 단건 저장 (신규/수정 시)
     window.saveOneToFirestore = async function(r) {
       try {
-        await setDoc(doc(db, 'members', String(r._id)), r);
-      } catch(e) {
-        console.error('Firestore 단건 저장 실패:', e);
-      }
+        await setDoc(doc(db, getMemberPath(), String(r._id)), r);
+      } catch(e) { console.error('Firestore 단건 저장 실패:', e); }
     };
 
-    // Firestore 단건 삭제
     window.deleteOneFromFirestore = async function(id) {
       try {
-        await deleteDoc(doc(db, 'members', String(id)));
-      } catch(e) {
-        console.error('Firestore 삭제 실패:', e);
-      }
+        await deleteDoc(doc(db, getMemberPath(), String(id)));
+      } catch(e) { console.error('Firestore 삭제 실패:', e); }
     };
 
-    // Firestore 전체 불러오기
     window.loadFromFirestore = async function() {
       try {
-        const snap = await getDocs(collection(db, 'members'));
+        const snap = await getDocs(collection(db, getMemberPath()));
         if (snap.empty) return null;
         const result = [];
         snap.forEach(d => result.push(d.data()));
         return result;
-      } catch(e) {
-        console.error('Firestore 로드 실패:', e);
-        return null;
-      }
+      } catch(e) { console.error('Firestore 로드 실패:', e); return null; }
     };
 
-    // 공지사항 저장
+    // 공지사항 - 관리자만 작성, 전체 공개
     window.saveNotice = async function(notice) {
       try {
-        await setDoc(doc(db, 'notices', String(notice.id)), notice);
+        await setDoc(doc(db, 'admin_notices', String(notice.id)), notice);
       } catch(e) { console.error('공지 저장 실패:', e); }
     };
-    // 공지사항 삭제
     window.deleteNotice = async function(id) {
       try {
-        await deleteDoc(doc(db, 'notices', String(id)));
+        await deleteDoc(doc(db, 'admin_notices', String(id)));
       } catch(e) { console.error('공지 삭제 실패:', e); }
     };
-    // 공지사항 전체 불러오기
     window.loadNotices = async function() {
       try {
-        const snap = await getDocs(collection(db, 'notices'));
+        const snap = await getDocs(collection(db, 'admin_notices'));
         if (snap.empty) return [];
         const result = [];
         snap.forEach(d => result.push(d.data()));
@@ -155,13 +191,26 @@
       const indicator = document.getElementById('sync-indicator');
       const userInfo = document.getElementById('user-info');
 
-      if (user && ALLOWED_EMAILS.includes(user.email)) {
+      if (user) {
+        // 역할 확인
+        const roleInfo = await window.checkUserRole(user.email);
+        if (!roleInfo) {
+          await signOut(auth);
+          document.getElementById('login-error').textContent = '❌ 접근 권한이 없는 계정입니다. 관리자에게 문의하세요.';
+          return;
+        }
+        window.currentUserRole = roleInfo.role;
+        window.currentTenantId = roleInfo.tenantId;
+
         // 로그인 성공 → 앱 표시
         loginScreen.style.display = 'none';
         appScreen.style.display = 'block';
         if (userInfo) userInfo.textContent = user.email;
         var sidebarUser = document.getElementById('sidebar-user');
         if (sidebarUser) sidebarUser.textContent = user.email;
+
+        // 역할별 UI 조정
+        window.applyRoleUI(roleInfo.role);
 
         // 최초 1회만 Firestore에서 불러오기
         if (!dataLoaded) {
@@ -174,7 +223,6 @@
             if (typeof window.reloadData === 'function') window.reloadData();
             if (typeof window.loadNoticeList === 'function') window.loadNoticeList();
           } else {
-            // Firestore 비어있으면 localStorage 데이터 업로드
             if (indicator) indicator.textContent = '🔄 초기 데이터 업로드 중...';
             if (typeof window.reloadData === 'function') window.reloadData();
             if (typeof window.loadNoticeList === 'function') window.loadNoticeList();
@@ -624,7 +672,7 @@ textarea.form-input{min-height:85px;resize:vertical;line-height:1.5}
     </div>
   </div>
   <div class="sidebar-bottom">
-    <div style="margin-bottom:10px;cursor:pointer;display:flex;align-items:center;gap:6px;padding:6px 4px;border-radius:6px;font-size:12px;color:#6b7280" onclick="switchPage('admin',this)" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='none'">
+    <div data-admin-link style="margin-bottom:10px;cursor:pointer;display:flex;align-items:center;gap:6px;padding:6px 4px;border-radius:6px;font-size:12px;color:#6b7280" onclick="switchPage('admin',this)" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='none'">
       <span>⚙️</span><span>관리자 설정</span>
     </div>
     <div class="sb-email" id="sidebar-user"></div>
@@ -1011,7 +1059,7 @@ textarea.form-input{min-height:85px;resize:vertical;line-height:1.5}
     <div id="notice-list-view">
       <div class="notice-header">
         <h2>📢 공지사항</h2>
-        <button class="tb-btn primary" onclick="showNoticeForm()">+ 새 공지 작성</button>
+        <button class="tb-btn primary" id="btn-new-notice" onclick="showNoticeForm()">+ 새 공지 작성</button>
       </div>
       <!-- 탭 -->
       <div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid #e5e7eb">
@@ -1097,6 +1145,26 @@ textarea.form-input{min-height:85px;resize:vertical;line-height:1.5}
   <div style="max-width:800px;margin:0 auto;padding:32px 24px">
     <h2 style="font-size:22px;font-weight:700;color:#1a1a1a;margin-bottom:24px">⚙️ 관리자 설정</h2>
 
+    <!-- 의원(테넌트) 관리 -->
+    <div style="background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:24px;margin-bottom:20px" id="admin-tenant-section">
+      <h3 style="font-size:16px;font-weight:700;color:#333;margin:0 0 4px">👥 의원 계정 관리</h3>
+      <p style="font-size:13px;color:#888;margin:0 0 16px">등록된 의원만 로그인하여 자신의 당원을 관리할 수 있습니다.</p>
+      <div id="tenant-list" style="margin-bottom:16px"></div>
+      <div style="background:#f9fafb;border-radius:10px;padding:16px;border:1px dashed #d1d5db">
+        <div style="font-size:14px;font-weight:600;color:#555;margin-bottom:12px">+ 새 의원 등록</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <input id="tenant-name" type="text" placeholder="이름 (예: 홍길동)" style="padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">
+          <input id="tenant-email" type="email" placeholder="구글 이메일" style="padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+          <input id="tenant-position" type="text" placeholder="직책 (예: 시의원)" style="padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">
+          <input id="tenant-district" type="text" placeholder="선거구 (예: 수원시 제1선거구)" style="padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">
+        </div>
+        <button onclick="registerNewTenant()" style="padding:10px 24px;background:#4f46e5;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">등록</button>
+        <span id="tenant-reg-msg" style="margin-left:12px;font-size:13px;color:#22c55e;display:none">등록되었습니다!</span>
+      </div>
+    </div>
+
     <!-- 사이트 기본 정보 -->
     <div style="background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:24px;margin-bottom:20px">
       <h3 style="font-size:16px;font-weight:700;color:#333;margin:0 0 16px">🏛️ 사이트 정보</h3>
@@ -1118,34 +1186,6 @@ textarea.form-input{min-height:85px;resize:vertical;line-height:1.5}
       </div>
       <button onclick="saveAdminSettings()" style="padding:10px 24px;background:#4f46e5;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">💾 저장</button>
       <span id="admin-save-msg" style="margin-left:12px;font-size:13px;color:#22c55e;display:none">저장되었습니다!</span>
-    </div>
-
-    <!-- 허용 이메일 관리 -->
-    <div style="background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:24px;margin-bottom:20px">
-      <h3 style="font-size:16px;font-weight:700;color:#333;margin:0 0 16px">🔐 접근 권한 관리</h3>
-      <p style="font-size:13px;color:#888;margin:0 0 12px">로그인 허용된 이메일 목록입니다.</p>
-      <div id="admin-email-list"></div>
-      <div style="display:flex;gap:8px;margin-top:12px">
-        <input id="admin-new-email" type="email" placeholder="새 이메일 추가" style="flex:1;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">
-        <button onclick="addAdminEmail()" style="padding:10px 16px;background:#4f46e5;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap">+ 추가</button>
-      </div>
-    </div>
-
-    <!-- 중앙당 공지 수동 등록 -->
-    <div style="background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:24px;margin-bottom:20px">
-      <h3 style="font-size:16px;font-weight:700;color:#333;margin:0 0 16px">📰 중앙당 공지 수동 등록</h3>
-      <p style="font-size:13px;color:#888;margin:0 0 12px">민주당 중앙당 공지를 직접 등록할 수 있습니다.</p>
-      <div style="margin-bottom:12px">
-        <input id="admin-party-title" type="text" placeholder="공지 제목" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box">
-      </div>
-      <div style="margin-bottom:12px">
-        <input id="admin-party-link" type="url" placeholder="원문 링크 (https://...)" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box">
-      </div>
-      <div style="margin-bottom:12px">
-        <input id="admin-party-date" type="date" style="padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">
-      </div>
-      <button onclick="addPartyNotice()" style="padding:10px 24px;background:#4f46e5;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">📰 등록</button>
-      <span id="admin-party-msg" style="margin-left:12px;font-size:13px;color:#22c55e;display:none">등록되었습니다!</span>
     </div>
 
     <!-- 데이터 관리 -->
@@ -2272,8 +2312,22 @@ async function loadPartyNoticeList() {
   list.innerHTML = html;
 }
 
+/* ── 역할별 UI 조정 ── */
+window.applyRoleUI = function(role) {
+  var adminOnly = document.querySelectorAll('.admin-only');
+  var tenantOnly = document.querySelectorAll('.tenant-only');
+  adminOnly.forEach(function(el) { el.style.display = role === 'admin' ? '' : 'none'; });
+  tenantOnly.forEach(function(el) { el.style.display = role === 'tenant' ? '' : 'none'; });
+  // 테넌트는 공지 작성 불가 (읽기만)
+  var newNoticeBtn = document.getElementById('btn-new-notice');
+  if (newNoticeBtn) newNoticeBtn.style.display = role === 'admin' ? '' : 'none';
+  // 테넌트는 관리자 설정 숨김
+  var adminLinks = document.querySelectorAll('[data-admin-link]');
+  adminLinks.forEach(function(el) { el.style.display = role === 'admin' ? '' : 'none'; });
+};
+
 /* ── 관리자 페이지 ── */
-function loadAdminPage() {
+async function loadAdminPage() {
   var data = JSON.parse(localStorage.getItem('crm_v4') || '[]');
   document.getElementById('admin-member-count').textContent = '총 당원 수: ' + data.length + '명';
   document.getElementById('admin-notice-count').textContent = '총 공지 수: ' + noticeCache.length + '건';
@@ -2284,8 +2338,53 @@ function loadAdminPage() {
   document.getElementById('admin-position').value = settings.position || '';
   document.getElementById('admin-phone').value = settings.phone || '';
 
-  var emails = JSON.parse(localStorage.getItem('admin_emails') || '["banedict84@gmail.com"]');
-  renderEmailList(emails);
+  // 테넌트 목록 로드
+  await loadTenantList();
+}
+
+async function loadTenantList() {
+  var listEl = document.getElementById('tenant-list');
+  if (!listEl) return;
+  listEl.innerHTML = '<div style="text-align:center;padding:12px;color:#aaa">불러오는 중...</div>';
+  var tenants = await window.loadTenants();
+  if (tenants.length === 0) {
+    listEl.innerHTML = '<div style="text-align:center;padding:16px;color:#aaa;font-size:14px">등록된 의원이 없습니다.</div>';
+    return;
+  }
+  listEl.innerHTML = tenants.map(function(t) {
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:#f9fafb;border-radius:10px;margin-bottom:8px;border:1px solid #e5e7eb">'
+      + '<div>'
+      + '<div style="font-size:14px;font-weight:600;color:#1a1a1a">' + escapeHtml(t.name || '') + ' <span style="font-size:12px;color:#6b7280;font-weight:400">' + escapeHtml(t.position || '') + '</span></div>'
+      + '<div style="font-size:12px;color:#9ca3af;margin-top:2px">' + escapeHtml(t.email || '') + ' · ' + escapeHtml(t.district || '') + '</div>'
+      + '</div>'
+      + '<button onclick="removeTenant(\'' + escapeHtml(t.id) + '\',\'' + escapeHtml(t.email) + '\')" style="padding:6px 12px;background:#ef4444;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer">삭제</button>'
+      + '</div>';
+  }).join('');
+}
+
+async function registerNewTenant() {
+  var name = document.getElementById('tenant-name').value.trim();
+  var email = document.getElementById('tenant-email').value.trim();
+  var position = document.getElementById('tenant-position').value.trim();
+  var district = document.getElementById('tenant-district').value.trim();
+  if (!name || !email) { alert('이름과 이메일을 입력하세요'); return; }
+  if (!email.includes('@')) { alert('올바른 이메일을 입력하세요'); return; }
+  var id = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '_');
+  await window.registerTenant({ id: id, name: name, email: email, position: position, district: district, created: Date.now() });
+  document.getElementById('tenant-name').value = '';
+  document.getElementById('tenant-email').value = '';
+  document.getElementById('tenant-position').value = '';
+  document.getElementById('tenant-district').value = '';
+  var msg = document.getElementById('tenant-reg-msg');
+  msg.style.display = 'inline';
+  setTimeout(function(){ msg.style.display = 'none'; }, 2000);
+  await loadTenantList();
+}
+
+async function removeTenant(id, email) {
+  if (!confirm(email + ' 의원을 삭제하시겠습니까?')) return;
+  await window.deleteTenant(id, email);
+  await loadTenantList();
 }
 
 function saveAdminSettings() {
@@ -2304,61 +2403,6 @@ function saveAdminSettings() {
   var msg = document.getElementById('admin-save-msg');
   msg.style.display = 'inline';
   setTimeout(function(){ msg.style.display = 'none'; }, 2000);
-}
-
-function renderEmailList(emails) {
-  var el = document.getElementById('admin-email-list');
-  el.innerHTML = emails.map(function(em, i) {
-    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#f9fafb;border-radius:8px;margin-bottom:6px">'
-      + '<span style="font-size:14px;color:#333">' + escapeHtml(em) + '</span>'
-      + (i === 0 ? '<span style="font-size:11px;color:#999;background:#e5e7eb;padding:2px 8px;border-radius:4px">관리자</span>'
-        : '<button onclick="removeAdminEmail('+i+')" style="padding:4px 10px;background:#ef4444;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer">삭제</button>')
-      + '</div>';
-  }).join('');
-}
-
-function addAdminEmail() {
-  var input = document.getElementById('admin-new-email');
-  var email = input.value.trim();
-  if (!email || !email.includes('@')) { alert('올바른 이메일을 입력하세요'); return; }
-  var emails = JSON.parse(localStorage.getItem('admin_emails') || '["banedict84@gmail.com"]');
-  if (emails.includes(email)) { alert('이미 등록된 이메일입니다'); return; }
-  emails.push(email);
-  localStorage.setItem('admin_emails', JSON.stringify(emails));
-  renderEmailList(emails);
-  input.value = '';
-}
-
-function removeAdminEmail(idx) {
-  var emails = JSON.parse(localStorage.getItem('admin_emails') || '["banedict84@gmail.com"]');
-  if (idx === 0) return;
-  emails.splice(idx, 1);
-  localStorage.setItem('admin_emails', JSON.stringify(emails));
-  renderEmailList(emails);
-}
-
-async function addPartyNotice() {
-  var title = document.getElementById('admin-party-title').value.trim();
-  var link = document.getElementById('admin-party-link').value.trim();
-  var date = document.getElementById('admin-party-date').value;
-  if (!title) { alert('제목을 입력하세요'); return; }
-  var id = 'party_' + Date.now();
-  var notice = { no: '', title: title, link: link, date: date, source: '민주당 중앙당', id: id, updated: Date.now() };
-  try {
-    var docRef = window.db_ref || null;
-    if (typeof setDoc !== 'undefined') {
-      // Firestore에 저장 시도
-    }
-    var stored = JSON.parse(localStorage.getItem('party_notices') || '[]');
-    stored.unshift(notice);
-    localStorage.setItem('party_notices', JSON.stringify(stored));
-    document.getElementById('admin-party-title').value = '';
-    document.getElementById('admin-party-link').value = '';
-    document.getElementById('admin-party-date').value = '';
-    var msg = document.getElementById('admin-party-msg');
-    msg.style.display = 'inline';
-    setTimeout(function(){ msg.style.display = 'none'; }, 2000);
-  } catch(e) { alert('등록 실패: ' + e.message); }
 }
 
 function exportAllData() {
@@ -2394,15 +2438,6 @@ var origSwitchPage = switchPage;
 switchPage = function(pageId, el) {
   origSwitchPage(pageId, el);
   if (pageId === 'admin') loadAdminPage();
-};
-
-// 중앙당 공지에 수동 등록 데이터도 포함
-var origLoadPartyNotices = window.loadPartyNotices;
-window.loadPartyNotices = async function() {
-  var remote = [];
-  try { remote = await origLoadPartyNotices(); } catch(e) {}
-  var local = JSON.parse(localStorage.getItem('party_notices') || '[]');
-  return local.concat(remote);
 };
 </script>
 
