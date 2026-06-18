@@ -1019,6 +1019,7 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
     document.getElementById('fbd').value=r.birthday||'';
     document.getElementById('fph').value=r.phone||'';
     document.getElementById('fjm').value=r.jumin||'';
+    fmtJumin(document.getElementById('fjm'));
     document.getElementById('fadr').value=r.address||'';
     document.getElementById('fdn').value=r.dong||'';
     document.getElementById('fmt').value=r.member_type||'';
@@ -1216,7 +1217,7 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
       gender:document.getElementById('fgd').value,
       birthday:document.getElementById('fbd').value.trim(),
       phone:document.getElementById('fph').value.trim(),
-      jumin:document.getElementById('fjm').value.trim(),
+      jumin:(function(){var v=document.getElementById('fjm').value.trim().replace(/[^0-9\*]/g,'');return v.length>6?v.slice(0,6)+'-'+v.slice(6):v;})(),
       address:document.getElementById('fadr').value.trim(),
       dong:document.getElementById('fdn').value,
       member_type:document.getElementById('fmt').value,
