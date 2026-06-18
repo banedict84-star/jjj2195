@@ -275,7 +275,7 @@ html,body{height:100%;overflow:hidden;font-family:'Apple SD Gothic Neo','Malgun 
 .page-container.active{display:block;min-height:100vh}
 
 /* ─── 공지사항 게시판 ─── */
-.notice-page{padding:24px 28px;overflow-y:auto;flex:1;background:#f5f7fa}
+.notice-page{padding:24px 28px;overflow-y:auto;background:#f5f7fa;min-height:100vh}
 .notice-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
 .notice-header h2{font-size:20px;font-weight:800;color:#1e1b4b}
 .notice-board{
@@ -1006,7 +1006,7 @@ textarea.form-input{min-height:85px;resize:vertical;line-height:1.5}
           <div class="notice-board-head">
             <div>번호</div><div>제목</div><div>작성일</div><div>작성자</div>
           </div>
-          <div id="notice-list"></div>
+          <div id="notice-list"><div class="notice-empty">등록된 공지사항이 없습니다.</div></div>
         </div>
       </div>
       <!-- 중앙당 공지 -->
