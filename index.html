@@ -1216,7 +1216,6 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
         }
       }
       if(dup){
-        // 중복 모달 표시
         document.getElementById('dup-info').innerHTML =
           '👤 <b>'+esc(dup.name)+'</b><br>' +
           '📞 '+esc(dup.phone)+'<br>' +
@@ -1224,22 +1223,31 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
           (dup.member_type?'🏷 '+esc(dup.member_type)+'<br>':'') +
           (dup.recommender?'👋 추천인: '+esc(dup.recommender):'');
         document.getElementById('ov-dup').style.display='flex';
-        window._pendingRec = r; // 강제 추가 시 사용
+        window._pendingRec = r;
+        window._pendingIsNew = true; // 신규 플래그 보존
         return;
       }
     }
 
-    doSaveRec(r);
+    doSaveRec(r, isNew);
   }
 
-  function doSaveRec(r){
+  function doSaveRec(r, addAsNew){
     // 저장 전 가족수 자동 계산
     r.family_cnt = getAddrFamily(r.address);
     r.score = calcScore(r);
     document.getElementById('fsc').value = r.score;
-    if(isNew){data.push(r);nid++;selId=r._id;isNew=false;toast('신규 추가: '+r.name+' (점수:'+r.score+')','#2e7d32');}
-    else{for(var i=0;i<data.length;i++){if(data[i]._id===selId){data[i]=r;break;}}toast('저장 완료: '+r.name+' (점수:'+r.score+')','#1a3a5c');}
-    // 같은 주소 전체 가족수 갱신
+    if(addAsNew){
+      r._id = nid; // 새 ID 부여
+      data.push(r);
+      nid++;
+      selId=r._id;
+      isNew=false;
+      toast('신규 추가: '+r.name+' (점수:'+r.score+')','#2e7d32');
+    } else {
+      for(var i=0;i<data.length;i++){if(data[i]._id===selId){data[i]=r;break;}}
+      toast('저장 완료: '+r.name+' (점수:'+r.score+')','#1a3a5c');
+    }
     calcFamilyCounts();
     persist(r);
     document.getElementById('total').textContent=data.length.toLocaleString();
@@ -1275,13 +1283,13 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
     toast('삭제: '+(r?r.name:''),'#555');go();
   }
   function closeOv(){document.getElementById('ov').style.display='none';}
-  function closeDupOv(){document.getElementById('ov-dup').style.display='none'; window._pendingRec=null;}
+  function closeDupOv(){document.getElementById('ov-dup').style.display='none'; window._pendingRec=null; window._pendingIsNew=false;}
   function forceAdd(){
     document.getElementById('ov-dup').style.display='none';
     if(window._pendingRec){
-      isNew=true; // 강제로 신규 추가 모드
-      doSaveRec(window._pendingRec);
+      doSaveRec(window._pendingRec, true); // 항상 신규 추가
       window._pendingRec=null;
+      window._pendingIsNew=false;
     }
   }
 
