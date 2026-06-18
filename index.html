@@ -121,19 +121,30 @@
       } catch(e) { console.error('공지 로드 실패:', e); return []; }
     };
 
-    // 중앙당 공지 불러오기 (Google Apps Script 프록시)
+    // 중앙당 공지 불러오기 (Google Apps Script JSONP)
     const GAS_PROXY_URL = 'https://script.google.com/macros/s/AKfycbxcoy4wpH9gf0nQlAd088XAK1GxUgiDoSxnRDdfa8CPc0y2_nQ3FtNGq7tO91_rlcRCyA/exec';
-    window.loadPartyNotices = async function() {
-      try {
-        if (GAS_PROXY_URL.includes('APPS_SCRIPT_ID_HERE')) {
-          console.warn('Google Apps Script URL이 설정되지 않았습니다.');
-          return [];
-        }
-        const resp = await fetch(GAS_PROXY_URL);
-        if (!resp.ok) return [];
-        const notices = await resp.json();
-        return Array.isArray(notices) ? notices : [];
-      } catch(e) { console.error('중앙당 공지 로드 실패:', e); return []; }
+    window.loadPartyNotices = function() {
+      return new Promise(function(resolve) {
+        var cbName = '_gasPartyNotices_' + Date.now();
+        var timeout = setTimeout(function() {
+          delete window[cbName];
+          console.error('중앙당 공지 로드 타임아웃');
+          resolve([]);
+        }, 15000);
+        window[cbName] = function(data) {
+          clearTimeout(timeout);
+          delete window[cbName];
+          resolve(Array.isArray(data) ? data : []);
+        };
+        var s = document.createElement('script');
+        s.src = GAS_PROXY_URL + '?callback=' + cbName;
+        s.onerror = function() {
+          clearTimeout(timeout);
+          delete window[cbName];
+          resolve([]);
+        };
+        document.head.appendChild(s);
+      });
     };
 
     // 로그인 상태 감지
