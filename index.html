@@ -74,6 +74,7 @@
     };
 
     // 로그인 상태 감지
+    let dataLoaded = false;
     onAuthStateChanged(auth, async (user) => {
       const loginScreen = document.getElementById('login-screen');
       const appScreen = document.getElementById('app-screen');
@@ -85,18 +86,24 @@
         loginScreen.style.display = 'none';
         appScreen.style.display = 'flex';
         if (userInfo) userInfo.textContent = user.email;
-        if (indicator) indicator.textContent = '🔄 서버 동기화 중...';
 
-        const fsData = await window.loadFromFirestore();
-        if (fsData && fsData.length > 0) {
-          localStorage.setItem('crm_v4', JSON.stringify(fsData));
-          if (indicator) indicator.textContent = '✅ 서버 연결됨';
-          if (typeof window.reloadData === 'function') window.reloadData();
-        } else {
-          if (indicator) indicator.textContent = '✅ 서버 연결됨 (초기 데이터)';
+        // 최초 1회만 Firestore에서 불러오기
+        if (!dataLoaded) {
+          dataLoaded = true;
+          if (indicator) indicator.textContent = '🔄 서버 동기화 중...';
+          const fsData = await window.loadFromFirestore();
+          if (fsData && fsData.length > 0) {
+            localStorage.setItem('crm_v4', JSON.stringify(fsData));
+            if (indicator) indicator.textContent = '✅ 서버 연결됨';
+            if (typeof window.reloadData === 'function') window.reloadData();
+          } else {
+            if (indicator) indicator.textContent = '✅ 서버 연결됨 (초기 데이터)';
+            if (typeof window.reloadData === 'function') window.reloadData();
+          }
         }
       } else {
         // 미로그인 → 로그인 화면 표시
+        dataLoaded = false;
         loginScreen.style.display = 'flex';
         appScreen.style.display = 'none';
       }
