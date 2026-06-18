@@ -86,10 +86,24 @@ textarea.form-input{resize:vertical;min-height:120px}
 
 @media(max-width:600px){
   .form-row{grid-template-columns:1fr}
-  .tabs{overflow-x:auto}
-  .content{padding:20px 16px}
-  .tenant-item{flex-direction:column;align-items:flex-start;gap:10px}
-  .tenant-actions{width:100%}
+  .tabs{overflow-x:auto;padding:0 12px}
+  .tab{padding:12px 14px;font-size:13px;white-space:nowrap}
+  .content{padding:16px 12px}
+  .topbar{padding:12px 16px;flex-direction:column;gap:8px}
+  .topbar h1{font-size:16px}
+  .topbar-right{flex-wrap:wrap;justify-content:center;gap:8px}
+  .stat-grid{grid-template-columns:1fr 1fr;gap:10px}
+  .stat-num{font-size:24px}
+  .stat-label{font-size:11px}
+  .stat-card{padding:14px 10px}
+  .card{padding:16px;margin-bottom:14px}
+  .card h3{font-size:15px}
+  .tenant-item{flex-direction:column;align-items:flex-start;gap:10px;padding:12px}
+  .tenant-actions{width:100%;display:flex}
+  .tenant-actions button{flex:1}
+  .modal{padding:20px;margin:10px}
+  .login-box{padding:32px 24px}
+  .btn{padding:10px 18px;font-size:13px;width:100%}
 }
 </style>
 
