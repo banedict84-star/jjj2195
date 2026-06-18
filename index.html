@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>제3선거구 당원 관리 · 장윤정</title>
+<title>당원 관리 시스템</title>
 <meta name="version" content="v2.1">
 <script src="//t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
 
@@ -613,8 +613,8 @@ textarea.form-input{min-height:85px;resize:vertical;line-height:1.5}
 ">
   <div style="background:#fff;border-radius:20px;padding:48px 40px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);max-width:360px;width:90%">
     <div style="font-size:36px;margin-bottom:8px">🗳️</div>
-    <div style="font-size:20px;font-weight:800;color:#1e1b4b;margin-bottom:4px">제3선거구 당원 관리</div>
-    <div style="font-size:13px;color:#6b7280;margin-bottom:32px">경기도의원 장윤정</div>
+    <div style="font-size:20px;font-weight:800;color:#1e1b4b;margin-bottom:4px">당원 관리 시스템</div>
+    <div style="font-size:13px;color:#6b7280;margin-bottom:32px">의원 전용 페이지</div>
     <button onclick="window.doGoogleLogin()" style="
       display:flex;align-items:center;justify-content:center;gap:10px;
       width:100%;padding:14px;border:2px solid #e5e7eb;border-radius:12px;
@@ -672,8 +672,8 @@ textarea.form-input{min-height:85px;resize:vertical;line-height:1.5}
     </div>
   </div>
   <div class="sidebar-bottom">
-    <a data-admin-link href="admin.html" style="margin-bottom:10px;display:flex;align-items:center;gap:6px;padding:6px 4px;border-radius:6px;font-size:12px;color:#6b7280;text-decoration:none" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='none'">
-      <span>⚙️</span><span>관리자 설정</span>
+    <a data-admin-link href="admin.html" style="margin-bottom:10px;display:none;align-items:center;gap:6px;padding:6px 4px;border-radius:6px;font-size:12px;color:#6b7280;text-decoration:none" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='none'">
+      <span>⚙️</span><span>관리자 페이지</span>
     </a>
     <div class="sb-email" id="sidebar-user"></div>
     <button onclick="window.doLogout()" class="sb-logout">⏻ 로그아웃</button>
@@ -1140,17 +1140,6 @@ textarea.form-input{min-height:85px;resize:vertical;line-height:1.5}
   </div>
 </div>
 
-<!-- 페이지: 관리자 설정 (별도 페이지로 이동) -->
-<div class="with-sidebar page-container" id="page-admin">
-  <div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#f5f7fa">
-    <div style="text-align:center">
-      <div style="font-size:48px;margin-bottom:16px">⚙️</div>
-      <div style="font-size:18px;font-weight:700;color:#666;margin-bottom:12px">관리자 설정</div>
-      <div style="font-size:14px;color:#999;margin-bottom:20px">관리자 페이지에서 의원 등록, 공지 작성 등을 관리하세요.</div>
-      <a href="admin.html" style="display:inline-block;padding:12px 32px;background:#4f46e5;color:#fff;border-radius:10px;font-size:15px;font-weight:600;text-decoration:none">관리자 페이지 열기 →</a>
-    </div>
-  </div>
-</div>
 
 </div><!-- /app-screen -->
 
@@ -2260,124 +2249,11 @@ window.applyRoleUI = function(role) {
   // 테넌트는 공지 작성 불가 (읽기만)
   var newNoticeBtn = document.getElementById('btn-new-notice');
   if (newNoticeBtn) newNoticeBtn.style.display = role === 'admin' ? '' : 'none';
-  // 테넌트는 관리자 설정 숨김
+  // 관리자만 관리자 페이지 링크 표시
   var adminLinks = document.querySelectorAll('[data-admin-link]');
-  adminLinks.forEach(function(el) { el.style.display = role === 'admin' ? '' : 'none'; });
+  adminLinks.forEach(function(el) { el.style.display = role === 'admin' ? 'flex' : 'none'; });
 };
 
-/* ── 관리자 페이지 ── */
-async function loadAdminPage() {
-  var data = JSON.parse(localStorage.getItem('crm_v4') || '[]');
-  document.getElementById('admin-member-count').textContent = '총 당원 수: ' + data.length + '명';
-  document.getElementById('admin-notice-count').textContent = '총 공지 수: ' + noticeCache.length + '건';
-
-  var settings = JSON.parse(localStorage.getItem('admin_settings') || '{}');
-  document.getElementById('admin-site-name').value = settings.siteName || '';
-  document.getElementById('admin-rep-name').value = settings.repName || '';
-  document.getElementById('admin-position').value = settings.position || '';
-  document.getElementById('admin-phone').value = settings.phone || '';
-
-  // 테넌트 목록 로드
-  await loadTenantList();
-}
-
-async function loadTenantList() {
-  var listEl = document.getElementById('tenant-list');
-  if (!listEl) return;
-  listEl.innerHTML = '<div style="text-align:center;padding:12px;color:#aaa">불러오는 중...</div>';
-  var tenants = await window.loadTenants();
-  if (tenants.length === 0) {
-    listEl.innerHTML = '<div style="text-align:center;padding:16px;color:#aaa;font-size:14px">등록된 의원이 없습니다.</div>';
-    return;
-  }
-  listEl.innerHTML = tenants.map(function(t) {
-    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:#f9fafb;border-radius:10px;margin-bottom:8px;border:1px solid #e5e7eb">'
-      + '<div>'
-      + '<div style="font-size:14px;font-weight:600;color:#1a1a1a">' + escapeHtml(t.name || '') + ' <span style="font-size:12px;color:#6b7280;font-weight:400">' + escapeHtml(t.position || '') + '</span></div>'
-      + '<div style="font-size:12px;color:#9ca3af;margin-top:2px">' + escapeHtml(t.email || '') + ' · ' + escapeHtml(t.district || '') + '</div>'
-      + '</div>'
-      + '<button onclick="removeTenant(\'' + escapeHtml(t.id) + '\',\'' + escapeHtml(t.email) + '\')" style="padding:6px 12px;background:#ef4444;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer">삭제</button>'
-      + '</div>';
-  }).join('');
-}
-
-async function registerNewTenant() {
-  var name = document.getElementById('tenant-name').value.trim();
-  var email = document.getElementById('tenant-email').value.trim();
-  var position = document.getElementById('tenant-position').value.trim();
-  var district = document.getElementById('tenant-district').value.trim();
-  if (!name || !email) { alert('이름과 이메일을 입력하세요'); return; }
-  if (!email.includes('@')) { alert('올바른 이메일을 입력하세요'); return; }
-  var id = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '_');
-  await window.registerTenant({ id: id, name: name, email: email, position: position, district: district, created: Date.now() });
-  document.getElementById('tenant-name').value = '';
-  document.getElementById('tenant-email').value = '';
-  document.getElementById('tenant-position').value = '';
-  document.getElementById('tenant-district').value = '';
-  var msg = document.getElementById('tenant-reg-msg');
-  msg.style.display = 'inline';
-  setTimeout(function(){ msg.style.display = 'none'; }, 2000);
-  await loadTenantList();
-}
-
-async function removeTenant(id, email) {
-  if (!confirm(email + ' 의원을 삭제하시겠습니까?')) return;
-  await window.deleteTenant(id, email);
-  await loadTenantList();
-}
-
-function saveAdminSettings() {
-  var settings = {
-    siteName: document.getElementById('admin-site-name').value,
-    repName: document.getElementById('admin-rep-name').value,
-    position: document.getElementById('admin-position').value,
-    phone: document.getElementById('admin-phone').value
-  };
-  localStorage.setItem('admin_settings', JSON.stringify(settings));
-  if (settings.siteName) document.title = settings.siteName;
-  if (settings.repName) {
-    var sub = document.querySelector('.sidebar-brand-sub');
-    if (sub) sub.textContent = (settings.position || '') + ' ' + settings.repName;
-  }
-  var msg = document.getElementById('admin-save-msg');
-  msg.style.display = 'inline';
-  setTimeout(function(){ msg.style.display = 'none'; }, 2000);
-}
-
-function exportAllData() {
-  var data = localStorage.getItem('crm_v4') || '[]';
-  var blob = new Blob([data], {type:'application/json'});
-  var a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = '당원데이터_' + new Date().toISOString().slice(0,10) + '.json';
-  a.click();
-}
-
-function exportCSV() {
-  var data = JSON.parse(localStorage.getItem('crm_v4') || '[]');
-  if (data.length === 0) { alert('내보낼 데이터가 없습니다'); return; }
-  var headers = ['이름','연락처','주소','가입일','메모'];
-  var keys = ['name','phone','addr','joinDate','memo'];
-  var csv = '﻿' + headers.join(',') + '\n';
-  data.forEach(function(r) {
-    csv += keys.map(function(k) {
-      var v = (r[k] || '').toString().replace(/"/g,'""');
-      return '"' + v + '"';
-    }).join(',') + '\n';
-  });
-  var blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
-  var a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = '당원데이터_' + new Date().toISOString().slice(0,10) + '.csv';
-  a.click();
-}
-
-// 관리자 페이지 진입 시 로드
-var origSwitchPage = switchPage;
-switchPage = function(pageId, el) {
-  origSwitchPage(pageId, el);
-  if (pageId === 'admin') loadAdminPage();
-};
 </script>
 
 </body>
