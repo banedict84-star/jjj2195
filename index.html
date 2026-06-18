@@ -1208,8 +1208,10 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
     // 신규 등록 시 이름+연락처 중복 체크
     if(isNew){
       var dup = null;
+      var rPhone = r.phone.replace(/-/g,'');
       for(var i=0;i<data.length;i++){
-        if(data[i].name===r.name && data[i].phone===r.phone){
+        var dPhone = (data[i].phone||'').replace(/-/g,'');
+        if(data[i].name===r.name && dPhone===rPhone){
           dup=data[i]; break;
         }
       }
@@ -1276,7 +1278,11 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
   function closeDupOv(){document.getElementById('ov-dup').style.display='none'; window._pendingRec=null;}
   function forceAdd(){
     document.getElementById('ov-dup').style.display='none';
-    if(window._pendingRec){ doSaveRec(window._pendingRec); window._pendingRec=null; }
+    if(window._pendingRec){
+      isNew=true; // 강제로 신규 추가 모드
+      doSaveRec(window._pendingRec);
+      window._pendingRec=null;
+    }
   }
 
   /* ── 가족수 자동 계산 ── */
