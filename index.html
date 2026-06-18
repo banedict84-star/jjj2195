@@ -693,6 +693,35 @@ textarea.form-input{min-height:85px;resize:vertical;line-height:1.5}
   </div>
 </div>
 
+<!-- 중복 당원 경고 모달 -->
+<div id="ov-dup" style="
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);
+  z-index:9999;align-items:center;justify-content:center;
+">
+  <div style="
+    background:#fff;border-radius:16px;padding:32px 28px;
+    width:360px;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center;
+  ">
+    <div style="font-size:36px;margin-bottom:12px">⚠️</div>
+    <div style="font-size:16px;font-weight:700;color:#b45309;margin-bottom:8px">이미 등록된 당원입니다</div>
+    <div id="dup-info" style="
+      background:#fef3c7;border:1px solid #fcd34d;border-radius:10px;
+      padding:14px;margin-bottom:16px;text-align:left;font-size:13px;line-height:1.8;
+    "></div>
+    <p style="font-size:12px;color:#888;margin-bottom:20px">이름과 연락처가 동일한 당원이 이미 존재합니다.<br>그래도 추가하시겠습니까?</p>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button onclick="closeDupOv()" style="
+        padding:10px 24px;border:2px solid #e5e7eb;border-radius:10px;
+        background:#fff;color:#374151;font-size:14px;font-weight:600;cursor:pointer;
+      ">취소</button>
+      <button onclick="forceAdd()" style="
+        padding:10px 24px;border:none;border-radius:10px;
+        background:#d97706;color:#fff;font-size:14px;font-weight:600;cursor:pointer;
+      ">그래도 추가</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1175,6 +1204,33 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
       document.getElementById('fph-err').style.display='block';
       swTabById('p1'); return;
     }
+
+    // 신규 등록 시 이름+연락처 중복 체크
+    if(isNew){
+      var dup = null;
+      for(var i=0;i<data.length;i++){
+        if(data[i].name===r.name && data[i].phone===r.phone){
+          dup=data[i]; break;
+        }
+      }
+      if(dup){
+        // 중복 모달 표시
+        document.getElementById('dup-info').innerHTML =
+          '👤 <b>'+esc(dup.name)+'</b><br>' +
+          '📞 '+esc(dup.phone)+'<br>' +
+          (dup.dong?'📍 '+esc(dup.dong)+'<br>':'') +
+          (dup.member_type?'🏷 '+esc(dup.member_type)+'<br>':'') +
+          (dup.recommender?'👋 추천인: '+esc(dup.recommender):'');
+        document.getElementById('ov-dup').style.display='flex';
+        window._pendingRec = r; // 강제 추가 시 사용
+        return;
+      }
+    }
+
+    doSaveRec(r);
+  }
+
+  function doSaveRec(r){
     // 저장 전 가족수 자동 계산
     r.family_cnt = getAddrFamily(r.address);
     r.score = calcScore(r);
@@ -1217,6 +1273,11 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
     toast('삭제: '+(r?r.name:''),'#555');go();
   }
   function closeOv(){document.getElementById('ov').style.display='none';}
+  function closeDupOv(){document.getElementById('ov-dup').style.display='none'; window._pendingRec=null;}
+  function forceAdd(){
+    document.getElementById('ov-dup').style.display='none';
+    if(window._pendingRec){ doSaveRec(window._pendingRec); window._pendingRec=null; }
+  }
 
   /* ── 가족수 자동 계산 ── */
   function calcFamilyCounts() {
@@ -1443,7 +1504,7 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
   window.W={pick:pick};
   window.go=go; window.toggleMF=toggleMF; window.mfChange=mfChange; window.resetFilters=resetFilters;window.srt=srt;window.pick=pick;window.newRec=newRec;
   window.cancelEdit=cancelEdit;window.saveRec=saveRec;window.askDel=askDel;
-  window.doDel=doDel;window.closeOv=closeOv;window.doCSV=doCSV;
+  window.doDel=doDel;window.closeOv=closeOv;window.closeDupOv=closeDupOv;window.forceAdd=forceAdd;window.doCSV=doCSV;
   window.callTel=callTel;window.doSMS=doSMS;window.swTab=swTab;
   window.importCSV=importCSV;window.dlTemplate=dlTemplate;window.previewFamily=previewFamily;
   window.onCSVFile=onCSVFile;window.doImport=doImport;window.closeOvCSV=closeOvCSV;
