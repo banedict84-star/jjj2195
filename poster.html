@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>웹자보 만들기 · 당원 관리 시스템</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, doc, setDoc, getDoc, getDocs, collection, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAIjhvbCztHoF7YwP2IYIk2C6jCI64uFhs",
+    authDomain: "jjj2195-1bd15.firebaseapp.com",
+    projectId: "jjj2195-1bd15",
+    storageBucket: "jjj2195-1bd15.firebasestorage.app",
+    messagingSenderId: "370852437825",
+    appId: "1:370852437825:web:b0a891d6a99b426d230bc0",
+    measurementId: "G-D1R6WDHP0F"
+  };
+
+  const SUPER_ADMIN = 'banedict84@gmail.com';
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+  const provider = new GoogleAuthProvider();
+
+  window.doGoogleLogin = async function() {
+    try { await signInWithPopup(auth, provider); }
+    catch(e) { document.getElementById('login-error').textContent = '로그인 실패: ' + e.message; }
+  };
+  window.doLogout = async function() { await signOut(auth); };
+
+  window.checkUserRole = async function(email) {
+    if (email === SUPER_ADMIN) return { role: 'admin', tenantId: 'admin' };
+    try {
+      const d = await getDoc(doc(db, 'users', email));
+      if (d.exists()) { const data = d.data(); return { role: data.role || 'tenant', tenantId: data.tenantId || email.split('@')[0] }; }
+      return null;
+    } catch(e) { return null; }
+  };
+
+  window.savePosterToDb = async function(data) {
+    try { await setDoc(doc(db, 'posters', data.id), data); return true; }
+    catch(e) { console.error('저장 실패:', e); alert('저장 실패: ' + e.message); return false; }
+  };
+
+  window.loadMyPosters = async function() {
+    try {
+      const snap = await getDocs(collection(db, 'posters'));
+      const result = [];
+      snap.forEach(d => result.push(d.data()));
+      return result.sort((a,b) => (b.created||0) - (a.created||0));
+    } catch(e) { return []; }
+  };
+
+  window.deletePosterFromDb = async function(id) {
+    try { await deleteDoc(doc(db, 'posters', id)); return true; }
+    catch(e) { return false; }
+  };
+
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      const role = await window.checkUserRole(user.email);
+      if (!role) { await signOut(auth); document.getElementById('login-error').textContent = '접근 권한이 없습니다.'; return; }
+      window.currentUserEmail = user.email;
+      window.currentUserRole = role.role;
+      window.currentTenantId = role.tenantId;
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      document.getElementById('user-email').textContent = user.email;
+      renderPoster();
+      refreshPosterList();
+    } else {
+      document.getElementById('login-screen').style.display = 'flex';
+      document.getElementById('app').style.display = 'none';
+    }
+  });
+</script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif;background:#f0f2f5;color:#1a1a1a;min-height:100vh}
+.login-screen{display:flex;align-items:center;justify-content:center;height:100vh;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%)}
+.login-box{background:#fff;border-radius:16px;padding:48px 40px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.15);max-width:400px;width:90%}
+.login-box h1{font-size:22px;color:#1e1b4b;margin-bottom:8px}
+.login-box p{font-size:13px;color:#6b7280;margin-bottom:24px}
+.btn-google{padding:12px 32px;background:#4f46e5;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;width:100%}
+.btn-google:hover{background:#4338ca}
+.login-error{color:#ef4444;font-size:13px;margin-top:12px;min-height:20px}
+
+#app{display:none}
+.topbar{background:#fff;border-bottom:1px solid #e5e7eb;padding:14px 24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.topbar-left h1{font-size:18px;font-weight:700;color:#1e1b4b}
+.topbar-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.topbar-right a{font-size:13px;color:#4f46e5;text-decoration:none}
+.topbar-right a:hover{text-decoration:underline}
+.user-email{font-size:12px;color:#6b7280}
+.btn-sm{padding:6px 14px;background:none;border:1px solid #d1d5db;border-radius:6px;font-size:12px;color:#6b7280;cursor:pointer}
+.btn-sm:hover{background:#f3f4f6}
+
+.view-tabs{display:flex;background:#fff;border-bottom:1px solid #e5e7eb;padding:0 24px}
+.view-tab{padding:12px 20px;font-size:14px;font-weight:600;color:#9ca3af;cursor:pointer;border-bottom:2px solid transparent}
+.view-tab:hover{color:#4f46e5}
+.view-tab.active{color:#4f46e5;border-bottom-color:#4f46e5}
+
+.view-panel{display:none;padding:24px}
+.view-panel.active{display:block}
+
+.editor{display:flex;gap:32px;max-width:1100px;margin:0 auto}
+.form-panel{flex:1;max-width:420px;min-width:300px}
+.preview-panel{flex:1;display:flex;flex-direction:column;align-items:center}
+
+.section{background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:20px;margin-bottom:16px}
+.section-title{font-size:14px;font-weight:700;color:#333;margin-bottom:12px}
+
+.tpl-options{display:flex;gap:8px}
+.tpl-opt{flex:1;padding:10px 8px;border:2px solid #e5e7eb;border-radius:10px;text-align:center;cursor:pointer;transition:all .15s;background:#fff}
+.tpl-opt:hover{border-color:#a5b4fc}
+.tpl-opt.active{border-color:#4f46e5;background:#eef2ff}
+.tpl-opt .tpl-icon{font-size:22px;margin-bottom:4px}
+.tpl-opt .tpl-name{font-size:11px;font-weight:600;color:#555}
+
+.color-options{display:flex;gap:8px;flex-wrap:wrap}
+.color-dot{width:32px;height:32px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all .15s}
+.color-dot:hover{transform:scale(1.1)}
+.color-dot.active{border-color:#1a1a1a;box-shadow:0 0 0 2px #fff inset}
+
+.photo-drop{border:2px dashed #d1d5db;border-radius:10px;padding:24px;text-align:center;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.photo-drop:hover{border-color:#4f46e5;background:#f5f3ff}
+.photo-drop.has-photo{border-style:solid;border-color:#e5e7eb;padding:8px}
+.photo-drop input{display:none}
+.photo-drop .ph-icon{font-size:28px;margin-bottom:4px}
+.photo-drop .ph-text{font-size:12px;color:#6b7280}
+.photo-thumb{width:100%;border-radius:8px;max-height:150px;object-fit:cover}
+.photo-remove{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:24px;height:24px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+
+.field{margin-bottom:10px}
+.field label{display:block;font-size:12px;font-weight:600;color:#555;margin-bottom:4px}
+.field input,.field textarea{width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-family:inherit}
+.field input:focus,.field textarea:focus{outline:none;border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.08)}
+.field textarea{resize:vertical;min-height:60px}
+
+.preview-wrap{position:relative;margin-bottom:16px}
+.poster-canvas{width:360px;height:480px;border-radius:8px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,.12);background:#fff;position:relative}
+
+.action-btns{display:flex;gap:10px;width:100%;max-width:360px}
+.btn-action{flex:1;padding:12px 16px;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s}
+.btn-download{background:#1f2937;color:#fff}
+.btn-download:hover{background:#111827}
+.btn-share{background:#4f46e5;color:#fff}
+.btn-share:hover{background:#4338ca}
+.btn-action:disabled{opacity:.5;cursor:not-allowed}
+
+.poster-list{max-width:800px;margin:0 auto}
+.poster-item{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px 20px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.poster-item-info{flex:1;min-width:0}
+.poster-item-title{font-size:14px;font-weight:600;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.poster-item-meta{font-size:12px;color:#9ca3af;margin-top:2px}
+.poster-item-actions{display:flex;gap:6px;flex-shrink:0}
+.btn-icon{padding:6px 10px;border:1px solid #e5e7eb;border-radius:6px;background:#fff;font-size:12px;cursor:pointer;white-space:nowrap}
+.btn-icon:hover{background:#f3f4f6}
+.btn-icon.danger{color:#ef4444;border-color:#fecaca}
+.btn-icon.danger:hover{background:#fef2f2}
+.empty-msg{text-align:center;padding:40px;color:#aaa;font-size:14px}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1f2937;color:#fff;padding:12px 24px;border-radius:10px;font-size:13px;font-weight:500;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1}
+
+/* Poster template styles */
+.p-tpl{width:100%;height:100%;position:relative;overflow:hidden;display:flex;flex-direction:column}
+
+/* Modern */
+.p-modern{background:#111}
+.p-modern .p-bg{position:absolute;inset:0;background-size:cover;background-position:center}
+.p-modern .p-overlay{position:absolute;inset:0;background:linear-gradient(to bottom,transparent 20%,rgba(0,0,0,.88) 100%)}
+.p-modern .p-body{position:absolute;bottom:44px;left:20px;right:20px;color:#fff}
+.p-modern .p-title{font-size:24px;font-weight:800;line-height:1.2;margin-bottom:4px;word-break:keep-all}
+.p-modern .p-subtitle{font-size:12px;opacity:.8;margin-bottom:12px}
+.p-modern .p-accent-line{width:40px;height:3px;margin-bottom:10px;border-radius:2px}
+.p-modern .p-detail{font-size:10.5px;opacity:.9;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.p-modern .p-desc{font-size:10px;opacity:.65;margin-top:8px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.p-modern .p-footer{position:absolute;bottom:0;left:0;right:0;height:36px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:600;letter-spacing:.3px}
+
+/* Clean */
+.p-clean{background:#fff}
+.p-clean .p-bar{height:5px;flex-shrink:0}
+.p-clean .p-inner{padding:18px 20px;flex:1;display:flex;flex-direction:column}
+.p-clean .p-photo-wrap{width:100%;height:170px;border-radius:8px;overflow:hidden;margin-bottom:14px;background:#f3f4f6;flex-shrink:0}
+.p-clean .p-photo-wrap img{width:100%;height:100%;object-fit:cover}
+.p-clean .p-photo-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#ccc;font-size:36px}
+.p-clean .p-title{font-size:20px;font-weight:800;text-align:center;color:#1a1a1a;line-height:1.3;margin-bottom:3px;word-break:keep-all}
+.p-clean .p-subtitle{font-size:11px;text-align:center;color:#888;margin-bottom:12px}
+.p-clean .p-info-box{border-radius:8px;padding:10px 12px;margin-bottom:10px}
+.p-clean .p-detail{font-size:10.5px;color:#333;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.p-clean .p-detail:last-child{margin-bottom:0}
+.p-clean .p-desc{font-size:10px;color:#666;line-height:1.5;margin-bottom:auto;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.p-clean .p-footer-line{border-top:1px solid #eee;padding-top:10px;margin-top:10px;font-size:10px;font-weight:600}
+
+/* Bold */
+.p-bold .p-header{padding:20px;color:#fff;display:flex;flex-direction:column;justify-content:flex-end;min-height:140px;flex-shrink:0}
+.p-bold .p-title{font-size:24px;font-weight:900;line-height:1.15;word-break:keep-all}
+.p-bold .p-subtitle{font-size:11px;opacity:.85;margin-top:4px}
+.p-bold .p-photo-strip{width:100%;height:170px;background:#eee;flex-shrink:0;overflow:hidden}
+.p-bold .p-photo-strip img{width:100%;height:100%;object-fit:cover}
+.p-bold .p-photo-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#ccc;font-size:36px;background:#f3f4f6}
+.p-bold .p-bottom{padding:14px 20px;flex:1;display:flex;flex-direction:column;background:#fff}
+.p-bold .p-detail{font-size:10.5px;color:#444;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.p-bold .p-desc{font-size:10px;color:#666;line-height:1.5;margin-top:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.p-bold .p-footer-bar{margin-top:auto;padding-top:8px;font-size:10px;font-weight:700}
+
+@media(max-width:800px){
+  .editor{flex-direction:column;align-items:center}
+  .form-panel{max-width:100%;min-width:0;width:100%}
+  .preview-panel{width:100%}
+  .poster-canvas{width:100%;max-width:360px;height:auto;aspect-ratio:3/4}
+  .action-btns{max-width:100%}
+}
+</style>
+</head>
+<body>
+
+<!-- 로그인 -->
+<div class="login-screen" id="login-screen">
+  <div class="login-box">
+    <h1>웹자보 만들기</h1>
+    <p>사진과 내용을 넣으면 자동으로 홍보 자보를 만들어드립니다.</p>
+    <button class="btn-google" onclick="window.doGoogleLogin()">Google 로그인</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- 앱 -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-left">
+      <h1>🎨 웹자보 만들기</h1>
+    </div>
+    <div class="topbar-right">
+      <a href="index.html">← 당원관리</a>
+      <span class="user-email" id="user-email"></span>
+      <button class="btn-sm" onclick="window.doLogout()">로그아웃</button>
+    </div>
+  </div>
+
+  <div class="view-tabs">
+    <div class="view-tab active" onclick="switchView('editor',this)">새 자보 만들기</div>
+    <div class="view-tab" onclick="switchView('list',this)">내 자보 목록</div>
+  </div>
+
+  <!-- 에디터 뷰 -->
+  <div class="view-panel active" id="view-editor">
+    <div class="editor">
+      <div class="form-panel">
+
+        <div class="section">
+          <div class="section-title">템플릿 선택</div>
+          <div class="tpl-options">
+            <div class="tpl-opt active" onclick="selectTemplate('modern',this)">
+              <div class="tpl-icon">🌃</div>
+              <div class="tpl-name">모던</div>
+            </div>
+            <div class="tpl-opt" onclick="selectTemplate('clean',this)">
+              <div class="tpl-icon">📋</div>
+              <div class="tpl-name">깔끔</div>
+            </div>
+            <div class="tpl-opt" onclick="selectTemplate('bold',this)">
+              <div class="tpl-icon">⚡</div>
+              <div class="tpl-name">강렬</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">색상 테마</div>
+          <div class="color-options">
+            <div class="color-dot active" style="background:#4f46e5" onclick="selectColor('#4f46e5',this)"></div>
+            <div class="color-dot" style="background:#dc2626" onclick="selectColor('#dc2626',this)"></div>
+            <div class="color-dot" style="background:#059669" onclick="selectColor('#059669',this)"></div>
+            <div class="color-dot" style="background:#7c3aed" onclick="selectColor('#7c3aed',this)"></div>
+            <div class="color-dot" style="background:#ea580c" onclick="selectColor('#ea580c',this)"></div>
+            <div class="color-dot" style="background:#0284c7" onclick="selectColor('#0284c7',this)"></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">사진</div>
+          <div class="photo-drop" id="photo-drop" onclick="document.getElementById('photo-input').click()">
+            <input type="file" id="photo-input" accept="image/*" onchange="handlePhoto(this)">
+            <div id="photo-empty">
+              <div class="ph-icon">📷</div>
+              <div class="ph-text">클릭하여 사진 업로드</div>
+            </div>
+            <div id="photo-preview" style="display:none">
+              <img class="photo-thumb" id="photo-thumb">
+              <button class="photo-remove" onclick="event.stopPropagation();removePhoto()">✕</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">내용 입력</div>
+          <div class="field">
+            <label>제목 *</label>
+            <input id="f-title" placeholder="예: 주민과 함께하는 소통 간담회" oninput="renderPoster()">
+          </div>
+          <div class="field">
+            <label>부제목</label>
+            <input id="f-subtitle" placeholder="예: 지역 현안 논의 및 의정보고" oninput="renderPoster()">
+          </div>
+          <div class="field" style="display:flex;gap:8px">
+            <div style="flex:1">
+              <label>날짜</label>
+              <input id="f-date" placeholder="예: 2024.12.20 (금)" oninput="renderPoster()">
+            </div>
+            <div style="flex:1">
+              <label>시간</label>
+              <input id="f-time" placeholder="예: 14:00 ~ 16:00" oninput="renderPoster()">
+            </div>
+          </div>
+          <div class="field">
+            <label>장소</label>
+            <input id="f-location" placeholder="예: 수원시청 대회의실" oninput="renderPoster()">
+          </div>
+          <div class="field">
+            <label>설명</label>
+            <textarea id="f-desc" placeholder="행사 설명을 입력하세요" oninput="renderPoster()"></textarea>
+          </div>
+          <div class="field">
+            <label>주최 / 문의</label>
+            <input id="f-organizer" placeholder="예: 홍길동 의원실 031-000-0000" oninput="renderPoster()">
+          </div>
+        </div>
+      </div>
+
+      <div class="preview-panel">
+        <div class="preview-wrap">
+          <div class="poster-canvas" id="poster-canvas"></div>
+        </div>
+        <div class="action-btns">
+          <button class="btn-action btn-download" onclick="downloadPoster()">📥 이미지 저장</button>
+          <button class="btn-action btn-share" onclick="sharePoster()">🔗 저장 &amp; 공유</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 내 자보 목록 뷰 -->
+  <div class="view-panel" id="view-list">
+    <div class="poster-list" id="poster-list">
+      <div class="empty-msg">불러오는 중...</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var currentTemplate = 'modern';
+var currentColor = '#4f46e5';
+var currentPhoto = null;
+var editingPosterId = null;
+
+function escHtml(s) { return s ? s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') : ''; }
+
+function selectTemplate(tpl, el) {
+  currentTemplate = tpl;
+  document.querySelectorAll('.tpl-opt').forEach(function(e){ e.classList.remove('active'); });
+  if (el) el.classList.add('active');
+  renderPoster();
+}
+
+function selectColor(color, el) {
+  currentColor = color;
+  document.querySelectorAll('.color-dot').forEach(function(e){ e.classList.remove('active'); });
+  if (el) el.classList.add('active');
+  renderPoster();
+}
+
+function handlePhoto(input) {
+  var file = input.files[0];
+  if (!file) return;
+  compressImage(file, 1024, 0.7, function(dataUrl) {
+    currentPhoto = dataUrl;
+    document.getElementById('photo-empty').style.display = 'none';
+    document.getElementById('photo-preview').style.display = 'block';
+    document.getElementById('photo-thumb').src = dataUrl;
+    document.getElementById('photo-drop').classList.add('has-photo');
+    renderPoster();
+  });
+}
+
+function removePhoto() {
+  currentPhoto = null;
+  document.getElementById('photo-input').value = '';
+  document.getElementById('photo-empty').style.display = 'block';
+  document.getElementById('photo-preview').style.display = 'none';
+  document.getElementById('photo-drop').classList.remove('has-photo');
+  renderPoster();
+}
+
+function compressImage(file, maxW, quality, cb) {
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var img = new Image();
+    img.onload = function() {
+      var w = img.width, h = img.height;
+      if (w > maxW) { h = (maxW / w) * h; w = maxW; }
+      var c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      cb(c.toDataURL('image/jpeg', quality));
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function getPosterData() {
+  return {
+    template: currentTemplate,
+    color: currentColor,
+    photo: currentPhoto,
+    title: document.getElementById('f-title').value.trim(),
+    subtitle: document.getElementById('f-subtitle').value.trim(),
+    date: document.getElementById('f-date').value.trim(),
+    time: document.getElementById('f-time').value.trim(),
+    location: document.getElementById('f-location').value.trim(),
+    description: document.getElementById('f-desc').value.trim(),
+    organizer: document.getElementById('f-organizer').value.trim()
+  };
+}
+
+function lightenColor(hex, amt) {
+  var r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  r = Math.min(255, r + amt); g = Math.min(255, g + amt); b = Math.min(255, b + amt);
+  return 'rgb(' + r + ',' + g + ',' + b + ')';
+}
+
+function renderPoster() {
+  var d = getPosterData();
+  var canvas = document.getElementById('poster-canvas');
+  var html = '';
+
+  if (d.template === 'modern') {
+    html = buildModern(d);
+  } else if (d.template === 'clean') {
+    html = buildClean(d);
+  } else {
+    html = buildBold(d);
+  }
+  canvas.innerHTML = html;
+}
+
+function buildModern(d) {
+  var bg = d.photo ? 'background-image:url(' + d.photo + ')' : 'background:linear-gradient(135deg,' + d.color + ',#1a1a2e)';
+  var details = buildDetails(d, '#fff');
+  return '<div class="p-tpl p-modern">' +
+    '<div class="p-bg" style="' + bg + '"></div>' +
+    '<div class="p-overlay"></div>' +
+    '<div class="p-body">' +
+      '<div class="p-title">' + escHtml(d.title || '제목을 입력하세요') + '</div>' +
+      (d.subtitle ? '<div class="p-subtitle">' + escHtml(d.subtitle) + '</div>' : '') +
+      '<div class="p-accent-line" style="background:' + d.color + '"></div>' +
+      details +
+      (d.description ? '<div class="p-desc">' + escHtml(d.description) + '</div>' : '') +
+    '</div>' +
+    '<div class="p-footer" style="background:' + d.color + '">' + escHtml(d.organizer || '주최 정보를 입력하세요') + '</div>' +
+  '</div>';
+}
+
+function buildClean(d) {
+  var photoHtml = d.photo
+    ? '<img src="' + d.photo + '" style="width:100%;height:100%;object-fit:cover">'
+    : '<div class="p-photo-placeholder">📷</div>';
+  var details = buildDetails(d, '#333');
+  var infoBoxBg = lightenColor(d.color, 200);
+  return '<div class="p-tpl p-clean">' +
+    '<div class="p-bar" style="background:' + d.color + '"></div>' +
+    '<div class="p-inner">' +
+      '<div class="p-photo-wrap">' + photoHtml + '</div>' +
+      '<div class="p-title">' + escHtml(d.title || '제목을 입력하세요') + '</div>' +
+      (d.subtitle ? '<div class="p-subtitle">' + escHtml(d.subtitle) + '</div>' : '<div style="margin-bottom:12px"></div>') +
+      '<div class="p-info-box" style="background:' + infoBoxBg + '">' + details + '</div>' +
+      (d.description ? '<div class="p-desc">' + escHtml(d.description) + '</div>' : '') +
+      '<div class="p-footer-line" style="color:' + d.color + '">' + escHtml(d.organizer || '주최 정보') + '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+function buildBold(d) {
+  var photoHtml = d.photo
+    ? '<img src="' + d.photo + '" style="width:100%;height:100%;object-fit:cover">'
+    : '<div class="p-photo-placeholder">📷</div>';
+  var details = buildDetails(d, '#444');
+  return '<div class="p-tpl p-bold">' +
+    '<div class="p-header" style="background:' + d.color + '">' +
+      '<div class="p-title">' + escHtml(d.title || '제목을 입력하세요') + '</div>' +
+      (d.subtitle ? '<div class="p-subtitle">' + escHtml(d.subtitle) + '</div>' : '') +
+    '</div>' +
+    '<div class="p-photo-strip">' + photoHtml + '</div>' +
+    '<div class="p-bottom">' +
+      details +
+      (d.description ? '<div class="p-desc">' + escHtml(d.description) + '</div>' : '') +
+      '<div class="p-footer-bar" style="color:' + d.color + '">' + escHtml(d.organizer || '주최 정보') + '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+function buildDetails(d, color) {
+  var rows = '';
+  if (d.date) rows += '<div class="p-detail" style="color:' + color + '"><span>📅</span> ' + escHtml(d.date) + '</div>';
+  if (d.time) rows += '<div class="p-detail" style="color:' + color + '"><span>🕐</span> ' + escHtml(d.time) + '</div>';
+  if (d.location) rows += '<div class="p-detail" style="color:' + color + '"><span>📍</span> ' + escHtml(d.location) + '</div>';
+  return rows;
+}
+
+/* 이미지 다운로드 */
+async function downloadPoster() {
+  var btn = document.querySelector('.btn-download');
+  btn.disabled = true; btn.textContent = '생성 중...';
+  try {
+    var canvas = document.getElementById('poster-canvas');
+    var result = await html2canvas(canvas, { scale: 3, useCORS: true, backgroundColor: '#ffffff' });
+    var link = document.createElement('a');
+    link.download = 'poster_' + Date.now() + '.png';
+    link.href = result.toDataURL('image/png');
+    link.click();
+    showToast('이미지가 저장되었습니다');
+  } catch(e) {
+    alert('이미지 생성 실패: ' + e.message);
+  }
+  btn.disabled = false; btn.innerHTML = '📥 이미지 저장';
+}
+
+/* 저장 & 공유 */
+async function sharePoster() {
+  var d = getPosterData();
+  if (!d.title) { alert('제목을 입력하세요'); return; }
+
+  var btn = document.querySelector('.btn-share');
+  btn.disabled = true; btn.textContent = '저장 중...';
+
+  var id = editingPosterId || String(Date.now());
+  var posterData = {
+    id: id,
+    template: d.template,
+    color: d.color,
+    photo: d.photo || '',
+    title: d.title,
+    subtitle: d.subtitle,
+    date: d.date,
+    time: d.time,
+    location: d.location,
+    description: d.description,
+    organizer: d.organizer,
+    createdBy: window.currentUserEmail || '',
+    tenantId: window.currentTenantId || '',
+    created: editingPosterId ? undefined : Date.now(),
+    updated: Date.now()
+  };
+  if (!editingPosterId) posterData.created = Date.now();
+
+  var ok = await window.savePosterToDb(posterData);
+  btn.disabled = false; btn.innerHTML = '🔗 저장 &amp; 공유';
+
+  if (ok) {
+    var url = location.origin + location.pathname.replace('poster.html', 'poster-view.html') + '?id=' + id;
+    try { await navigator.clipboard.writeText(url); }
+    catch(e) { prompt('공유 링크를 복사하세요:', url); }
+    showToast('저장 완료! 공유 링크가 복사되었습니다');
+    editingPosterId = null;
+    refreshPosterList();
+  }
+}
+
+/* 내 자보 목록 */
+async function refreshPosterList() {
+  var list = document.getElementById('poster-list');
+  var posters = await window.loadMyPosters();
+  var myEmail = window.currentUserEmail;
+  var mine = posters.filter(function(p) { return p.createdBy === myEmail; });
+
+  if (mine.length === 0) {
+    list.innerHTML = '<div class="empty-msg">아직 만든 자보가 없습니다.<br>새 자보를 만들어보세요!</div>';
+    return;
+  }
+
+  var html = '';
+  mine.forEach(function(p) {
+    var date = p.created ? new Date(p.created).toLocaleDateString('ko-KR') : '';
+    var tplName = p.template === 'modern' ? '모던' : p.template === 'clean' ? '깔끔' : '강렬';
+    html += '<div class="poster-item">' +
+      '<div class="poster-item-info">' +
+        '<div class="poster-item-title">' + escHtml(p.title) + '</div>' +
+        '<div class="poster-item-meta">' + tplName + ' · ' + date + '</div>' +
+      '</div>' +
+      '<div class="poster-item-actions">' +
+        '<button class="btn-icon" onclick="copyLink(\'' + p.id + '\')">🔗 링크</button>' +
+        '<button class="btn-icon" onclick="editPoster(\'' + p.id + '\')">✏️ 수정</button>' +
+        '<button class="btn-icon danger" onclick="deletePoster(\'' + p.id + '\')">🗑️</button>' +
+      '</div>' +
+    '</div>';
+  });
+  list.innerHTML = html;
+}
+
+function copyLink(id) {
+  var url = location.origin + location.pathname.replace('poster.html', 'poster-view.html') + '?id=' + id;
+  navigator.clipboard.writeText(url).then(function() {
+    showToast('공유 링크가 복사되었습니다');
+  }).catch(function() {
+    prompt('공유 링크:', url);
+  });
+}
+
+async function editPoster(id) {
+  var posters = await window.loadMyPosters();
+  var p = posters.find(function(x) { return x.id === id; });
+  if (!p) return;
+
+  editingPosterId = id;
+  currentTemplate = p.template || 'modern';
+  currentColor = p.color || '#4f46e5';
+  currentPhoto = p.photo || null;
+
+  document.querySelectorAll('.tpl-opt').forEach(function(el) { el.classList.remove('active'); });
+  document.querySelectorAll('.tpl-opt')[currentTemplate === 'modern' ? 0 : currentTemplate === 'clean' ? 1 : 2].classList.add('active');
+
+  document.querySelectorAll('.color-dot').forEach(function(el) {
+    el.classList.toggle('active', el.style.background === currentColor || el.style.backgroundColor === currentColor);
+  });
+
+  if (currentPhoto) {
+    document.getElementById('photo-empty').style.display = 'none';
+    document.getElementById('photo-preview').style.display = 'block';
+    document.getElementById('photo-thumb').src = currentPhoto;
+    document.getElementById('photo-drop').classList.add('has-photo');
+  } else {
+    removePhoto();
+  }
+
+  document.getElementById('f-title').value = p.title || '';
+  document.getElementById('f-subtitle').value = p.subtitle || '';
+  document.getElementById('f-date').value = p.date || '';
+  document.getElementById('f-time').value = p.time || '';
+  document.getElementById('f-location').value = p.location || '';
+  document.getElementById('f-desc').value = p.description || '';
+  document.getElementById('f-organizer').value = p.organizer || '';
+
+  switchView('editor', document.querySelectorAll('.view-tab')[0]);
+  renderPoster();
+  showToast('자보를 불러왔습니다. 수정 후 저장하세요.');
+}
+
+async function deletePoster(id) {
+  if (!confirm('이 자보를 삭제하시겠습니까?')) return;
+  var ok = await window.deletePosterFromDb(id);
+  if (ok) { showToast('삭제되었습니다'); refreshPosterList(); }
+}
+
+function switchView(view, el) {
+  document.querySelectorAll('.view-tab').forEach(function(t) { t.classList.remove('active'); });
+  document.querySelectorAll('.view-panel').forEach(function(p) { p.classList.remove('active'); });
+  if (el) el.classList.add('active');
+  document.getElementById('view-' + view).classList.add('active');
+  if (view === 'list') refreshPosterList();
+}
+
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 2500);
+}
+</script>
+</body>
+</html>
