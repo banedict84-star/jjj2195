@@ -498,6 +498,7 @@ textarea.form-input{min-height:85px;resize:vertical;line-height:1.5}
           <th onclick="srt('jumin')">주민번호</th>
           <th onclick="srt('dong')">행정동</th>
           <th onclick="srt('member_type')">당원구분</th>
+          <th onclick="srt('affiliation')" style="width:72px">소속</th>
           <th onclick="srt('vote_result')">투표결과</th>
           <th onclick="srt('age')" style="width:44px">나이</th>
           <th onclick="srt('age_group')" style="width:52px">연령대</th>
@@ -506,6 +507,7 @@ textarea.form-input{min-height:85px;resize:vertical;line-height:1.5}
           <th onclick="srt('sub_recommender')" style="width:64px">서브추천인</th>
           <th onclick="srt('third_recommender')" style="width:64px">서드추천인</th>
           <th onclick="srt('kakao_mgmt')" style="width:64px">카톡관리</th>
+          <th onclick="srt('kakao_reply')" style="width:64px">카톡답장</th>
           <th onclick="srt('text_reply')" style="width:64px">문자관리</th>
           <th onclick="srt('family_cnt')" style="width:44px">가족수</th>
           <th onclick="srt('address')" style="text-align:left;min-width:200px">주소</th>
@@ -559,7 +561,7 @@ textarea.form-input{min-height:85px;resize:vertical;line-height:1.5}
         <!-- 주민번호 -->
         <div class="form-row">
           <span class="form-label">주민번호</span>
-          <input class="form-input" id="fjm" placeholder="000000-0000000" oninput="fmtJumin(this);autoFromJumin()">
+          <input class="form-input" id="fjm" placeholder="000000-0000000" oninput="fmtJumin(this);autoFromJumin()" onblur="blurJumin(this);autoFromJumin()">
         </div>
 
         <!-- 자동계산 결과 표시 -->
@@ -621,6 +623,7 @@ textarea.form-input{min-height:85px;resize:vertical;line-height:1.5}
         <div class="form-section">당원정보</div>
         <div class="form-row"><span class="form-label">당원구분</span>
           <select class="form-input" id="fmt"><option value="">선택</option><option>기존</option><option>신규</option><option>탈당</option><option>주민번호오류</option><option>성명불일치</option><option>코드/체크썸</option></select></div>
+        <div class="form-row"><span class="form-label">소속</span><input class="form-input" id="faff" placeholder="소속 단체/기관"></div>
         <div class="form-row"><span class="form-label">추천인</span><input class="form-input" id="frec" placeholder="추천인 이름"></div>
         <div class="form-row"><span class="form-label">서브추천인</span><input class="form-input" id="fsub" placeholder="서브추천인"></div>
         <div class="form-row"><span class="form-label">서드추천인</span><input class="form-input" id="fthird" placeholder="서드추천인"></div>
@@ -634,6 +637,8 @@ textarea.form-input{min-height:85px;resize:vertical;line-height:1.5}
         <div class="form-section">카카오톡·연락</div>
         <div class="form-row"><span class="form-label">카톡관리</span>
           <select class="form-input" id="fkk"><option value="">선택</option><option>관리중</option><option>관리안함</option><option>추가안됨</option></select></div>
+        <div class="form-row"><span class="form-label">카톡답장</span>
+          <select class="form-input" id="fkr"><option value="">선택</option><option>내용좋음</option><option>보통</option><option>없음</option></select></div>
         <div class="form-row"><span class="form-label">문자답장</span>
           <select class="form-input" id="ftr"><option value="">선택</option><option>좋음</option><option>보통</option><option>없음</option></select></div>
       </div>
@@ -878,6 +883,7 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
         +'<td style="color:#555;font-size:11px">'+esc(r.jumin)+'</td>'
         +'<td>'+db(r.dong)+'</td>'
         +'<td>'+mb(r.member_type)+'</td>'
+        +'<td style="width:76px;color:#444">'+esc(r.affiliation||'')+'</td>'
         +'<td>'+vb(r.vote_result)+'</td>'
         +'<td style="width:48px">'+esc(r.age)+'</td>'
         +'<td style="width:58px">'+esc(r.age_group)+'</td>'
@@ -886,6 +892,7 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
         +'<td style="width:68px">'+esc(r.sub_recommender)+'</td>'
         +'<td style="width:68px">'+esc(r.third_recommender)+'</td>'
         +'<td style="width:68px;font-size:11px;color:#666">'+esc(r.kakao_mgmt)+'</td>'
+        +'<td style="width:68px;font-size:11px;color:#888">'+esc(r.kakao_reply||'')+'</td>'
         +'<td style="width:68px;font-size:11px;color:#666">'+esc(r.text_reply)+'</td>'
         +'<td style="width:52px">'+esc(r.family_cnt)+'</td>'
         +'<td style="color:#5a7080;text-align:left;min-width:220px">'+esc(r.address)+'</td>'
@@ -915,26 +922,40 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
   function findById(id){for(var i=0;i<data.length;i++){if(data[i]._id===id)return data[i];}return null;}
 
   function calcScore(m) {
-    var s = 1;
-    if (m.gwondang === '1') s += 3;
-    if (m.family_flag) s += 1;
-    if (m.honam) s += 1;
-    if (m.sangrok) s += 2;
-    if (m.ipdang) s += 3;
-    var ag = m.age_group || '';
-    if (ag.indexOf('60') >= 0) s += 4;
-    else if (ag.indexOf('50') >= 0) s += 5;
-    else if (ag.indexOf('40') >= 0) s += 4;
-    else if (ag.indexOf('30') >= 0) s += 2;
-    else if (ag.indexOf('20') >= 0) s += 1;
+    var s = 0;
+
+    // 투표결과: 투표완료 +5
+    if (m.vote_result === '투표완료') s += 5;
+
+    // 연령대 점수
+    var ag = parseInt(m.age_group || '0');
+    if (ag >= 70) s += 3;
+    else if (ag === 60) s += 4;
+    else if (ag === 50) s += 5;
+    else if (ag === 40) s += 4;
+    else if (ag === 30) s += 3;
+    else if (ag > 0 && ag < 30) s += 2;  // 20대 미만(10대 등)
+
+    // 추천인: 상록을 +3, 장윤정 +3
+    var rec = (m.recommender || '').trim();
+    if (rec === '상록을') s += 3;
+    if (rec === '장윤정') s += 3;
+
+    // 카톡관리: 관리중 +3
+    if (m.kakao_mgmt === '관리중') s += 3;
+
+    // 카톡답장: 내용좋음 +3
+    if (m.kakao_reply === '내용좋음') s += 3;
+
+    // 문자관리: 좋음 +5, 나쁨 -5
     var tr = m.text_reply || '';
     if (tr === '좋음') s += 5;
-    else if (tr === '안좋음') s -= 5;
-    if (m.kakao_mgmt === '관리중') s += 3;
-    if (m.kakao_reply === '1') s += 5;
-    if (m.group_talk === '1') s += 5;
-    if (m.jangyn_know === '1') s += 5;
-    if (m.vote_result === '투표완료') s += 5;
+    else if (tr === '나쁨') s -= 5;
+
+    // 가족수: 2 이상 +3
+    var fc = parseInt(m.family_cnt || '0');
+    if (!isNaN(fc) && fc >= 2) s += 3;
+
     return String(Math.max(s, 0));
   }
 
@@ -975,6 +996,7 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
     document.getElementById('fadr').value=r.address||'';
     document.getElementById('fdn').value=r.dong||'';
     document.getElementById('fmt').value=r.member_type||'';
+    document.getElementById('faff').value=r.affiliation||'';
     document.getElementById('frec').value=r.recommender||'';
     document.getElementById('fsub').value=r.sub_recommender||'';
     document.getElementById('fthird').value=r.third_recommender||'';
@@ -983,6 +1005,7 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
     document.getElementById('fvl').value=r.vote_leader||'';
     document.getElementById('fsc').value=r.score||'';
     document.getElementById('fkk').value=r.kakao_mgmt||'';
+    document.getElementById('fkr').value=r.kakao_reply||'';
     document.getElementById('ftr').value=r.text_reply||'';
     document.getElementById('fmm').value=r.memo||'';
     // 주민번호 자동계산 UI 갱신
@@ -1110,11 +1133,27 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
     box.style.display = 'block';
   }
 
-  /* ── 주민번호 자동 하이픈 ── */
+  /* ── 주민번호 자동 하이픈 + 마스킹 ── */
   function fmtJumin(el) {
-    var v = el.value.replace(/[^0-9\*]/g,'');
-    if(v.length>6) v = v.slice(0,6)+'-'+v.slice(6,13);
-    el.value = v;
+    var raw = el.value.replace(/[^0-9\*]/g, '');
+    if (raw.length <= 6) {
+      // 6자리 이하: 그냥 표시
+      el.value = raw;
+    } else if (raw.length === 7) {
+      // 7자리: 840718-1******
+      el.value = raw.slice(0, 6) + '-' + raw.slice(6, 7) + '******';
+    } else {
+      // 8자리 이상: 하이픈만 추가
+      el.value = raw.slice(0, 6) + '-' + raw.slice(6, 13);
+    }
+  }
+
+  function blurJumin(el) {
+    // 포커스 벗어날 때 6자리만 입력된 경우 마스킹
+    var raw = el.value.replace(/[^0-9\*]/g, '');
+    if (raw.length === 6) {
+      el.value = raw + '-*******';
+    }
   }
 
   /* ── 전화번호 자동 하이픈 ── */
@@ -1155,6 +1194,7 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
       address:document.getElementById('fadr').value.trim(),
       dong:document.getElementById('fdn').value,
       member_type:document.getElementById('fmt').value,
+      affiliation:document.getElementById('faff').value.trim(),
       recommender:document.getElementById('frec').value.trim(),
       sub_recommender:document.getElementById('fsub').value.trim(),
       third_recommender:document.getElementById('fthird').value.trim(),
@@ -1163,6 +1203,7 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
       vote_leader:document.getElementById('fvl').value.trim(),
       score:document.getElementById('fsc').value.trim(),
       kakao_mgmt:document.getElementById('fkk').value,
+      kakao_reply:document.getElementById('fkr').value,
       text_reply:document.getElementById('ftr').value,
       memo:document.getElementById('fmm').value.trim()
     };
@@ -1345,7 +1386,7 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
 
   /* ── CSV 내보내기 ── */
   function doCSV(){
-    var hd=['성명','전화','행정동','당원구분','투표결과','연령대','성별','나이','추천인','서브추천인','서드추천인','주소','점수','카톡관리','메모'];
+    var hd=['성명','전화','행정동','당원구분','소속','투표결과','연령대','성별','나이','추천인','서브추천인','서드추천인','주소','점수','카톡관리','카톡답장','메모'];
     var ks=['name','phone','dong','member_type','vote_result','age_group','gender','age','recommender','sub_recommender','third_recommender','address','score','kakao_mgmt','memo'];
     var rows=[];
     for(var i=0;i<filtered.length;i++){
