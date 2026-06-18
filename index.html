@@ -669,13 +669,26 @@ textarea.form-input{min-height:85px;resize:vertical;line-height:1.5}
 </div>
 
 <!-- 삭제 확인 모달 -->
-<div class="overlay" id="ov">
-  <div class="dialog">
-    <h3>삭제 확인</h3>
-    <p id="dlgmsg"></p>
-    <div class="dialog-btns">
-      <button class="tb-btn" onclick="closeOv()">취소</button>
-      <button class="tb-btn danger" onclick="doDel()">삭제</button>
+<div id="ov" style="
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);
+  z-index:9999;align-items:center;justify-content:center;
+">
+  <div style="
+    background:#fff;border-radius:16px;padding:32px 28px;
+    width:320px;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center;
+  ">
+    <div style="font-size:36px;margin-bottom:12px">🗑️</div>
+    <div style="font-size:16px;font-weight:700;color:#1a1a2e;margin-bottom:8px">삭제 확인</div>
+    <p id="dlgmsg" style="font-size:13px;color:#555;line-height:1.6;margin-bottom:24px"></p>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button onclick="closeOv()" style="
+        padding:10px 24px;border:2px solid #e5e7eb;border-radius:10px;
+        background:#fff;color:#374151;font-size:14px;font-weight:600;cursor:pointer;
+      ">취소</button>
+      <button onclick="doDel()" style="
+        padding:10px 24px;border:none;border-radius:10px;
+        background:#dc2626;color:#fff;font-size:14px;font-weight:600;cursor:pointer;
+      ">삭제</button>
     </div>
   </div>
 </div>
@@ -1183,8 +1196,8 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
   function askDel(){
     if(selId<0){toast('삭제할 당원을 선택하세요','#c62828');return;}
     var r=findById(selId);
-    document.getElementById('dlgmsg').innerHTML='<b>'+esc(r?r.name:'')+'</b> 당원을 삭제하시겠습니까?<br><span style="color:#c62828">삭제 후 복구할 수 없습니다.</span>';
-    document.getElementById('ov').className='ov on';
+    document.getElementById('dlgmsg').innerHTML='<b>'+esc(r?r.name:'')+'</b> 당원을 삭제하시겠습니까?<br><span style="color:#c62828;font-size:12px">삭제 후 복구할 수 없습니다.</span>';
+    document.getElementById('ov').style.display='flex';
   }
   function doDel(){
     var r=findById(selId);
@@ -1203,7 +1216,7 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
     setForm({});
     toast('삭제: '+(r?r.name:''),'#555');go();
   }
-  function closeOv(){document.getElementById('ov').className='ov';}
+  function closeOv(){document.getElementById('ov').style.display='none';}
 
   /* ── 가족수 자동 계산 ── */
   function calcFamilyCounts() {
