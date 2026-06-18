@@ -120,6 +120,20 @@
       } catch(e) { console.error('공지 로드 실패:', e); return []; }
     };
 
+    // 중앙당 공지 불러오기
+    window.loadPartyNotices = async function() {
+      try {
+        const snap = await getDocs(collection(db, 'party_notices'));
+        if (snap.empty) return [];
+        const result = [];
+        snap.forEach(d => result.push(d.data()));
+        return result.sort((a,b) => {
+          if (a.date && b.date) return b.date.localeCompare(a.date);
+          return (b.updated||0) - (a.updated||0);
+        });
+      } catch(e) { console.error('중앙당 공지 로드 실패:', e); return []; }
+    };
+
     // 로그인 상태 감지
     let dataLoaded = false;
     onAuthStateChanged(auth, async (user) => {
@@ -306,6 +320,13 @@ html,body{height:100%;overflow:hidden;font-family:'Apple SD Gothic Neo','Malgun 
 }
 .notice-form-btns{display:flex;gap:8px;justify-content:flex-end}
 .notice-empty{text-align:center;padding:60px 20px;color:#aaa;font-size:14px}
+.notice-tab{
+  padding:10px 20px;font-size:13px;font-weight:600;color:#9ca3af;
+  background:none;border:none;border-bottom:2px solid transparent;
+  cursor:pointer;transition:all .12s;margin-bottom:-2px;
+}
+.notice-tab:hover{color:#6b7280}
+.notice-tab.active{color:#4f46e5;border-bottom-color:#4f46e5}
 
 /* ─── 헤더 ─── */
 .app-header{
@@ -972,11 +993,28 @@ textarea.form-input{min-height:85px;resize:vertical;line-height:1.5}
         <h2>📢 공지사항</h2>
         <button class="tb-btn primary" onclick="showNoticeForm()">+ 새 공지 작성</button>
       </div>
-      <div class="notice-board" id="notice-board">
-        <div class="notice-board-head">
-          <div>번호</div><div>제목</div><div>작성일</div><div>작성자</div>
+      <!-- 탭 -->
+      <div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid #e5e7eb">
+        <button class="notice-tab active" id="tab-our" onclick="switchNoticeTab('our')">📌 우리 공지</button>
+        <button class="notice-tab" id="tab-party" onclick="switchNoticeTab('party')">🏛️ 민주당 중앙당</button>
+      </div>
+      <!-- 우리 공지 -->
+      <div id="notice-tab-our">
+        <div class="notice-board" id="notice-board">
+          <div class="notice-board-head">
+            <div>번호</div><div>제목</div><div>작성일</div><div>작성자</div>
+          </div>
+          <div id="notice-list"></div>
         </div>
-        <div id="notice-list"></div>
+      </div>
+      <!-- 중앙당 공지 -->
+      <div id="notice-tab-party" style="display:none">
+        <div class="notice-board">
+          <div class="notice-board-head">
+            <div>번호</div><div>제목</div><div>작성일</div><div>출처</div>
+          </div>
+          <div id="party-notice-list"></div>
+        </div>
       </div>
     </div>
     <!-- 글 보기 뷰 -->
@@ -2101,6 +2139,36 @@ async function delNotice(id) {
   if (!confirm('이 공지를 삭제하시겠습니까?')) return;
   await window.deleteNotice(id);
   backToNoticeList();
+}
+
+/* ── 공지 탭 전환 ── */
+function switchNoticeTab(tab) {
+  document.getElementById('tab-our').classList.toggle('active', tab === 'our');
+  document.getElementById('tab-party').classList.toggle('active', tab === 'party');
+  document.getElementById('notice-tab-our').style.display = tab === 'our' ? 'block' : 'none';
+  document.getElementById('notice-tab-party').style.display = tab === 'party' ? 'block' : 'none';
+  if (tab === 'party') loadPartyNoticeList();
+}
+
+async function loadPartyNoticeList() {
+  var list = document.getElementById('party-notice-list');
+  list.innerHTML = '<div style="text-align:center;padding:20px;color:#aaa">불러오는 중...</div>';
+  var notices = await window.loadPartyNotices();
+  if (notices.length === 0) {
+    list.innerHTML = '<div class="notice-empty">중앙당 공지를 불러오는 중이거나 아직 데이터가 없습니다.<br><span style="font-size:12px;color:#bbb">Firebase Functions 배포 후 자동으로 수집됩니다.</span></div>';
+    return;
+  }
+  var html = '';
+  notices.forEach(function(n, i) {
+    var onclick = n.link ? 'window.open(\'' + n.link.replace(/'/g,"\\'") + '\',\'_blank\')' : '';
+    html += '<div class="notice-row" onclick="' + onclick + '" style="cursor:pointer">'
+      + '<div class="nr-no">' + (n.no || (notices.length - i)) + '</div>'
+      + '<div class="nr-title">' + escapeHtml(n.title) + '</div>'
+      + '<div class="nr-date">' + escapeHtml(n.date || '-') + '</div>'
+      + '<div class="nr-author">' + escapeHtml(n.source || '민주당') + '</div>'
+      + '</div>';
+  });
+  list.innerHTML = html;
 }
 </script>
 
