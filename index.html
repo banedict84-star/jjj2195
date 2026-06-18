@@ -1395,7 +1395,7 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
   }
 
   /* ── 전체 점수 일괄 재계산 ── */
-  function recalcAllScores() {
+  window.recalcAllScores = function() {
     var ov = document.getElementById('ov-recalc');
     var msg = document.getElementById('recalc-msg');
     var prog = document.getElementById('recalc-progress');
@@ -1410,11 +1410,11 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
     ov.style.cssText = 'display:flex;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center;';
   }
 
-  function closeRecalcOv() {
+  window.closeRecalcOv = function() {
     document.getElementById('ov-recalc').style.cssText = 'display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;';
   }
 
-  async function doRecalcConfirm() {
+  window.doRecalcConfirm = async function() {
     var msg = document.getElementById('recalc-msg');
     var prog = document.getElementById('recalc-progress');
     var btns = document.getElementById('recalc-btns');
