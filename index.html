@@ -674,6 +674,33 @@ textarea.form-input{min-height:85px;resize:vertical;line-height:1.5}
   </div>
 </div>
 
+
+<!-- 점수 재계산 확인 모달 -->
+<div id="ov-recalc" style="
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);
+  z-index:9999;align-items:center;justify-content:center;
+">
+  <div style="
+    background:#fff;border-radius:16px;padding:32px 28px;
+    width:340px;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center;
+  ">
+    <div style="font-size:36px;margin-bottom:12px">🔄</div>
+    <div style="font-size:16px;font-weight:700;color:#1a1a2e;margin-bottom:8px">점수 재계산</div>
+    <p id="recalc-msg" style="font-size:13px;color:#555;line-height:1.6;margin-bottom:8px"></p>
+    <div id="recalc-progress" style="display:none;font-size:12px;color:#4f46e5;font-weight:600;margin-bottom:16px;padding:8px;background:#f0f4ff;border-radius:8px"></div>
+    <div id="recalc-btns" style="display:flex;gap:10px;justify-content:center;margin-top:16px">
+      <button onclick="closeRecalcOv()" style="
+        padding:10px 24px;border:2px solid #e5e7eb;border-radius:10px;
+        background:#fff;color:#374151;font-size:14px;font-weight:600;cursor:pointer;
+      ">취소</button>
+      <button onclick="doRecalcConfirm()" style="
+        padding:10px 24px;border:none;border-radius:10px;
+        background:#f59e0b;color:#fff;font-size:14px;font-weight:600;cursor:pointer;
+      ">재계산 시작</button>
+    </div>
+  </div>
+</div>
+
 <!-- 삭제 확인 모달 -->
 <div id="ov" style="
   display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);
@@ -1371,12 +1398,31 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
   }
 
   /* ── 전체 점수 일괄 재계산 ── */
-  async function recalcAllScores() {
-    if (!confirm('모든 당원(' + data.length + '명)의 점수를 새 기준으로 재계산하고 서버에 저장합니다.\n계속하시겠습니까?')) return;
+  function recalcAllScores() {
+    // 팝업 열기
+    var msg = document.getElementById('recalc-msg');
+    var prog = document.getElementById('recalc-progress');
+    var btns = document.getElementById('recalc-btns');
+    if (msg) msg.textContent = '총 ' + data.length + '명의 점수를 새 기준으로 재계산하고 서버에 저장합니다.';
+    if (prog) prog.style.display = 'none';
+    if (btns) btns.style.display = 'flex';
+    document.getElementById('ov-recalc').style.display = 'flex';
+  }
 
-    var indicator = document.getElementById('sync-indicator');
-    if (indicator) indicator.textContent = '🔄 재계산 중...';
+  function closeRecalcOv() {
+    document.getElementById('ov-recalc').style.display = 'none';
+  }
 
+  async function doRecalcConfirm() {
+    var msg = document.getElementById('recalc-msg');
+    var prog = document.getElementById('recalc-progress');
+    var btns = document.getElementById('recalc-btns');
+
+    // 버튼 숨기고 진행상황 표시
+    if (btns) btns.style.display = 'none';
+    if (prog) { prog.style.display = 'block'; prog.textContent = '점수 계산 중...'; }
+
+    // 점수 재계산
     var changed = [];
     for (var i = 0; i < data.length; i++) {
       var newScore = calcScore(data[i]);
@@ -1386,22 +1432,36 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
       }
     }
 
-    // localStorage 갱신
-    try { localStorage.setItem('dangwon_v8', JSON.stringify(data)); } catch(e) {}
+    if (prog) prog.textContent = changed.length + '명 점수 변경 → 서버 저장 중...';
 
-    // Firestore 배치 저장 (변경된 것만)
-    if (changed.length > 0 && typeof window.saveOneToFirestore === 'function') {
-      var total = changed.length;
-      for (var j = 0; j < changed.length; j++) {
-        await window.saveOneToFirestore(changed[j]);
-        if (indicator) indicator.textContent = '🔄 저장 중... ' + (j+1) + '/' + total;
+    // localStorage 갱신
+    try { localStorage.setItem(SKEY, JSON.stringify(data)); } catch(e) {}
+
+    // Firestore 저장 (변경된 것만, 배치로 50개씩)
+    if (changed.length > 0 && typeof window.saveToFirestore === 'function') {
+      var BATCH = 50;
+      for (var b = 0; b < changed.length; b += BATCH) {
+        var chunk = changed.slice(b, b + BATCH);
+        await Promise.all(chunk.map(function(r) {
+          return window.saveOneToFirestore(r);
+        }));
+        var done = Math.min(b + BATCH, changed.length);
+        if (prog) prog.textContent = '서버 저장 중... ' + done + '/' + changed.length + '명';
       }
     }
 
-    if (indicator) indicator.textContent = '✅ 재계산 완료 (' + changed.length + '명 변경)';
-    setTimeout(function(){ if(indicator) indicator.textContent = '✅ 서버 연결됨'; }, 3000);
+    // 완료
+    if (prog) prog.textContent = '✅ 완료! ' + changed.length + '명 점수 변경됨';
+    if (msg) msg.textContent = '재계산이 완료되었습니다.';
+    if (btns) {
+      btns.innerHTML = '<button onclick="closeRecalcOv()" style="padding:10px 32px;border:none;border-radius:10px;background:#16a34a;color:#fff;font-size:14px;font-weight:600;cursor:pointer;">확인</button>';
+      btns.style.display = 'flex';
+    }
 
-    go(); // 화면 갱신
+    go();
+    var indicator = document.getElementById('sync-indicator');
+    if (indicator) indicator.textContent = '✅ 점수 재계산 완료';
+    setTimeout(function(){ if(indicator) indicator.textContent = '✅ 서버 연결됨'; }, 3000);
     toast('점수 재계산 완료 — ' + changed.length + '명 변경', '#2e7d32');
   }
 
