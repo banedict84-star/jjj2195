@@ -97,6 +97,29 @@
       }
     };
 
+    // 공지사항 저장
+    window.saveNotice = async function(notice) {
+      try {
+        await setDoc(doc(db, 'notices', String(notice.id)), notice);
+      } catch(e) { console.error('공지 저장 실패:', e); }
+    };
+    // 공지사항 삭제
+    window.deleteNotice = async function(id) {
+      try {
+        await deleteDoc(doc(db, 'notices', String(id)));
+      } catch(e) { console.error('공지 삭제 실패:', e); }
+    };
+    // 공지사항 전체 불러오기
+    window.loadNotices = async function() {
+      try {
+        const snap = await getDocs(collection(db, 'notices'));
+        if (snap.empty) return [];
+        const result = [];
+        snap.forEach(d => result.push(d.data()));
+        return result.sort((a,b) => (b.created||0) - (a.created||0));
+      } catch(e) { console.error('공지 로드 실패:', e); return []; }
+    };
+
     // 로그인 상태 감지
     let dataLoaded = false;
     onAuthStateChanged(auth, async (user) => {
@@ -108,8 +131,10 @@
       if (user && ALLOWED_EMAILS.includes(user.email)) {
         // 로그인 성공 → 앱 표시
         loginScreen.style.display = 'none';
-        appScreen.style.display = 'flex';
+        appScreen.style.display = 'block';
         if (userInfo) userInfo.textContent = user.email;
+        var sidebarUser = document.getElementById('sidebar-user');
+        if (sidebarUser) sidebarUser.textContent = user.email;
 
         // 최초 1회만 Firestore에서 불러오기
         if (!dataLoaded) {
@@ -145,6 +170,76 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden;font-family:'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif;font-size:13px;background:#f5f7fa;color:#222}
+
+/* ─── 사이드바 ─── */
+.sidebar{
+  width:220px;flex-shrink:0;background:#1e1b4b;color:#fff;
+  display:flex;flex-direction:column;height:100vh;position:fixed;left:0;top:0;z-index:200;
+  transition:transform .2s;
+}
+.sidebar-brand{padding:16px 18px;border-bottom:1px solid #312e81;display:flex;align-items:center;gap:10px}
+.sidebar-brand-logo{
+  width:36px;height:36px;border-radius:10px;
+  background:linear-gradient(135deg,#6366f1,#8b5cf6);
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-weight:800;font-size:15px;
+}
+.sidebar-brand-name{font-size:14px;font-weight:700;color:#e0e7ff}
+.sidebar-brand-sub{font-size:10px;color:#a5b4fc;margin-top:2px}
+.sidebar-nav{flex:1;padding:12px 0;overflow-y:auto}
+.sidebar-item{
+  display:flex;align-items:center;gap:10px;padding:10px 18px;
+  cursor:pointer;color:#c7d2fe;font-size:13px;font-weight:500;
+  transition:all .12s;border-left:3px solid transparent;
+}
+.sidebar-item:hover{background:#312e81;color:#fff}
+.sidebar-item.active{background:#312e81;color:#fff;border-left-color:#6366f1;font-weight:700}
+.sidebar-item .si-icon{font-size:16px;width:22px;text-align:center}
+.sidebar-item .si-badge{
+  margin-left:auto;background:#6366f1;color:#fff;font-size:10px;
+  padding:1px 7px;border-radius:10px;font-weight:700;
+}
+.sidebar-bottom{padding:12px 18px;border-top:1px solid #312e81;font-size:11px;color:#818cf8}
+.sidebar-toggle{
+  display:none;position:fixed;top:10px;left:10px;z-index:201;
+  background:#1e1b4b;color:#fff;border:none;border-radius:8px;
+  width:36px;height:36px;font-size:18px;cursor:pointer;
+}
+@media(max-width:900px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .sidebar-toggle{display:flex;align-items:center;justify-content:center}
+}
+.with-sidebar{margin-left:220px}
+@media(max-width:900px){.with-sidebar{margin-left:0}}
+
+/* ─── 페이지 컨테이너 ─── */
+.page-container{display:none}
+.page-container.active{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+/* ─── 공지사항 ─── */
+.notice-page{padding:20px;overflow-y:auto;flex:1;background:#f5f7fa}
+.notice-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.notice-header h2{font-size:18px;font-weight:800;color:#1e1b4b}
+.notice-card{
+  background:#fff;border-radius:12px;padding:16px 20px;margin-bottom:10px;
+  box-shadow:0 1px 4px rgba(0,0,0,.06);border-left:4px solid #6366f1;
+  transition:all .12s;
+}
+.notice-card:hover{box-shadow:0 4px 12px rgba(0,0,0,.1)}
+.notice-card-title{font-size:14px;font-weight:700;color:#1e1b4b;margin-bottom:4px}
+.notice-card-date{font-size:11px;color:#999;margin-bottom:8px}
+.notice-card-body{font-size:13px;color:#444;line-height:1.7;white-space:pre-wrap}
+.notice-card-actions{margin-top:10px;display:flex;gap:6px;justify-content:flex-end}
+.notice-form{background:#fff;border-radius:12px;padding:20px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.notice-form input,.notice-form textarea{
+  width:100%;padding:8px 12px;border:1px solid #e0e0e0;border-radius:8px;
+  font-size:13px;margin-bottom:8px;font-family:inherit;
+}
+.notice-form textarea{min-height:120px;resize:vertical;line-height:1.6}
+.notice-form-btns{display:flex;gap:8px;justify-content:flex-end}
+.notice-empty{text-align:center;padding:60px 20px;color:#aaa;font-size:14px}
+.notice-pin{color:#f59e0b;margin-right:4px}
 
 /* ─── 헤더 ─── */
 .app-header{
@@ -384,7 +479,46 @@ textarea.form-input{min-height:85px;resize:vertical;line-height:1.5}
 </div>
 
 <!-- 앱 본체 -->
-<div id="app-screen" style="display:none;flex-direction:column;min-height:100vh">
+<div id="app-screen" style="display:none">
+
+<!-- 사이드바 -->
+<button class="sidebar-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+<div class="sidebar">
+  <div class="sidebar-brand">
+    <div class="sidebar-brand-logo">장</div>
+    <div>
+      <div class="sidebar-brand-name">당원 관리 시스템</div>
+      <div class="sidebar-brand-sub">경기도의원 장윤정</div>
+    </div>
+  </div>
+  <div class="sidebar-nav">
+    <div class="sidebar-item active" onclick="switchPage('members',this)">
+      <span class="si-icon">👥</span> 당원 관리
+    </div>
+    <div class="sidebar-item" onclick="switchPage('notices',this)">
+      <span class="si-icon">📢</span> 공지사항
+      <span class="si-badge" id="notice-count" style="display:none">0</span>
+    </div>
+    <div class="sidebar-item" onclick="switchPage('schedule',this)">
+      <span class="si-icon">📅</span> 일정 관리
+      <span class="si-badge" style="background:#f59e0b">준비중</span>
+    </div>
+    <div class="sidebar-item" onclick="switchPage('stats',this)">
+      <span class="si-icon">📊</span> 통계/분석
+      <span class="si-badge" style="background:#f59e0b">준비중</span>
+    </div>
+  </div>
+  <div class="sidebar-bottom">
+    <div id="sidebar-user" style="margin-bottom:6px"></div>
+    <button onclick="window.doLogout()" style="
+      font-size:11px;padding:4px 10px;border:1px solid #6366f1;border-radius:6px;
+      background:transparent;color:#a5b4fc;cursor:pointer;width:100%;
+    ">로그아웃</button>
+  </div>
+</div>
+
+<!-- 페이지: 당원 관리 -->
+<div class="with-sidebar page-container active" id="page-members">
 <div class="wrap">
 
 <!-- 헤더 -->
@@ -751,6 +885,51 @@ textarea.form-input{min-height:85px;resize:vertical;line-height:1.5}
     </div>
   </div>
 </div>
+
+</div><!-- /page-members -->
+
+<!-- 페이지: 공지사항 -->
+<div class="with-sidebar page-container" id="page-notices">
+  <div class="notice-page">
+    <div class="notice-header">
+      <h2>📢 공지사항</h2>
+      <button class="tb-btn primary" id="btn-new-notice" onclick="toggleNoticeForm()">+ 새 공지 작성</button>
+    </div>
+    <div class="notice-form" id="notice-form" style="display:none">
+      <input type="text" id="notice-title" placeholder="공지 제목을 입력하세요">
+      <textarea id="notice-body" placeholder="공지 내용을 입력하세요"></textarea>
+      <div class="notice-form-btns">
+        <button class="tb-btn" onclick="cancelNotice()">취소</button>
+        <button class="tb-btn primary" onclick="submitNotice()">등록</button>
+      </div>
+    </div>
+    <div id="notice-list"></div>
+  </div>
+</div>
+
+<!-- 페이지: 일정 관리 (준비중) -->
+<div class="with-sidebar page-container" id="page-schedule">
+  <div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#f5f7fa">
+    <div style="text-align:center;color:#999">
+      <div style="font-size:48px;margin-bottom:16px">📅</div>
+      <div style="font-size:18px;font-weight:700;color:#666;margin-bottom:8px">일정 관리</div>
+      <div style="font-size:14px">준비 중입니다. 곧 업데이트됩니다!</div>
+    </div>
+  </div>
+</div>
+
+<!-- 페이지: 통계/분석 (준비중) -->
+<div class="with-sidebar page-container" id="page-stats">
+  <div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#f5f7fa">
+    <div style="text-align:center;color:#999">
+      <div style="font-size:48px;margin-bottom:16px">📊</div>
+      <div style="font-size:18px;font-weight:700;color:#666;margin-bottom:8px">통계 / 분석</div>
+      <div style="font-size:14px">준비 중입니다. 곧 업데이트됩니다!</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /app-screen -->
 
 <div class="toast" id="toast"></div>
 
@@ -1683,6 +1862,118 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
 
 </script>
 </div><!-- wrap -->
-</div><!-- app-screen -->
+
+<script>
+/* ── 사이드바 페이지 전환 ── */
+function switchPage(pageId, el) {
+  document.querySelectorAll('.page-container').forEach(function(p){ p.classList.remove('active'); });
+  var target = document.getElementById('page-' + pageId);
+  if (target) target.classList.add('active');
+  document.querySelectorAll('.sidebar-item').forEach(function(s){ s.classList.remove('active'); });
+  if (el) el.classList.add('active');
+  document.querySelector('.sidebar').classList.remove('open');
+  if (pageId === 'notices') loadNoticeList();
+}
+
+/* ── 공지사항 기능 ── */
+var noticeEditId = null;
+
+function toggleNoticeForm() {
+  var form = document.getElementById('notice-form');
+  if (form.style.display === 'none') {
+    form.style.display = 'block';
+    noticeEditId = null;
+    document.getElementById('notice-title').value = '';
+    document.getElementById('notice-body').value = '';
+  } else {
+    form.style.display = 'none';
+  }
+}
+
+function cancelNotice() {
+  document.getElementById('notice-form').style.display = 'none';
+  noticeEditId = null;
+}
+
+async function submitNotice() {
+  var title = document.getElementById('notice-title').value.trim();
+  var body = document.getElementById('notice-body').value.trim();
+  if (!title) { alert('제목을 입력하세요'); return; }
+  if (!body) { alert('내용을 입력하세요'); return; }
+  var notice = {
+    id: noticeEditId || String(Date.now()),
+    title: title,
+    body: body,
+    created: noticeEditId ? undefined : Date.now(),
+    updated: Date.now(),
+    author: 'admin'
+  };
+  if (noticeEditId) {
+    var existing = (await window.loadNotices()).find(function(n){ return n.id === noticeEditId; });
+    if (existing) notice.created = existing.created;
+  } else {
+    notice.created = Date.now();
+  }
+  await window.saveNotice(notice);
+  document.getElementById('notice-form').style.display = 'none';
+  noticeEditId = null;
+  loadNoticeList();
+}
+
+async function loadNoticeList() {
+  var list = document.getElementById('notice-list');
+  list.innerHTML = '<div style="text-align:center;padding:20px;color:#aaa">불러오는 중...</div>';
+  var notices = await window.loadNotices();
+  var badge = document.getElementById('notice-count');
+  if (notices.length > 0) {
+    badge.textContent = String(notices.length);
+    badge.style.display = 'inline-block';
+  } else {
+    badge.style.display = 'none';
+  }
+  if (notices.length === 0) {
+    list.innerHTML = '<div class="notice-empty">등록된 공지사항이 없습니다.</div>';
+    return;
+  }
+  var html = '';
+  notices.forEach(function(n) {
+    var d = new Date(n.created);
+    var dateStr = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+    html += '<div class="notice-card">'
+      + '<div class="notice-card-title">' + escapeHtml(n.title) + '</div>'
+      + '<div class="notice-card-date">' + dateStr + '</div>'
+      + '<div class="notice-card-body">' + escapeHtml(n.body) + '</div>'
+      + '<div class="notice-card-actions">'
+      + '<button class="tb-btn" onclick="editNotice(\'' + n.id + '\')">수정</button>'
+      + '<button class="tb-btn danger" onclick="delNotice(\'' + n.id + '\')">삭제</button>'
+      + '</div></div>';
+  });
+  list.innerHTML = html;
+}
+
+function escapeHtml(s) {
+  var d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+async function editNotice(id) {
+  var notices = await window.loadNotices();
+  var n = notices.find(function(x){ return x.id === id; });
+  if (!n) return;
+  noticeEditId = id;
+  document.getElementById('notice-title').value = n.title;
+  document.getElementById('notice-body').value = n.body;
+  document.getElementById('notice-form').style.display = 'block';
+  window.scrollTo(0,0);
+}
+
+async function delNotice(id) {
+  if (!confirm('이 공지를 삭제하시겠습니까?')) return;
+  await window.deleteNotice(id);
+  loadNoticeList();
+}
+</script>
+
 </body>
 </html>
