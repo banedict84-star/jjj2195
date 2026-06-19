@@ -113,6 +113,14 @@
     window.fbSaveSchedule = async function(id, data) { await setDoc(doc(db, 'schedules', id), data, { merge: true }); };
     window.fbDeleteSchedule = async function(id) { await deleteDoc(doc(db, 'schedules', id)); };
 
+    // 업무 관리
+    window.fbGetTasks = async function() {
+      const snap = await getDocs(collection(db, 'tasks'));
+      const result = []; snap.forEach(d => result.push(d.data())); return result;
+    };
+    window.fbSaveTask = async function(id, data) { await setDoc(doc(db, 'tasks', id), data, { merge: true }); };
+    window.fbDeleteTask = async function(id) { await deleteDoc(doc(db, 'tasks', id)); };
+
     // 테넌트(의원) 등록
     window.registerTenant = async function(tenantData) {
       try {
@@ -539,6 +547,39 @@ input[name="sched-color"]:checked+.color-dot{border-color:#333}
   .modal-box{padding:20px;margin:10px}
 }
 
+/* ─── 업무 관리 ─── */
+.task-page{padding:24px 28px;overflow-y:auto;background:#f5f7fa;min-height:100vh}
+.task-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.task-header h2{font-size:20px;font-weight:800;color:#1e1b4b}
+.task-filters{display:flex;gap:6px;margin-bottom:16px}
+.task-filter-btn{padding:7px 16px;border:1px solid #d1d5db;border-radius:20px;background:#fff;font-size:13px;font-weight:600;color:#666;cursor:pointer}
+.task-filter-btn:hover{background:#f3f4f6}
+.task-filter-btn.active{background:#4f46e5;color:#fff;border-color:#4f46e5}
+.task-group-title{font-size:14px;font-weight:700;color:#666;margin:16px 0 8px;display:flex;align-items:center;gap:8px}
+.task-group-title .cnt{font-size:12px;color:#aaa;font-weight:400}
+.task-item{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;background:#fff;border-radius:10px;margin-bottom:6px;border:1px solid #e5e7eb;cursor:pointer;transition:box-shadow .15s}
+.task-item:hover{box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.task-check{width:20px;height:20px;border:2px solid #d1d5db;border-radius:50%;flex-shrink:0;margin-top:1px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;transition:all .15s}
+.task-check.todo{border-color:#d1d5db}
+.task-check.doing{border-color:#3b82f6;background:#dbeafe;color:#3b82f6}
+.task-check.done{border-color:#22c55e;background:#22c55e;color:#fff}
+.task-info{flex:1;min-width:0}
+.task-item-title{font-size:14px;font-weight:600;color:#1a1a1a}
+.task-item-title.done{text-decoration:line-through;color:#aaa}
+.task-item-meta{font-size:12px;color:#9ca3af;margin-top:3px;display:flex;gap:10px;flex-wrap:wrap}
+.task-priority-high{color:#dc2626;font-weight:600}
+.task-overdue{color:#dc2626}
+.task-status-badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600}
+.task-status-badge.todo{background:#f3f4f6;color:#666}
+.task-status-badge.doing{background:#dbeafe;color:#2563eb}
+.task-status-badge.done{background:#dcfce7;color:#16a34a}
+.task-empty{text-align:center;padding:40px;color:#aaa;font-size:14px}
+
+@media(max-width:600px){
+  .task-page{padding:16px 12px}
+  .task-filters{overflow-x:auto}
+}
+
 /* ─── 통계바 ─── */
 .stats-row{
   background:#fff;border-bottom:1px solid #e8eaed;
@@ -807,12 +848,17 @@ window.showInAppNotice = function(title, body) {
       <span class="si-icon">👥</span>
       <span class="si-label">당원 관리</span>
     </div>
-    <div class="sidebar-divider" style="margin:8px 8px"></div>
-    <div class="sidebar-section-label">준비중</div>
+    <div class="sidebar-item" onclick="switchPage('tasks',this)">
+      <span class="si-icon">☑️</span>
+      <span class="si-label">업무</span>
+      <span class="si-badge" id="task-count" style="display:none">0</span>
+    </div>
     <div class="sidebar-item" onclick="switchPage('schedule',this)">
       <span class="si-icon">📅</span>
-      <span class="si-label">일정 관리</span>
+      <span class="si-label">일정</span>
     </div>
+    <div class="sidebar-divider" style="margin:8px 8px"></div>
+    <div class="sidebar-section-label">준비중</div>
     <div class="sidebar-item" onclick="switchPage('stats',this)">
       <span class="si-icon">📊</span>
       <span class="si-label">통계 / 분석</span>
@@ -1346,6 +1392,74 @@ window.showInAppNotice = function(title, body) {
       <button class="modal-btn cancel" onclick="closeScheduleModal()">취소</button>
       <button class="modal-btn danger" id="sched-del-btn" onclick="deleteSchedule()" style="display:none">삭제</button>
       <button class="modal-btn primary" onclick="saveSchedule()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 페이지: 업무 관리 -->
+<div class="with-sidebar page-container" id="page-tasks">
+  <div class="task-page">
+    <div class="task-header">
+      <h2>☑️ 업무</h2>
+      <button class="tb-btn success" id="btn-add-task" onclick="openTaskModal()">+ 업무 추가</button>
+    </div>
+
+    <div class="task-filters">
+      <button class="task-filter-btn active" onclick="filterTasks('all',this)">전체</button>
+      <button class="task-filter-btn" onclick="filterTasks('todo',this)">할 일</button>
+      <button class="task-filter-btn" onclick="filterTasks('doing',this)">진행중</button>
+      <button class="task-filter-btn" onclick="filterTasks('done',this)">완료</button>
+    </div>
+
+    <div id="task-list"></div>
+  </div>
+</div>
+
+<!-- 업무 추가/수정 모달 -->
+<div class="modal-overlay" id="task-modal">
+  <div class="modal-box">
+    <h3 id="task-modal-title">☑️ 새 업무 추가</h3>
+    <input type="hidden" id="task-edit-id">
+    <div style="margin-bottom:10px">
+      <label class="modal-label">제목 *</label>
+      <input class="modal-input" id="task-title" placeholder="업무 제목">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <div>
+        <label class="modal-label">마감일</label>
+        <input class="modal-input" id="task-due" type="date">
+      </div>
+      <div>
+        <label class="modal-label">상태</label>
+        <select class="modal-input" id="task-status">
+          <option value="todo">할 일</option>
+          <option value="doing">진행중</option>
+          <option value="done">완료</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <div>
+        <label class="modal-label">우선순위</label>
+        <select class="modal-input" id="task-priority">
+          <option value="normal">보통</option>
+          <option value="high">높음 🔴</option>
+          <option value="low">낮음</option>
+        </select>
+      </div>
+      <div>
+        <label class="modal-label">담당자</label>
+        <input class="modal-input" id="task-assignee" placeholder="담당자 (선택)">
+      </div>
+    </div>
+    <div style="margin-bottom:10px">
+      <label class="modal-label">내용</label>
+      <textarea class="modal-input" id="task-body" rows="3" placeholder="업무 내용 (선택)"></textarea>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="modal-btn cancel" onclick="closeTaskModal()">취소</button>
+      <button class="modal-btn danger" id="task-del-btn" onclick="deleteTask()" style="display:none">삭제</button>
+      <button class="modal-btn primary" onclick="saveTask()">저장</button>
     </div>
   </div>
 </div>
@@ -2322,6 +2436,7 @@ function switchPage(pageId, el) {
   document.querySelector('.sidebar').classList.remove('open');
   if (pageId === 'notices') { backToNoticeList(); }
   if (pageId === 'schedule') { loadSchedules(); }
+  if (pageId === 'tasks') { loadTasks(); }
 }
 
 /* ── 일정 관리 ── */
@@ -2508,6 +2623,153 @@ async function deleteSchedule() {
     await window.fbDeleteSchedule(id);
     closeScheduleModal();
     loadSchedules();
+  } catch(e) { alert('삭제 실패: ' + e.message); }
+}
+
+/* ── 업무 관리 ── */
+var taskCache = [], taskFilter = 'all';
+
+async function loadTasks() {
+  try {
+    taskCache = await window.fbGetTasks();
+    renderTasks();
+    var pending = taskCache.filter(function(t){ return t.status !== 'done'; }).length;
+    var badge = document.getElementById('task-count');
+    if (pending > 0) { badge.textContent = pending; badge.style.display = ''; }
+    else { badge.style.display = 'none'; }
+  } catch(e) { console.error('업무 로드 실패:', e); }
+}
+
+function filterTasks(f, el) {
+  taskFilter = f;
+  document.querySelectorAll('.task-filter-btn').forEach(function(b){ b.classList.remove('active'); });
+  if (el) el.classList.add('active');
+  renderTasks();
+}
+
+function renderTasks() {
+  var el = document.getElementById('task-list');
+  var filtered = taskCache;
+  if (taskFilter !== 'all') filtered = taskCache.filter(function(t){ return t.status === taskFilter; });
+
+  if (filtered.length === 0) {
+    el.innerHTML = '<div class="task-empty">업무가 없습니다.</div>';
+    return;
+  }
+
+  var groups = {todo:[], doing:[], done:[]};
+  filtered.forEach(function(t){ (groups[t.status] || groups.todo).push(t); });
+
+  var statusNames = {todo:'할 일', doing:'진행중', done:'완료'};
+  var html = '';
+  ['todo','doing','done'].forEach(function(st) {
+    var items = groups[st];
+    if (items.length === 0) return;
+    items.sort(function(a,b){
+      if (a.priority === 'high' && b.priority !== 'high') return -1;
+      if (b.priority === 'high' && a.priority !== 'high') return 1;
+      return (a.dueDate||'9999').localeCompare(b.dueDate||'9999');
+    });
+    if (taskFilter === 'all') {
+      html += '<div class="task-group-title">' + statusNames[st] + ' <span class="cnt">' + items.length + '</span></div>';
+    }
+    items.forEach(function(t) {
+      var checkClass = t.status;
+      var checkIcon = t.status === 'done' ? '✓' : (t.status === 'doing' ? '●' : '');
+      var titleClass = t.status === 'done' ? 'task-item-title done' : 'task-item-title';
+      var meta = [];
+      if (t.dueDate) {
+        var today = new Date().toISOString().split('T')[0];
+        var isOverdue = t.status !== 'done' && t.dueDate < today;
+        meta.push('<span class="' + (isOverdue ? 'task-overdue' : '') + '">📅 ' + t.dueDate.replace(/-/g,'.') + (isOverdue ? ' (기한초과)' : '') + '</span>');
+      }
+      if (t.assignee) meta.push('<span>👤 ' + escapeHtml(t.assignee) + '</span>');
+      if (t.priority === 'high') meta.push('<span class="task-priority-high">🔴 높음</span>');
+      html += '<div class="task-item" onclick="openTaskDetail(\'' + t.id + '\')">'
+        + '<div class="task-check ' + checkClass + '" onclick="event.stopPropagation();toggleTaskStatus(\'' + t.id + '\')">' + checkIcon + '</div>'
+        + '<div class="task-info">'
+        + '<div class="' + titleClass + '">' + escapeHtml(t.title) + '</div>'
+        + (meta.length ? '<div class="task-item-meta">' + meta.join('') + '</div>' : '')
+        + '</div></div>';
+    });
+  });
+  el.innerHTML = html;
+}
+
+async function toggleTaskStatus(id) {
+  var t = taskCache.find(function(x){ return x.id === id; });
+  if (!t) return;
+  var nextStatus = {todo:'doing', doing:'done', done:'todo'};
+  t.status = nextStatus[t.status] || 'todo';
+  try {
+    await window.fbSaveTask(id, {status: t.status, updated: Date.now()});
+    renderTasks();
+    var pending = taskCache.filter(function(t){ return t.status !== 'done'; }).length;
+    var badge = document.getElementById('task-count');
+    if (pending > 0) { badge.textContent = pending; badge.style.display = ''; }
+    else { badge.style.display = 'none'; }
+  } catch(e) { console.error(e); }
+}
+
+function openTaskModal() {
+  document.getElementById('task-edit-id').value = '';
+  document.getElementById('task-modal-title').textContent = '☑️ 새 업무 추가';
+  document.getElementById('task-title').value = '';
+  document.getElementById('task-due').value = '';
+  document.getElementById('task-status').value = 'todo';
+  document.getElementById('task-priority').value = 'normal';
+  document.getElementById('task-assignee').value = '';
+  document.getElementById('task-body').value = '';
+  document.getElementById('task-del-btn').style.display = 'none';
+  document.getElementById('task-modal').classList.add('show');
+}
+
+function openTaskDetail(id) {
+  var t = taskCache.find(function(x){ return x.id === id; });
+  if (!t) return;
+  document.getElementById('task-edit-id').value = t.id;
+  document.getElementById('task-modal-title').textContent = '☑️ 업무 수정';
+  document.getElementById('task-title').value = t.title || '';
+  document.getElementById('task-due').value = t.dueDate || '';
+  document.getElementById('task-status').value = t.status || 'todo';
+  document.getElementById('task-priority').value = t.priority || 'normal';
+  document.getElementById('task-assignee').value = t.assignee || '';
+  document.getElementById('task-body').value = t.body || '';
+  document.getElementById('task-del-btn').style.display = '';
+  document.getElementById('task-modal').classList.add('show');
+}
+
+function closeTaskModal() { document.getElementById('task-modal').classList.remove('show'); }
+
+async function saveTask() {
+  var title = document.getElementById('task-title').value.trim();
+  if (!title) { alert('제목을 입력하세요.'); return; }
+  var editId = document.getElementById('task-edit-id').value;
+  var id = editId || 'task_' + Date.now();
+  var data = {
+    id: id, title: title,
+    dueDate: document.getElementById('task-due').value,
+    status: document.getElementById('task-status').value,
+    priority: document.getElementById('task-priority').value,
+    assignee: document.getElementById('task-assignee').value.trim(),
+    body: document.getElementById('task-body').value.trim(),
+    updated: Date.now()
+  };
+  if (!editId) data.created = Date.now();
+  try {
+    await window.fbSaveTask(id, data);
+    closeTaskModal();
+    loadTasks();
+  } catch(e) { alert('저장 실패: ' + e.message); }
+}
+
+async function deleteTask() {
+  var id = document.getElementById('task-edit-id').value;
+  if (!id || !confirm('이 업무를 삭제하시겠습니까?')) return;
+  try {
+    await window.fbDeleteTask(id);
+    closeTaskModal();
+    loadTasks();
   } catch(e) { alert('삭제 실패: ' + e.message); }
 }
 
