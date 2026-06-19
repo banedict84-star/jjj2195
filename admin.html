@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>총관리자 · MOIDA</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+  :root{
+    --bg:#f3f5f8; --surface:#ffffff; --line:#e8eaf0; --line-soft:#f1f3f7;
+    --ink:#1c2030; --ink-2:#5a6072; --ink-3:#9298a8; --ink-4:#b6bcca;
+    --primary:#4f46e5; --primary-600:#4338ca; --primary-soft:#eef0fe;
+    --shadow-sm:0 1px 2px rgba(22,26,45,.04),0 1px 3px rgba(22,26,45,.03);
+    --shadow-md:0 4px 16px rgba(22,26,45,.06),0 1px 3px rgba(22,26,45,.04);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{font-family:"Pretendard Variable",Pretendard,-apple-system,system-ui,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;letter-spacing:-.01em;min-height:100vh}
+
+  /* ===== Login ===== */
+  .login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;
+    background:
+      radial-gradient(120% 80% at 80% -10%, rgba(255,247,214,.7) 0%, rgba(255,247,214,0) 42%),
+      radial-gradient(90% 70% at 10% 6%, rgba(186,230,235,.5) 0%, rgba(186,230,235,0) 50%),
+      linear-gradient(160deg,#eef1ff 0%,#f3f5f8 60%);}
+  .login-box{background:#fff;border:1px solid var(--line);border-radius:22px;padding:44px 40px;text-align:center;box-shadow:0 24px 60px rgba(22,26,45,.12);max-width:400px;width:100%}
+  .login-logo{width:58px;height:58px;border-radius:16px;margin:0 auto 20px;background:linear-gradient(140deg,#6a5cf5 0%,#4f46e5 60%,#4338ca 100%);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 20px rgba(79,70,229,.34);position:relative;overflow:hidden}
+  .login-logo::after{content:"";position:absolute;inset:0;background:radial-gradient(65% 55% at 28% 20%,rgba(255,255,255,.42),rgba(255,255,255,0) 70%)}
+  .login-box .badge{display:inline-flex;align-items:center;gap:5px;background:#fdecec;color:#dc2626;font-size:11px;padding:5px 11px;border-radius:20px;margin-bottom:16px;font-weight:700;letter-spacing:.04em}
+  .login-box h1{font-size:22px;font-weight:800;color:var(--ink);margin-bottom:8px;letter-spacing:-.02em}
+  .login-box p{font-size:13.5px;color:var(--ink-3);margin-bottom:26px;font-weight:500}
+  .btn-google{display:flex;align-items:center;justify-content:center;gap:9px;padding:13px 32px;background:var(--primary);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;width:100%;font-family:inherit;box-shadow:0 6px 16px rgba(79,70,229,.28);transition:background .15s,transform .12s}
+  .btn-google:hover{background:var(--primary-600);transform:translateY(-1px)}
+  .login-error{color:#dc2626;font-size:13px;margin-top:14px;min-height:20px;font-weight:500}
+
+  /* ===== App shell ===== */
+  .app{display:none}
+  .layout{display:grid;grid-template-columns:248px 1fr;min-height:100vh}
+
+  .sidebar{background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:20px 16px;position:sticky;top:0;height:100vh;overflow-y:auto}
+  .logo{display:flex;align-items:center;gap:11px;padding:6px 8px 0}
+  .logo-mark{width:36px;height:36px;border-radius:11px;flex-shrink:0;background:linear-gradient(140deg,#6a5cf5 0%,#4f46e5 60%,#4338ca 100%);display:flex;align-items:center;justify-content:center;box-shadow:0 5px 14px rgba(79,70,229,.34);position:relative;overflow:hidden}
+  .logo-mark::after{content:"";position:absolute;inset:0;background:radial-gradient(65% 55% at 28% 20%,rgba(255,255,255,.42),rgba(255,255,255,0) 70%)}
+  .logo-name{font-size:20px;font-weight:800;letter-spacing:-.04em;color:#1c2030;line-height:1}
+  .logo-name b{color:var(--primary)}
+  .role-pill{display:inline-flex;align-items:center;gap:6px;margin:16px 8px 4px;padding:7px 12px;background:#15182a;color:#fff;font-size:12px;font-weight:700;border-radius:9px;align-self:flex-start}
+  .role-pill .led{width:6px;height:6px;border-radius:50%;background:#ef4444;box-shadow:0 0 0 3px rgba(239,68,68,.22)}
+
+  .tabs{display:flex;flex-direction:column;gap:3px;margin-top:14px}
+  .tab{display:flex;align-items:center;gap:12px;padding:11px 11px;border-radius:11px;cursor:pointer;color:var(--ink-2);font-size:14px;font-weight:600;transition:background .14s,color .14s}
+  .tab svg{color:var(--ink-3);flex-shrink:0}
+  .tab:hover{background:var(--line-soft);color:var(--ink)}
+  .tab.active{background:var(--primary-soft);color:var(--primary)}
+  .tab.active svg{color:var(--primary)}
+
+  .side-foot{margin-top:auto;padding-top:14px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+  .side-foot .email{font-size:12px;color:var(--ink-3);padding:2px 8px;font-weight:600;word-break:break-all}
+  .foot-link{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:10px;color:var(--ink-2);font-size:13px;font-weight:600;text-decoration:none;cursor:pointer;transition:background .14s}
+  .foot-link:hover{background:var(--line-soft)}
+  .foot-link svg{color:var(--ink-3)}
+  .btn-logout{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:10px;border:none;background:none;color:var(--ink-2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left;width:100%;transition:background .14s}
+  .btn-logout:hover{background:var(--line-soft)}
+  .btn-logout svg{color:var(--ink-3)}
+
+  /* ===== Main ===== */
+  .main{min-width:0;display:flex;flex-direction:column}
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:22px 32px 4px}
+  .topbar .pt{font-size:13px;color:var(--ink-3);font-weight:600}
+  .topbar h1{font-size:23px;font-weight:800;letter-spacing:-.025em;margin-top:3px}
+  .content{padding:20px 32px 40px;max-width:1080px;width:100%}
+  .tab-panel{display:none}
+  .tab-panel.active{display:block;animation:fade .25s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  /* cards */
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px 26px;margin-bottom:18px;box-shadow:var(--shadow-sm)}
+  .card h3{font-size:16px;font-weight:700;color:var(--ink);margin:0 0 4px;display:flex;align-items:center;gap:9px}
+  .card h3 .hi{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:var(--primary-soft);color:var(--primary);flex-shrink:0}
+  .card p.desc{font-size:13px;color:var(--ink-3);margin:0 0 18px;font-weight:500;line-height:1.5}
+
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+  .form-input{padding:11px 13px;border:1px solid var(--line);border-radius:10px;font-size:14px;width:100%;font-family:inherit;color:var(--ink);background:var(--surface);transition:border-color .14s,box-shadow .14s}
+  .form-input::placeholder{color:var(--ink-4)}
+  .form-input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft)}
+  textarea.form-input{resize:vertical;min-height:120px;line-height:1.6}
+  label{color:var(--ink-2)}
+
+  .btn{display:inline-flex;align-items:center;gap:7px;padding:11px 22px;background:var(--primary);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(79,70,229,.24);transition:background .14s,transform .12s}
+  .btn:hover{background:var(--primary-600);transform:translateY(-1px)}
+  .btn-danger{background:#ef4444;box-shadow:0 4px 12px rgba(239,68,68,.22)}.btn-danger:hover{background:#dc2626}
+  .btn-sm{padding:7px 13px;font-size:12.5px;border-radius:8px;box-shadow:none}
+  .btn-outline{background:none;border:1px solid var(--line);color:var(--ink-2);padding:7px 13px;font-size:12.5px;font-weight:600;border-radius:8px;cursor:pointer;font-family:inherit;transition:background .14s,border-color .14s,color .14s}
+  .btn-outline:hover{background:var(--primary-soft);border-color:transparent;color:var(--primary)}
+  .msg{margin-left:12px;font-size:13px;color:#16a34a;font-weight:600;display:none}
+
+  /* tenants */
+  .tenant-item{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:15px 16px;background:#fafbfd;border-radius:13px;margin-bottom:9px;border:1px solid var(--line-soft);transition:box-shadow .14s,border-color .14s}
+  .tenant-item:hover{box-shadow:var(--shadow-sm);border-color:var(--line)}
+  .tenant-info{flex:1;min-width:0}
+  .tenant-name{font-size:14.5px;font-weight:700;color:var(--ink)}
+  .tenant-name span{font-size:12px;color:var(--ink-3);font-weight:500;margin-left:7px}
+  .tenant-meta{font-size:12.5px;color:var(--ink-3);margin-top:3px;font-weight:500}
+  .tenant-badges{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+  .badge-member{display:inline-flex;align-items:center;font-size:11px;padding:3px 9px;border-radius:20px;background:var(--primary-soft);color:var(--primary);font-weight:700}
+  .badge-expiry{display:inline-flex;align-items:center;font-size:11px;padding:3px 9px;border-radius:20px;font-weight:700}
+  .badge-expiry.active{background:#e7f6ee;color:#0f9d63}
+  .badge-expiry.expired{background:#fdeaea;color:#dc2626}
+  .badge-expiry.warning{background:#fdf3d4;color:#b07d0a}
+  .tenant-actions{display:flex;gap:6px;flex-shrink:0}
+
+  /* notices */
+  .notice-item{padding:15px 16px;background:#fafbfd;border-radius:13px;margin-bottom:9px;border:1px solid var(--line-soft)}
+  .notice-title{font-size:14.5px;font-weight:700;color:var(--ink);margin-bottom:4px}
+  .notice-meta{font-size:12px;color:var(--ink-3);font-weight:500}
+  .notice-actions{margin-top:10px;display:flex;gap:8px}
+
+  /* stats */
+  .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px}
+  .stat-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px 22px;box-shadow:var(--shadow-sm);transition:box-shadow .16s,transform .16s}
+  .stat-card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px)}
+  .stat-ico{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:14px}
+  .stat-num{font-size:32px;font-weight:800;color:var(--ink);line-height:1;letter-spacing:-.03em}
+  .stat-label{font-size:13px;color:var(--ink-2);margin-top:8px;font-weight:600}
+  .c-indigo{background:#eef0fe;color:#4f46e5}.c-emerald{background:#e7f6ee;color:#10936a}
+  .c-amber{background:#fdf0e0;color:#cd7d18}.c-violet{background:#f1ebfd;color:#7c3aed}
+
+  .empty{text-align:center;padding:34px;color:var(--ink-3);font-size:13.5px;font-weight:500}
+
+  /* modal */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(22,26,45,.45);z-index:1000;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px)}
+  .modal-overlay.show{display:flex}
+  .modal{background:#fff;border-radius:18px;padding:28px;max-width:520px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 24px 70px rgba(22,26,45,.28)}
+  .modal h3{font-size:17px;font-weight:800;margin-bottom:18px;letter-spacing:-.02em}
+  .modal .form-row{margin-bottom:10px}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:22px}
+  .sub-box{margin-top:12px;padding:14px;background:#fafbfd;border-radius:12px;border:1px solid var(--line-soft)}
+  .sub-box>label{display:block;font-size:13px;font-weight:700;color:var(--ink-2);margin-bottom:8px}
+  .sub-box label small,.sub-lab{font-size:12px;color:var(--ink-3);font-weight:500}
+  .chip-row{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+
+  @media(max-width:980px){
+    .layout{grid-template-columns:1fr}
+    .sidebar{position:static;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center;gap:10px;overflow:visible}
+    .tabs{flex-direction:row;flex-wrap:wrap;margin-top:0}
+    .side-foot{margin:0 0 0 auto;flex-direction:row;border:none;padding:0;align-items:center}
+    .side-foot .email{display:none}
+    .role-pill{margin:0}
+    .stat-grid{grid-template-columns:1fr 1fr}
+    .topbar,.content{padding-left:18px;padding-right:18px}
+    .form-row{grid-template-columns:1fr}
+    .tenant-item{flex-direction:column;align-items:flex-start}
+    .tenant-actions{width:100%}.tenant-actions .btn,.tenant-actions .btn-outline{flex:1;justify-content:center}
+  }
+</style>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, doc, setDoc, getDoc, getDocs, collection, deleteDoc, query, orderBy, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAIjhvbCztHoF7YwP2IYIk2C6jCI64uFhs",
+    authDomain: "jjj2195-1bd15.firebaseapp.com",
+    projectId: "jjj2195-1bd15",
+    storageBucket: "jjj2195-1bd15.firebasestorage.app",
+    messagingSenderId: "370852437825",
+    appId: "1:370852437825:web:b0a891d6a99b426d230bc0",
+    measurementId: "G-D1R6WDHP0F"
+  };
+
+  const SUPER_ADMIN = 'banedict84@gmail.com';
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+  const provider = new GoogleAuthProvider();
+
+  window.doGoogleLogin = async function() {
+    try {
+      const result = await signInWithPopup(auth, provider);
+      if (result.user.email !== SUPER_ADMIN) {
+        await signOut(auth);
+        document.getElementById('login-error').textContent = '관리자만 접근할 수 있습니다.';
+      }
+    } catch(e) {
+      document.getElementById('login-error').textContent = '로그인 실패: ' + e.message;
+    }
+  };
+
+  window.doLogout = async function() { await signOut(auth); };
+
+  // Firestore 함수들
+  window.fbSetDoc = setDoc;
+  window.fbDoc = function(path, id) { return doc(db, path, id); };
+  window.fbGetDoc = async function(path, id) {
+    const snap = await getDoc(doc(db, path, id));
+    return snap.exists() ? snap.data() : null;
+  };
+  window.fbGetDocs = async function(path) {
+    const snap = await getDocs(collection(db, path));
+    const result = [];
+    snap.forEach(d => result.push(d.data()));
+    return result;
+  };
+  window.fbGetSubDocs = async function(path) {
+    const snap = await getDocs(collection(db, path));
+    return snap.size;
+  };
+  window.fbDeleteDoc = async function(path, id) { await deleteDoc(doc(db, path, id)); };
+  window.fbDeleteAll = async function(path) {
+    const snap = await getDocs(collection(db, path));
+    let total = 0;
+    let batch = writeBatch(db);
+    let count = 0;
+    snap.forEach(d => {
+      batch.delete(d.ref);
+      count++;
+      total++;
+      if (count >= 400) {
+        batch.commit();
+        batch = writeBatch(db);
+        count = 0;
+      }
+    });
+    if (count > 0) await batch.commit();
+    return total;
+  };
+
+  window.getFcmTokenCount = async function() {
+    try {
+      const snap = await getDocs(collection(db, 'fcm_tokens'));
+      return snap.size;
+    } catch(e) { return 0; }
+  };
+
+  onAuthStateChanged(auth, async (user) => {
+    if (user && user.email === SUPER_ADMIN) {
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      document.getElementById('topbar-email').textContent = user.email;
+      loadDashboard();
+    } else {
+      document.getElementById('login-screen').style.display = 'flex';
+      document.getElementById('app').style.display = 'none';
+    }
+  });
+</script>
+</head>
+<body>
+
+<!-- 로그인 화면 -->
+<div class="login-screen" id="login-screen">
+  <div class="login-box">
+    <div class="login-logo"><svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M7 8.5 12 14.5 17 8.5" stroke="#fff" stroke-opacity=".55" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7" cy="8" r="2.6" fill="#fff"/><circle cx="17" cy="8" r="2.6" fill="#fff"/><circle cx="12" cy="15.5" r="3.1" fill="#fff"/></svg></div>
+    <div class="badge"><span style="width:5px;height:5px;border-radius:50%;background:#dc2626;display:inline-block"></span>총관리자 전용</div>
+    <h1>관리자 페이지</h1>
+    <p>MOIDA 총관리자만 접근할 수 있습니다.</p>
+    <button class="btn-google" onclick="window.doGoogleLogin()">
+      <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#fff" d="M21.35 11.1H12v3.83h5.35c-.23 1.4-1.66 4.1-5.35 4.1-3.22 0-5.85-2.67-5.85-5.95S8.78 7.13 12 7.13c1.83 0 3.06.78 3.76 1.45l2.56-2.47C16.7 4.6 14.6 3.7 12 3.7 6.95 3.7 2.85 7.8 2.85 12.85S6.95 22 12 22c5.92 0 9.85-4.16 9.85-10.02 0-.67-.07-1.18-.5-2.88z"/></svg>
+      Google 계정으로 로그인
+    </button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- 의원 정보 수정 모달 -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <h3>의원 정보 수정</h3>
+    <input type="hidden" id="e-id">
+    <input type="hidden" id="e-old-email">
+    <div class="form-row">
+      <input class="form-input" id="e-name" placeholder="이름">
+      <input class="form-input" id="e-email" type="email" placeholder="구글 이메일">
+    </div>
+    <div class="form-row">
+      <input class="form-input" id="e-position" placeholder="직책">
+      <input class="form-input" id="e-district" placeholder="선거구">
+    </div>
+    <div class="form-row">
+      <input class="form-input" id="e-phone" placeholder="연락처">
+      <input class="form-input" id="e-party" placeholder="정당">
+    </div>
+    <div class="sub-box">
+      <label>사용 기간 설정</label>
+      <div class="form-row">
+        <div>
+          <label class="sub-lab">시작일</label>
+          <input class="form-input" id="e-sub-start" type="date">
+        </div>
+        <div>
+          <label class="sub-lab">만료일</label>
+          <input class="form-input" id="e-sub-end" type="date">
+        </div>
+      </div>
+      <div class="chip-row">
+        <button class="btn-outline" onclick="extendSubscription(1)">+1개월</button>
+        <button class="btn-outline" onclick="extendSubscription(3)">+3개월</button>
+        <button class="btn-outline" onclick="extendSubscription(6)">+6개월</button>
+        <button class="btn-outline" onclick="extendSubscription(12)">+12개월</button>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" style="padding:11px 22px" onclick="closeEditModal()">취소</button>
+      <button class="btn" onclick="saveEditTenant()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 앱 -->
+<div class="app" id="app">
+ <div class="layout">
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-mark"><svg width="21" height="21" viewBox="0 0 24 24" fill="none"><path d="M7 8.5 12 14.5 17 8.5" stroke="#fff" stroke-opacity=".55" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7" cy="8" r="2.6" fill="#fff"/><circle cx="17" cy="8" r="2.6" fill="#fff"/><circle cx="12" cy="15.5" r="3.1" fill="#fff"/></svg></div>
+      <div class="logo-name">MO<b>IDA</b></div>
+    </div>
+    <div class="role-pill"><span class="led"></span>총관리자</div>
+
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('dashboard',this)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>대시보드</div>
+      <div class="tab" onclick="switchTab('tenants',this)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="7" r="2.3"/><path d="M16.5 13.5a5 5 0 0 1 4.5 5"/></svg>의원 관리</div>
+      <div class="tab" onclick="switchTab('notices',this)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 14-6v14L3 13z"/><path d="M3 11v2a2 2 0 0 0 2 2h2"/></svg>공지 관리</div>
+      <div class="tab" onclick="switchTab('settings',this)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 7 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7H1a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 2.6 7a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 7 2.6h.1A1.6 1.6 0 0 0 9 1.1V1a2 2 0 1 1 4 0v.1A1.6 1.6 0 0 0 17 2.6a1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1.1 2.7H23a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg>설정</div>
+    </div>
+
+    <div class="side-foot">
+      <div class="email" id="topbar-email"></div>
+      <a class="foot-link" href="index.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>의원용 페이지</a>
+      <button class="btn-logout" onclick="window.doLogout()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 17l5-5-5-5M15 12H3"/></svg>로그아웃</button>
+    </div>
+  </aside>
+
+  <main class="main">
+   <div class="content">
+    <!-- 대시보드 -->
+    <div class="tab-panel active" id="panel-dashboard">
+      <div class="topbar" style="padding:0 0 18px"><div><div class="pt">총관리자 · 대시보드</div><h1>전체 현황</h1></div></div>
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-ico c-indigo"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="7" r="2.3"/></svg></div>
+          <div class="stat-num" id="stat-tenants">0</div>
+          <div class="stat-label">등록 의원 수</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-ico c-amber"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 14-6v14L3 13z"/><path d="M3 11v2a2 2 0 0 0 2 2h2"/></svg></div>
+          <div class="stat-num" id="stat-notices">0</div>
+          <div class="stat-label">공지사항 수</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-ico c-emerald"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="7" r="2.3"/><path d="M16.5 13.5a5 5 0 0 1 4.5 5"/></svg></div>
+          <div class="stat-num" id="stat-members">-</div>
+          <div class="stat-label">총 당원 수</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-ico c-violet"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></div>
+          <div class="stat-num" id="stat-push">0</div>
+          <div class="stat-label">푸시 알림 구독자</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3><span class="hi"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/></svg></span>최근 등록 의원</h3>
+        <p class="desc">최근에 등록된 의원 목록입니다.</p>
+        <div id="dash-recent-tenants"></div>
+      </div>
+    </div>
+
+    <!-- 의원 관리 -->
+    <div class="tab-panel" id="panel-tenants">
+      <div class="topbar" style="padding:0 0 18px"><div><div class="pt">총관리자 · 의원 관리</div><h1>의원(사용관리자) 관리</h1></div></div>
+      <div class="card">
+        <h3><span class="hi"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="7" r="2.3"/></svg></span>등록된 의원 목록</h3>
+        <p class="desc">등록된 의원만 의원용 페이지에서 로그인할 수 있습니다.</p>
+        <div id="tenant-list"></div>
+      </div>
+
+      <div class="card">
+        <h3><span class="hi"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></span>새 의원 등록</h3>
+        <p class="desc">의원의 구글 이메일을 등록하면 해당 이메일로 로그인할 수 있습니다.</p>
+        <div class="form-row">
+          <input class="form-input" id="t-name" placeholder="이름 (예: 홍길동)">
+          <input class="form-input" id="t-email" type="email" placeholder="구글 이메일">
+        </div>
+        <div class="form-row">
+          <input class="form-input" id="t-position" placeholder="직책 (예: 시의원)">
+          <input class="form-input" id="t-district" placeholder="선거구 (예: 수원시 제1선거구)">
+        </div>
+        <div class="form-row">
+          <input class="form-input" id="t-phone" placeholder="연락처 (선택)">
+          <input class="form-input" id="t-party" placeholder="정당 (예: 더불어민주당)">
+        </div>
+        <div class="sub-box">
+          <label>사용 기간 (선택)</label>
+          <div class="form-row">
+            <div>
+              <label class="sub-lab">시작일</label>
+              <input class="form-input" id="t-sub-start" type="date">
+            </div>
+            <div>
+              <label class="sub-lab">만료일</label>
+              <input class="form-input" id="t-sub-end" type="date">
+            </div>
+          </div>
+          <div class="chip-row">
+            <button type="button" class="btn-outline" onclick="setNewSubMonths(1)">1개월</button>
+            <button type="button" class="btn-outline" onclick="setNewSubMonths(3)">3개월</button>
+            <button type="button" class="btn-outline" onclick="setNewSubMonths(6)">6개월</button>
+            <button type="button" class="btn-outline" onclick="setNewSubMonths(12)">12개월</button>
+          </div>
+        </div>
+        <div style="margin-top:14px;display:flex;align-items:center">
+          <button class="btn" onclick="registerTenant()">등록</button>
+          <span class="msg" id="t-msg">등록되었습니다!</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 공지 관리 -->
+    <div class="tab-panel" id="panel-notices">
+      <div class="topbar" style="padding:0 0 18px"><div><div class="pt">총관리자 · 공지 관리</div><h1>공지사항 관리</h1></div></div>
+      <div class="card">
+        <h3><span class="hi"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 14-6v14L3 13z"/><path d="M3 11v2a2 2 0 0 0 2 2h2"/></svg></span>새 공지 작성</h3>
+        <p class="desc">여기서 작성한 공지는 모든 의원에게 자동으로 표시됩니다. 의원용 페이지가 열려있으면 실시간 알림이 표시됩니다.</p>
+        <div style="margin-bottom:10px">
+          <input class="form-input" id="n-title" placeholder="공지 제목">
+        </div>
+        <div style="margin-bottom:10px">
+          <textarea class="form-input" id="n-body" placeholder="공지 내용"></textarea>
+        </div>
+        <div style="display:flex;align-items:center">
+          <button class="btn" onclick="postNotice()">공지 등록</button>
+          <span class="msg" id="n-msg">등록되었습니다!</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3><span class="hi"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M4 12h16M4 19h10"/></svg></span>공지 목록</h3>
+        <p class="desc">등록된 공지사항입니다. 모든 의원에게 표시됩니다.</p>
+        <div id="notice-list"></div>
+      </div>
+    </div>
+
+    <!-- 설정 -->
+    <div class="tab-panel" id="panel-settings">
+      <div class="topbar" style="padding:0 0 18px"><div><div class="pt">총관리자 · 설정</div><h1>설정</h1></div></div>
+      <div class="card">
+        <h3><span class="hi"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6"/></svg></span>사이트 정보</h3>
+        <p class="desc">의원용 페이지에 표시되는 기본 정보입니다.</p>
+        <div style="margin-bottom:12px">
+          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:5px">사이트 이름</label>
+          <input class="form-input" id="s-site-name" placeholder="예: MOIDA">
+        </div>
+        <div style="margin-bottom:12px">
+          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:5px">관리자 이름</label>
+          <input class="form-input" id="s-admin-name" placeholder="예: 장윤정">
+        </div>
+        <div style="margin-bottom:14px">
+          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:5px">소속 / 직책</label>
+          <input class="form-input" id="s-position" placeholder="예: 경기도의원">
+        </div>
+        <div style="display:flex;align-items:center">
+          <button class="btn" onclick="saveSettings()">저장</button>
+          <span class="msg" id="s-msg">저장되었습니다!</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3><span class="hi"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg></span>시스템 정보</h3>
+        <div style="font-size:13px;color:var(--ink-2);line-height:2.3">
+          <div>버전: <strong>1.0.0</strong></div>
+          <div>호스팅: <strong>GitHub Pages</strong></div>
+          <div>데이터베이스: <strong>Firebase Firestore</strong></div>
+          <div>인증: <strong>Google OAuth</strong></div>
+          <div>의원용 페이지: <strong><a href="index.html" style="color:var(--primary)">index.html</a></strong></div>
+        </div>
+      </div>
+
+      <div class="card" style="border-color:#f6e3bf;background:#fffdf6">
+        <h3><span class="hi" style="background:#fdf0e0;color:#cd7d18"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v4M14 2v4M5 8h14l-1 12H6z"/><path d="M9 13h6"/></svg></span>샘플 데이터</h3>
+        <p class="desc">기존 당원 데이터를 모두 삭제하고 가짜 샘플 10명을 입력합니다. (관리자 members 컬렉션)</p>
+        <div style="display:flex;align-items:center">
+          <button class="btn btn-danger" onclick="seedSampleData()">기존 삭제 + 샘플 10명 입력</button>
+          <span class="msg" id="seed-msg">완료!</span>
+        </div>
+      </div>
+    </div>
+   </div>
+  </main>
+ </div>
+</div>
+
+<script>
+function escapeHtml(t){return t?t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'):''}
+
+function switchTab(tabId, el) {
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+  document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
+  if (el) el.classList.add('active');
+  var panel = document.getElementById('panel-' + tabId);
+  if (panel) panel.classList.add('active');
+  if (tabId === 'tenants') loadTenants();
+  if (tabId === 'notices') loadNotices();
+  if (tabId === 'dashboard') loadDashboard();
+  if (tabId === 'settings') loadSettings();
+}
+
+function formatDate(ts) {
+  if (!ts) return '-';
+  var d = new Date(ts);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+function getExpiryBadge(subEnd) {
+  if (!subEnd) return '<span class="badge-expiry active">무기한</span>';
+  var now = new Date(); now.setHours(0,0,0,0);
+  var end = new Date(subEnd); end.setHours(0,0,0,0);
+  var diff = Math.ceil((end - now) / (1000*60*60*24));
+  if (diff < 0) return '<span class="badge-expiry expired">만료됨</span>';
+  if (diff <= 7) return '<span class="badge-expiry warning">D-' + diff + '</span>';
+  return '<span class="badge-expiry active">~' + subEnd + '</span>';
+}
+
+/* 대시보드 */
+async function loadDashboard() {
+  try {
+    var tenants = await window.fbGetDocs('tenants');
+    var notices = await window.fbGetDocs('admin_notices');
+    document.getElementById('stat-tenants').textContent = tenants.length;
+    document.getElementById('stat-notices').textContent = notices.length;
+
+    // 총 당원 수 = 관리자 당원 + 모든 테넌트 당원
+    var adminMembers = await window.fbGetDocs('members');
+    var totalMembers = adminMembers.length;
+    for (var i = 0; i < tenants.length; i++) {
+      var cnt = await window.fbGetSubDocs('tenants/' + tenants[i].id + '/members');
+      totalMembers += cnt;
+    }
+    document.getElementById('stat-members').textContent = totalMembers;
+
+    var pushCount = await window.getFcmTokenCount();
+    document.getElementById('stat-push').textContent = pushCount;
+
+    var recent = tenants.sort(function(a,b){ return (b.created||0)-(a.created||0); }).slice(0,5);
+    var el = document.getElementById('dash-recent-tenants');
+    if (recent.length === 0) {
+      el.innerHTML = '<div class="empty">등록된 의원이 없습니다.</div>';
+    } else {
+      var html = '';
+      for (var j = 0; j < recent.length; j++) {
+        var t = recent[j];
+        var mc = await window.fbGetSubDocs('tenants/' + t.id + '/members');
+        html += '<div class="tenant-item"><div class="tenant-info">'
+          + '<div class="tenant-name">' + escapeHtml(t.name) + '<span>' + escapeHtml(t.position||'') + '</span></div>'
+          + '<div class="tenant-meta">' + escapeHtml(t.email) + ' · ' + escapeHtml(t.district||'') + '</div>'
+          + '<div class="tenant-badges">'
+          + '<span class="badge-member">당원 ' + mc + '명</span>'
+          + getExpiryBadge(t.subscriptionEnd)
+          + '</div></div>'
+          + '<button class="btn-outline" onclick="downloadTenantCSV(\'' + escapeHtml(t.id) + '\',\'' + escapeHtml(t.name) + '\')" title="CSV 다운로드">↓ CSV</button>'
+          + '</div>';
+      }
+      el.innerHTML = html;
+    }
+  } catch(e) { console.error(e); }
+}
+
+/* 의원 관리 */
+async function loadTenants() {
+  var el = document.getElementById('tenant-list');
+  el.innerHTML = '<div class="empty">불러오는 중...</div>';
+  try {
+    var tenants = await window.fbGetDocs('tenants');
+    if (tenants.length === 0) {
+      el.innerHTML = '<div class="empty">등록된 의원이 없습니다. 아래에서 추가하세요.</div>';
+      return;
+    }
+    tenants.sort(function(a,b){ return (b.created||0)-(a.created||0); });
+    var html = '';
+    for (var i = 0; i < tenants.length; i++) {
+      var t = tenants[i];
+      var mc = await window.fbGetSubDocs('tenants/' + t.id + '/members');
+      html += '<div class="tenant-item"><div class="tenant-info">'
+        + '<div class="tenant-name">' + escapeHtml(t.name) + '<span>' + escapeHtml(t.position||'') + '</span></div>'
+        + '<div class="tenant-meta">' + escapeHtml(t.email) + ' · ' + escapeHtml(t.district||'') + (t.phone ? ' · ' + escapeHtml(t.phone) : '') + '</div>'
+        + '<div class="tenant-badges">'
+        + '<span class="badge-member">당원 ' + mc + '명</span>'
+        + getExpiryBadge(t.subscriptionEnd)
+        + '</div></div>'
+        + '<div class="tenant-actions">'
+        + '<button class="btn-outline" onclick="downloadTenantCSV(\'' + escapeHtml(t.id) + '\',\'' + escapeHtml(t.name) + '\')">↓ CSV</button>'
+        + '<button class="btn-outline" onclick="openEditModal(\'' + escapeHtml(t.id) + '\')">수정</button>'
+        + '<button class="btn btn-danger btn-sm" onclick="removeTenant(\'' + escapeHtml(t.id) + '\',\'' + escapeHtml(t.email) + '\')">삭제</button>'
+        + '</div></div>';
+    }
+    el.innerHTML = html;
+  } catch(e) { el.innerHTML = '<div class="empty">로드 실패</div>'; }
+}
+
+// 새 등록 시 사용기간 버튼
+function setNewSubMonths(months) {
+  var today = new Date();
+  document.getElementById('t-sub-start').value = today.toISOString().split('T')[0];
+  var end = new Date(today);
+  end.setMonth(end.getMonth() + months);
+  document.getElementById('t-sub-end').value = end.toISOString().split('T')[0];
+}
+
+async function registerTenant() {
+  var name = document.getElementById('t-name').value.trim();
+  var email = document.getElementById('t-email').value.trim();
+  var position = document.getElementById('t-position').value.trim();
+  var district = document.getElementById('t-district').value.trim();
+  var phone = document.getElementById('t-phone').value.trim();
+  var party = document.getElementById('t-party').value.trim();
+  var subStart = document.getElementById('t-sub-start').value;
+  var subEnd = document.getElementById('t-sub-end').value;
+  if (!name || !email) { alert('이름과 이메일을 입력하세요'); return; }
+  if (!email.includes('@')) { alert('올바른 이메일을 입력하세요'); return; }
+  var id = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '_');
+  try {
+    var data = {
+      id: id, name: name, email: email, position: position, district: district,
+      phone: phone, party: party, created: Date.now()
+    };
+    if (subStart) data.subscriptionStart = subStart;
+    if (subEnd) data.subscriptionEnd = subEnd;
+    await window.fbSetDoc(window.fbDoc('tenants', id), data);
+    await window.fbSetDoc(window.fbDoc('users', email), {
+      role: 'tenant', tenantId: id, name: name, email: email, created: Date.now()
+    });
+    ['t-name','t-email','t-position','t-district','t-phone','t-party','t-sub-start','t-sub-end'].forEach(function(fid){ document.getElementById(fid).value=''; });
+    showMsg('t-msg');
+    loadTenants();
+  } catch(e) { alert('등록 실패: ' + e.message); }
+}
+
+async function removeTenant(id, email) {
+  if (!confirm(email + ' 의원을 삭제하시겠습니까?\n삭제하면 해당 의원은 로그인할 수 없습니다.')) return;
+  try {
+    await window.fbDeleteDoc('tenants', id);
+    await window.fbDeleteDoc('users', email);
+    loadTenants();
+  } catch(e) { alert('삭제 실패: ' + e.message); }
+}
+
+/* 수정 모달 */
+async function openEditModal(id) {
+  var t = await window.fbGetDoc('tenants', id);
+  if (!t) { alert('의원 정보를 찾을 수 없습니다.'); return; }
+  document.getElementById('e-id').value = t.id;
+  document.getElementById('e-old-email').value = t.email;
+  document.getElementById('e-name').value = t.name || '';
+  document.getElementById('e-email').value = t.email || '';
+  document.getElementById('e-position').value = t.position || '';
+  document.getElementById('e-district').value = t.district || '';
+  document.getElementById('e-phone').value = t.phone || '';
+  document.getElementById('e-party').value = t.party || '';
+  document.getElementById('e-sub-start').value = t.subscriptionStart || '';
+  document.getElementById('e-sub-end').value = t.subscriptionEnd || '';
+  document.getElementById('edit-modal').classList.add('show');
+}
+
+function closeEditModal() {
+  document.getElementById('edit-modal').classList.remove('show');
+}
+
+function extendSubscription(months) {
+  var endInput = document.getElementById('e-sub-end');
+  var startInput = document.getElementById('e-sub-start');
+  var base = endInput.value ? new Date(endInput.value) : new Date();
+  if (!startInput.value) startInput.value = new Date().toISOString().split('T')[0];
+  base.setMonth(base.getMonth() + months);
+  endInput.value = base.toISOString().split('T')[0];
+}
+
+async function saveEditTenant() {
+  var id = document.getElementById('e-id').value;
+  var oldEmail = document.getElementById('e-old-email').value;
+  var name = document.getElementById('e-name').value.trim();
+  var email = document.getElementById('e-email').value.trim();
+  var position = document.getElementById('e-position').value.trim();
+  var district = document.getElementById('e-district').value.trim();
+  var phone = document.getElementById('e-phone').value.trim();
+  var party = document.getElementById('e-party').value.trim();
+  var subStart = document.getElementById('e-sub-start').value;
+  var subEnd = document.getElementById('e-sub-end').value;
+  if (!name || !email) { alert('이름과 이메일을 입력하세요'); return; }
+
+  try {
+    var data = {
+      id: id, name: name, email: email, position: position, district: district,
+      phone: phone, party: party, updated: Date.now()
+    };
+    if (subStart) data.subscriptionStart = subStart;
+    if (subEnd) data.subscriptionEnd = subEnd;
+
+    await window.fbSetDoc(window.fbDoc('tenants', id), data, { merge: true });
+
+    if (oldEmail !== email) {
+      await window.fbDeleteDoc('users', oldEmail);
+    }
+    await window.fbSetDoc(window.fbDoc('users', email), {
+      role: 'tenant', tenantId: id, name: name, email: email, updated: Date.now()
+    }, { merge: true });
+
+    closeEditModal();
+    loadTenants();
+  } catch(e) { alert('저장 실패: ' + e.message); }
+}
+
+/* 공지 관리 */
+async function loadNotices() {
+  var el = document.getElementById('notice-list');
+  el.innerHTML = '<div class="empty">불러오는 중...</div>';
+  try {
+    var notices = await window.fbGetDocs('admin_notices');
+    if (notices.length === 0) {
+      el.innerHTML = '<div class="empty">등록된 공지가 없습니다.</div>';
+      return;
+    }
+    notices.sort(function(a,b){ return (b.created||0)-(a.created||0); });
+    el.innerHTML = notices.map(function(n){
+      return '<div class="notice-item">'
+        + '<div class="notice-title">' + escapeHtml(n.title) + '</div>'
+        + '<div class="notice-meta">' + formatDate(n.created) + ' · ' + escapeHtml(n.author||'관리자') + '</div>'
+        + (n.body ? '<div style="font-size:13px;color:#555;margin-top:8px;white-space:pre-wrap">' + escapeHtml(n.body) + '</div>' : '')
+        + '<div class="notice-actions">'
+        + '<button class="btn btn-danger btn-sm" onclick="removeNotice(\'' + escapeHtml(n.id) + '\')">삭제</button>'
+        + '</div></div>';
+    }).join('');
+  } catch(e) { el.innerHTML = '<div class="empty">로드 실패</div>'; }
+}
+
+async function postNotice() {
+  var title = document.getElementById('n-title').value.trim();
+  var body = document.getElementById('n-body').value.trim();
+  if (!title) { alert('제목을 입력하세요'); return; }
+  var id = 'notice_' + Date.now();
+  try {
+    await window.fbSetDoc(window.fbDoc('admin_notices', id), {
+      id: id, title: title, body: body, author: '관리자', created: Date.now()
+    });
+    document.getElementById('n-title').value = '';
+    document.getElementById('n-body').value = '';
+    showMsg('n-msg');
+    loadNotices();
+  } catch(e) { alert('등록 실패: ' + e.message); }
+}
+
+async function removeNotice(id) {
+  if (!confirm('이 공지를 삭제하시겠습니까?')) return;
+  try {
+    await window.fbDeleteDoc('admin_notices', id);
+    loadNotices();
+  } catch(e) { alert('삭제 실패: ' + e.message); }
+}
+
+/* 설정 */
+async function loadSettings() {
+  try {
+    var docs = await window.fbGetDocs('settings');
+    var s = docs.length > 0 ? docs[0] : {};
+    document.getElementById('s-site-name').value = s.siteName || '';
+    document.getElementById('s-admin-name').value = s.adminName || '';
+    document.getElementById('s-position').value = s.position || '';
+  } catch(e) {}
+}
+
+async function saveSettings() {
+  try {
+    await window.fbSetDoc(window.fbDoc('settings', 'main'), {
+      siteName: document.getElementById('s-site-name').value,
+      adminName: document.getElementById('s-admin-name').value,
+      position: document.getElementById('s-position').value,
+      updated: Date.now()
+    });
+    showMsg('s-msg');
+  } catch(e) { alert('저장 실패: ' + e.message); }
+}
+
+async function downloadTenantCSV(tenantId, tenantName) {
+  try {
+    var members = await window.fbGetDocs('tenants/' + tenantId + '/members');
+    if (members.length === 0) { alert(tenantName + ' 의원의 당원 데이터가 없습니다.'); return; }
+    var headers = ['성명','휴대전화','주민번호','행정동','당원구분','소속','투표결과','나이','연령대','성별','추천인','서브추천인','서드추천인','주소','카톡관리','카톡답장','문자관리','가족수','메모'];
+    var keys = ['name','phone','jumin','dong','member_type','affiliation','vote_result','age','age_group','gender','recommender','sub_recommender','third_recommender','address','kakao_mgmt','kakao_reply','text_reply','family_cnt','memo'];
+    var csv = '﻿' + headers.join(',') + '\n';
+    members.forEach(function(m) {
+      csv += keys.map(function(k) {
+        var v = (m[k] != null ? String(m[k]) : '');
+        if (v.indexOf(',') >= 0 || v.indexOf('"') >= 0 || v.indexOf('\n') >= 0) {
+          v = '"' + v.replace(/"/g, '""') + '"';
+        }
+        return v;
+      }).join(',') + '\n';
+    });
+    var blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = tenantName + '_당원목록_' + new Date().toISOString().split('T')[0] + '.csv';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  } catch(e) { alert('다운로드 실패: ' + e.message); }
+}
+
+function showMsg(id) {
+  var el = document.getElementById(id);
+  el.style.display = 'inline';
+  setTimeout(function(){ el.style.display = 'none'; }, 2000);
+}
+
+async function seedSampleData() {
+  if (!confirm('⚠️ 관리자(members) 컬렉션의 기존 당원 데이터를 모두 삭제하고\n샘플 10명을 새로 입력합니다.\n\n⏳ 데이터가 많으면 시간이 걸릴 수 있습니다.\n계속하시겠습니까?')) return;
+  try {
+    document.getElementById('seed-msg').textContent = '⏳ 삭제 중...';
+    document.getElementById('seed-msg').style.display = 'inline';
+    document.getElementById('seed-msg').style.color = '#f59e0b';
+    var deleted = await window.fbDeleteAll('members');
+    document.getElementById('seed-msg').textContent = '✅ ' + deleted + '건 삭제 완료! 샘플 입력 중...';
+
+    var dongs = ['이동','일동','성포동'];
+    var types = ['권리당원','기존당원','신규당원'];
+    var genders = ['남성','여성'];
+    var samples = [
+      {name:'김민수',phone:'010-1234-5678',jumin:'850315-1',dong:'이동',member_type:'권리당원',age:41,age_group:'40대',gender:'남성',address:'경기도 안산시 상록구 이동 123-4',recommender:'박영희',kakao_mgmt:'O',vote_result:'투표'},
+      {name:'이수진',phone:'010-2345-6789',jumin:'900722-2',dong:'성포동',member_type:'권리당원',age:36,age_group:'30대',gender:'여성',address:'경기도 안산시 상록구 성포동 456-7',recommender:'김민수',kakao_mgmt:'O',vote_result:'투표'},
+      {name:'박영희',phone:'010-3456-7890',jumin:'780105-2',dong:'일동',member_type:'기존당원',age:48,age_group:'40대',gender:'여성',address:'경기도 안산시 상록구 일동 789-1',recommender:'',kakao_mgmt:'X',vote_result:'불참'},
+      {name:'정대한',phone:'010-4567-8901',jumin:'650830-1',dong:'이동',member_type:'기존당원',age:61,age_group:'60대',gender:'남성',address:'경기도 안산시 상록구 이동 234-5',recommender:'김민수',kakao_mgmt:'O',vote_result:'투표'},
+      {name:'최은정',phone:'010-5678-9012',jumin:'950412-2',dong:'성포동',member_type:'신규당원',age:31,age_group:'30대',gender:'여성',address:'경기도 안산시 상록구 성포동 567-8',recommender:'이수진',kakao_mgmt:'O',vote_result:'미확인'},
+      {name:'한승우',phone:'010-6789-0123',jumin:'880619-1',dong:'일동',member_type:'권리당원',age:38,age_group:'30대',gender:'남성',address:'경기도 안산시 상록구 일동 890-2',recommender:'정대한',kakao_mgmt:'X',vote_result:'투표'},
+      {name:'윤서연',phone:'010-7890-1234',jumin:'010225-4',dong:'이동',member_type:'신규당원',age:25,age_group:'20대',gender:'여성',address:'경기도 안산시 상록구 이동 345-6',recommender:'최은정',kakao_mgmt:'O',vote_result:'미확인'},
+      {name:'오재현',phone:'010-8901-2345',jumin:'720918-1',dong:'성포동',member_type:'기존당원',age:54,age_group:'50대',gender:'남성',address:'경기도 안산시 상록구 성포동 678-9',recommender:'',kakao_mgmt:'X',vote_result:'불참'},
+      {name:'강미래',phone:'010-9012-3456',jumin:'980703-2',dong:'일동',member_type:'권리당원',age:28,age_group:'20대',gender:'여성',address:'경기도 안산시 상록구 일동 901-3',recommender:'한승우',kakao_mgmt:'O',vote_result:'투표'},
+      {name:'임동혁',phone:'010-0123-4567',jumin:'830211-1',dong:'이동',member_type:'기존당원',age:43,age_group:'40대',gender:'남성',address:'경기도 안산시 상록구 이동 012-4',recommender:'박영희',kakao_mgmt:'O',vote_result:'투표'}
+    ];
+
+    for (var j = 0; j < samples.length; j++) {
+      var s = samples[j];
+      s._id = j + 1;
+      s.family_cnt = 0;
+      s.score = 0;
+      s.kakao_reply = '';
+      s.text_reply = '';
+      s.sub_recommender = '';
+      s.third_recommender = '';
+      s.affiliation = '';
+      s.memo = '';
+      s.activities = '';
+      await window.fbSetDoc(window.fbDoc('members', String(s._id)), s);
+    }
+    showMsg('seed-msg');
+    loadDashboard();
+  } catch(e) { alert('실패: ' + e.message); }
+}
+</script>
+</body>
+</html>

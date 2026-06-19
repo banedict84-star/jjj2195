@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80">
+  <!-- Person 1 (blue) -->
+  <circle cx="28" cy="16" r="11" fill="#3B82F6"/>
+  <rect x="20" y="32" width="16" height="30" rx="6" fill="#3B82F6"/>
+
+  <!-- Person 2 (green) - taller -->
+  <circle cx="62" cy="10" r="11" fill="#22C55E"/>
+  <rect x="54" y="26" width="16" height="36" rx="6" fill="#22C55E"/>
+
+  <!-- Person 3 (orange) -->
+  <circle cx="96" cy="16" r="11" fill="#F59E0B"/>
+  <rect x="88" y="32" width="16" height="30" rx="6" fill="#F59E0B"/>
+
+  <!-- MOIDA text -->
+  <text x="128" y="52" font-family="'Segoe UI',Arial,sans-serif" font-size="36" font-weight="800" fill="#1F2937" letter-spacing="-1">MOIDA</text>
+</svg>
