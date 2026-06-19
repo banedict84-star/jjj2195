@@ -5,6 +5,220 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MOIDA · 대시보드</title>
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, doc, getDoc, getDocs, collection, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAIjhvbCztHoF7YwP2IYIk2C6jCI64uFhs",
+    authDomain: "jjj2195-1bd15.firebaseapp.com",
+    projectId: "jjj2195-1bd15",
+    storageBucket: "jjj2195-1bd15.firebasestorage.app",
+    messagingSenderId: "370852437825",
+    appId: "1:370852437825:web:b0a891d6a99b426d230bc0",
+    measurementId: "G-D1R6WDHP0F"
+  };
+
+  const SUPER_ADMIN = 'banedict84@gmail.com';
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+
+  window.currentUserRole = null;
+  window.currentTenantId = null;
+
+  // Logout
+  window.doLogout = async function() {
+    await signOut(auth);
+    window.location.href = 'index.html';
+  };
+
+  // Check user role
+  async function checkUserRole(email) {
+    if (email === SUPER_ADMIN) return { role: 'admin', tenantId: 'admin' };
+    try {
+      const userDoc = await getDoc(doc(db, 'users', email));
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        return { role: data.role || 'tenant', tenantId: data.tenantId || email.split('@')[0], name: data.name || '' };
+      }
+      return null;
+    } catch(e) { console.error('역할 확인 실패:', e); return null; }
+  }
+
+  // Get member collection path based on role
+  function getMemberPath() {
+    if (window.currentUserRole === 'admin') return 'members';
+    return 'tenants/' + window.currentTenantId + '/members';
+  }
+
+  // Update dynamic date
+  function updateDate() {
+    const now = new Date();
+    const days = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
+    const dateStr = now.getFullYear() + '년 ' + (now.getMonth()+1) + '월 ' + now.getDate() + '일 ' + days[now.getDay()];
+    const el = document.getElementById('dash-date');
+    if (el) el.textContent = dateStr;
+  }
+
+  // Update greeting based on time of day
+  function getGreetingTime() {
+    const h = new Date().getHours();
+    if (h < 6) return '편안한 밤';
+    if (h < 12) return '좋은 아침';
+    if (h < 18) return '좋은 오후';
+    return '좋은 저녁';
+  }
+
+  // Load notices from Firestore
+  async function loadNotices() {
+    try {
+      const snap = await getDocs(collection(db, 'admin_notices'));
+      if (snap.empty) return [];
+      const result = [];
+      snap.forEach(d => result.push(d.data()));
+      return result.sort((a,b) => (b.created||0) - (a.created||0));
+    } catch(e) { console.error('공지 로드 실패:', e); return []; }
+  }
+
+  // Load members from Firestore
+  async function loadMembers() {
+    try {
+      const path = getMemberPath();
+      const snap = await getDocs(collection(db, path));
+      if (snap.empty) return [];
+      const result = [];
+      snap.forEach(d => result.push(d.data()));
+      return result;
+    } catch(e) { console.error('당원 로드 실패:', e); return []; }
+  }
+
+  // Render notices into the card
+  function renderNotices(notices) {
+    const container = document.getElementById('notice-list');
+    const badge = document.getElementById('notice-badge');
+    const dotBadge = document.getElementById('notice-dot-badge');
+    if (!container) return;
+
+    // Update badge counts
+    if (badge) {
+      badge.textContent = notices.length;
+      badge.style.display = notices.length > 0 ? 'flex' : 'none';
+    }
+    if (dotBadge) {
+      dotBadge.textContent = notices.length;
+      dotBadge.style.display = notices.length > 0 ? 'flex' : 'none';
+    }
+
+    if (notices.length === 0) {
+      container.innerHTML = '<div class="empty"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 14-6v14L3 13z"/><path d="M3 11v2a2 2 0 0 0 2 2h2"/></svg>공지가 없습니다</div>';
+      return;
+    }
+
+    const colors = ['s-blue','s-orange','s-red','s-violet','s-sky'];
+    const latest = notices.slice(0, 3);
+    container.innerHTML = latest.map((n, i) => {
+      const date = n.created ? new Date(n.created) : new Date();
+      const dateStr = date.getFullYear() + '.' + String(date.getMonth()+1).padStart(2,'0') + '.' + String(date.getDate()).padStart(2,'0');
+      const author = n.author || '관리자';
+      const title = n.title || '(제목 없음)';
+      return '<div class="row"><span class="dotmark ' + colors[i % colors.length] + '"></span><div class="r-main"><div class="r-t">' + escapeHtml(title) + '</div><div class="r-s">공지사항 · ' + escapeHtml(author) + '</div></div><span class="r-meta">' + dateStr + '</span></div>';
+    }).join('');
+  }
+
+  // Render members into the card
+  function renderMembers(members) {
+    const countEl = document.getElementById('member-count');
+    const listEl = document.getElementById('member-list');
+    if (!countEl || !listEl) return;
+
+    countEl.textContent = members.length;
+
+    if (members.length === 0) {
+      listEl.innerHTML = '<div class="empty"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/></svg>등록된 당원이 없습니다.</div>';
+      return;
+    }
+
+    // Sort by _id descending (most recent first) or by created/registered date
+    const sorted = [...members].sort((a,b) => {
+      const aId = parseInt(a._id) || 0;
+      const bId = parseInt(b._id) || 0;
+      return bId - aId;
+    });
+    const latest = sorted.slice(0, 3);
+    const avatarColors = ['#3b82f6','#10b981','#f59e0b','#8b5cf6','#ef4444','#ec4899'];
+
+    listEl.innerHTML = latest.map((m, i) => {
+      const name = m.name || m['이름'] || '이름없음';
+      const dong = m.dong || m['동'] || m['읍면동'] || '';
+      const role = m.role || m['직책'] || '일반당원';
+      const initial = name.charAt(0);
+      const color = avatarColors[i % avatarColors.length];
+      const meta = i === 0 ? '최근 등록' : '';
+      const dongRole = dong ? dong + ' · ' + role : role;
+      return '<div class="row"><span class="ava-s" style="background:' + color + '">' + escapeHtml(initial) + '</span><div class="r-main"><div class="r-t">' + escapeHtml(name) + '</div><div class="r-s">' + escapeHtml(dongRole) + '</div></div><span class="r-meta">' + meta + '</span></div>';
+    }).join('');
+  }
+
+  // HTML escape helper
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.appendChild(document.createTextNode(str));
+    return div.innerHTML;
+  }
+
+  // Auth state listener
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      window.location.href = 'index.html';
+      return;
+    }
+
+    // Check role
+    const roleInfo = await checkUserRole(user.email);
+    if (!roleInfo) {
+      await signOut(auth);
+      window.location.href = 'index.html';
+      return;
+    }
+
+    window.currentUserRole = roleInfo.role;
+    window.currentTenantId = roleInfo.tenantId;
+
+    // Update user email in footer
+    const footMail = document.querySelector('.foot-mail');
+    if (footMail) footMail.textContent = user.email;
+
+    // Update avatar initial
+    const avatarEl = document.querySelector('.avatar');
+    const displayName = roleInfo.name || user.displayName || user.email.charAt(0);
+    const initial = displayName.charAt(0);
+    if (avatarEl) avatarEl.textContent = initial;
+
+    // Update greeting with user name
+    const greetEl = document.getElementById('dash-greet');
+    if (greetEl) {
+      const userName = roleInfo.name || user.displayName || user.email.split('@')[0];
+      greetEl.textContent = userName + '님, ' + getGreetingTime() + '입니다.';
+    }
+
+    // Update date
+    updateDate();
+
+    // Load and render notices
+    const notices = await loadNotices();
+    renderNotices(notices);
+
+    // Load and render members
+    const members = await loadMembers();
+    renderMembers(members);
+  });
+</script>
+
 <style>
   :root{
     --bg:#f3f5f8;
@@ -215,8 +429,8 @@
 
     <nav>
       <a class="nav-item active"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg><span class="nm">대시보드</span></a>
-      <a class="nav-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 14-6v14L3 13z"/><path d="M3 11v2a2 2 0 0 0 2 2h2"/></svg><span class="nm">공지사항</span><span class="badge">1</span></a>
-      <a class="nav-item" href="moida-members.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="7" r="2.3"/><path d="M16.5 13.5a5 5 0 0 1 4.5 5"/></svg><span class="nm">조직관리</span></a>
+      <a class="nav-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 14-6v14L3 13z"/><path d="M3 11v2a2 2 0 0 0 2 2h2"/></svg><span class="nm">공지사항</span><span class="badge" id="notice-badge" style="display:none">0</span></a>
+      <a class="nav-item" href="index.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="7" r="2.3"/><path d="M16.5 13.5a5 5 0 0 1 4.5 5"/></svg><span class="nm">조직관리</span></a>
       <a class="nav-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4" width="17" height="17" rx="3"/><path d="m8 12 3 3 5-6"/></svg><span class="nm">업무</span></a>
       <a class="nav-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16" rx="3"/><path d="M3.5 9h17M8 3v3M16 3v3"/></svg><span class="nm">일정</span></a>
     </nav>
@@ -238,7 +452,7 @@
     <div class="side-foot">
       <a class="foot-item" href="admin.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 7 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7H1a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 2.6 7a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 7 2.6h.1A1.6 1.6 0 0 0 9 1.1V1a2 2 0 1 1 4 0v.1A1.6 1.6 0 0 0 17 2.6a1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1.1 2.7H23a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg><span>관리자 페이지</span></a>
       <div class="foot-mail">banedict84@gmail.com</div>
-      <a class="foot-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 17l5-5-5-5M15 12H3"/></svg><span>로그아웃</span></a>
+      <a class="foot-item" onclick="doLogout()" style="cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 17l5-5-5-5M15 12H3"/></svg><span>로그아웃</span></a>
     </div>
   </aside>
 
@@ -254,7 +468,7 @@
       </div>
       <div class="tb-right">
         <button class="tb-ico"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></button>
-        <button class="tb-ico"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="dot">1</span></button>
+        <button class="tb-ico"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="dot" id="notice-dot-badge" style="display:none">0</span></button>
         <div class="avatar">장</div>
       </div>
     </div>
@@ -262,11 +476,11 @@
     <div class="content">
       <div class="greet-row">
         <div class="greet">
-          <h1>장윤정님, 좋은 오후입니다.</h1>
+          <h1 id="dash-greet">장윤정님, 좋은 오후입니다.</h1>
           <div class="status"><span class="pin"></span>오늘도 의정활동 화이팅입니다 — 상태 메시지를 입력해보세요.</div>
         </div>
         <div class="gr-right">
-          <div class="gr-date">2026년 6월 19일 금요일</div>
+          <div class="gr-date" id="dash-date">2026년 6월 19일 금요일</div>
           <div class="widget-set"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M18 6h2M4 12h2M10 12h10M4 18h7M15 18h5"/><circle cx="16" cy="6" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="13" cy="18" r="2"/></svg>위젯 설정</div>
         </div>
       </div>
@@ -285,7 +499,7 @@
             <div class="card-title"><span class="ti c-indigo"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 14-6v14L3 13z"/><path d="M3 11v2a2 2 0 0 0 2 2h2"/></svg></span>최근 공지</div>
             <a class="see-all">전체보기 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
           </div>
-          <div class="row"><span class="dotmark s-blue"></span><div class="r-main"><div class="r-t">후원회 관련 내용입니다.</div><div class="r-s">공지사항 · 장윤정</div></div><span class="r-meta">2026.06.19</span></div>
+          <div id="notice-list"><div class="row"><span class="dotmark s-blue"></span><div class="r-main"><div class="r-t">불러오는 중...</div><div class="r-s">공지사항</div></div><span class="r-meta"></span></div></div>
         </div>
 
         <!-- 다가오는 일정 -->
@@ -312,11 +526,9 @@
             <div class="card-title"><span class="ti c-emerald"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="7" r="2.3"/><path d="M16.5 13.5a5 5 0 0 1 4.5 5"/></svg></span>당원 현황</div>
             <a class="see-all">전체보기 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
           </div>
-          <div class="mem-stat"><span class="big">11</span><span class="unit">명의 당원이 함께하고 있어요</span></div>
-          <div class="mem-list">
-            <div class="row"><span class="ava-s" style="background:#3b82f6">김</span><div class="r-main"><div class="r-t">김민재</div><div class="r-s">성포동 · 운영위원</div></div><span class="r-meta">최근 등록</span></div>
-            <div class="row"><span class="ava-s" style="background:#10b981">이</span><div class="r-main"><div class="r-t">이서연</div><div class="r-s">일동 · 일반당원</div></div><span class="r-meta">06.17</span></div>
-            <div class="row"><span class="ava-s" style="background:#f59e0b">박</span><div class="r-main"><div class="r-t">박준호</div><div class="r-s">와동 · 후원회원</div></div><span class="r-meta">06.15</span></div>
+          <div class="mem-stat"><span class="big" id="member-count">-</span><span class="unit">명의 당원이 함께하고 있어요</span></div>
+          <div class="mem-list" id="member-list">
+            <div class="row"><span class="ava-s" style="background:#ccd1de">·</span><div class="r-main"><div class="r-t">불러오는 중...</div><div class="r-s"></div></div><span class="r-meta"></span></div>
           </div>
         </div>
       </div>
