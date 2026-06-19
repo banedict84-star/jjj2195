@@ -105,6 +105,14 @@
       } catch(e) { console.error('역할 확인 실패:', e); return null; }
     };
 
+    // 일정 관리
+    window.fbGetSchedules = async function() {
+      const snap = await getDocs(collection(db, 'schedules'));
+      const result = []; snap.forEach(d => result.push(d.data())); return result;
+    };
+    window.fbSaveSchedule = async function(id, data) { await setDoc(doc(db, 'schedules', id), data, { merge: true }); };
+    window.fbDeleteSchedule = async function(id) { await deleteDoc(doc(db, 'schedules', id)); };
+
     // 테넌트(의원) 등록
     window.registerTenant = async function(tenantData) {
       try {
@@ -475,6 +483,62 @@ html,body{height:100%;font-family:'Apple SD Gothic Neo','Malgun Gothic','Noto Sa
   font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;
 }
 
+/* ─── 일정 관리 ─── */
+.schedule-page{padding:24px 28px;overflow-y:auto;background:#f5f7fa;min-height:100vh}
+.schedule-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.schedule-header h2{font-size:20px;font-weight:800;color:#1e1b4b}
+.cal-nav{display:flex;align-items:center;gap:10px;margin-bottom:16px;justify-content:center}
+.cal-nav-title{font-size:18px;font-weight:700;color:#1e1b4b;min-width:120px;text-align:center}
+.cal-nav-btn{background:#fff;border:1px solid #d1d5db;border-radius:8px;padding:6px 14px;font-size:14px;cursor:pointer;color:#333}
+.cal-nav-btn:hover{background:#f3f4f6}
+.cal-grid{background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.06);overflow:hidden;margin-bottom:24px;display:grid;grid-template-columns:repeat(7,1fr)}
+.cal-head{padding:10px 4px;text-align:center;font-size:12px;font-weight:700;color:#666;background:#f8f9fa;border-bottom:2px solid #e8eaed}
+.cal-head:first-child{color:#dc2626}
+.cal-head:last-child{color:#2563eb}
+.cal-cell{min-height:80px;padding:4px;border:1px solid #f0f2f5;position:relative;cursor:pointer;transition:background .1s}
+.cal-cell:hover{background:#f5f7ff}
+.cal-cell.other-month{background:#fafafa}
+.cal-cell.other-month .cal-day{color:#ccc}
+.cal-cell.today{background:#eef2ff}
+.cal-cell.today .cal-day{background:#4f46e5;color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center}
+.cal-day{font-size:12px;font-weight:600;color:#333;margin-bottom:2px;padding:2px}
+.cal-cell:nth-child(7n+1) .cal-day{color:#dc2626}
+.cal-cell:nth-child(7n) .cal-day{color:#2563eb}
+.cal-cell.other-month .cal-day{color:#ccc!important}
+.cal-event{font-size:10px;padding:1px 4px;border-radius:3px;margin-bottom:1px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.schedule-list-section{margin-top:8px}
+.schedule-list-section h3{font-size:16px;font-weight:700;color:#333;margin-bottom:12px}
+.sched-item{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;background:#fff;border-radius:10px;margin-bottom:8px;border:1px solid #e5e7eb;cursor:pointer;transition:box-shadow .15s}
+.sched-item:hover{box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.sched-dot{width:6px;min-height:36px;border-radius:3px;margin-top:2px;flex-shrink:0}
+.sched-info{flex:1}
+.sched-title{font-size:14px;font-weight:600;color:#1a1a1a}
+.sched-meta{font-size:12px;color:#9ca3af;margin-top:2px}
+.sched-empty{text-align:center;padding:32px;color:#aaa;font-size:14px}
+
+/* 일정 모달 */
+.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.4);z-index:1000;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal-box{background:#fff;border-radius:14px;padding:28px;max-width:460px;width:90%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal-box h3{font-size:17px;font-weight:700;margin-bottom:16px;color:#1e1b4b}
+.modal-label{display:block;font-size:12px;font-weight:600;color:#555;margin-bottom:4px}
+.modal-input{width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box}
+.modal-input:focus{outline:none;border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.1)}
+textarea.modal-input{resize:vertical}
+.modal-btn{padding:8px 20px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer}
+.modal-btn.primary{background:#4f46e5;color:#fff}.modal-btn.primary:hover{background:#4338ca}
+.modal-btn.cancel{background:#f3f4f6;color:#666}.modal-btn.cancel:hover{background:#e5e7eb}
+.modal-btn.danger{background:#ef4444;color:#fff}.modal-btn.danger:hover{background:#dc2626}
+.color-dot{display:inline-block;width:24px;height:24px;border-radius:50%;border:3px solid transparent;transition:border .15s}
+input[name="sched-color"]:checked+.color-dot{border-color:#333}
+
+@media(max-width:600px){
+  .schedule-page{padding:16px 12px}
+  .cal-cell{min-height:56px}
+  .cal-event{font-size:9px}
+  .modal-box{padding:20px;margin:10px}
+}
+
 /* ─── 통계바 ─── */
 .stats-row{
   background:#fff;border-bottom:1px solid #e8eaed;
@@ -748,7 +812,6 @@ window.showInAppNotice = function(title, body) {
     <div class="sidebar-item" onclick="switchPage('schedule',this)">
       <span class="si-icon">📅</span>
       <span class="si-label">일정 관리</span>
-      <span class="si-badge-warn">곧 출시</span>
     </div>
     <div class="sidebar-item" onclick="switchPage('stats',this)">
       <span class="si-icon">📊</span>
@@ -1204,13 +1267,85 @@ window.showInAppNotice = function(title, body) {
   </div>
 </div>
 
-<!-- 페이지: 일정 관리 (준비중) -->
+<!-- 페이지: 일정 관리 -->
 <div class="with-sidebar page-container" id="page-schedule">
-  <div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#f5f7fa">
-    <div style="text-align:center;color:#999">
-      <div style="font-size:48px;margin-bottom:16px">📅</div>
-      <div style="font-size:18px;font-weight:700;color:#666;margin-bottom:8px">일정 관리</div>
-      <div style="font-size:14px">준비 중입니다. 곧 업데이트됩니다!</div>
+  <div class="schedule-page">
+    <div class="schedule-header">
+      <h2>📅 일정 관리</h2>
+      <button class="tb-btn success" id="btn-add-schedule" onclick="openScheduleModal()" style="display:none">+ 일정 추가</button>
+    </div>
+
+    <div class="cal-nav">
+      <button class="cal-nav-btn" onclick="calMove(-1)">◀</button>
+      <span class="cal-nav-title" id="cal-title">2026년 6월</span>
+      <button class="cal-nav-btn" onclick="calMove(1)">▶</button>
+      <button class="cal-nav-btn" onclick="calToday()" style="margin-left:8px;font-size:12px">오늘</button>
+    </div>
+
+    <div class="cal-grid">
+      <div class="cal-head">일</div><div class="cal-head">월</div><div class="cal-head">화</div>
+      <div class="cal-head">수</div><div class="cal-head">목</div><div class="cal-head">금</div><div class="cal-head">토</div>
+      <div id="cal-body"></div>
+    </div>
+
+    <div class="schedule-list-section">
+      <h3 id="schedule-list-title">이번 달 일정</h3>
+      <div id="schedule-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 일정 추가/수정 모달 -->
+<div class="modal-overlay" id="schedule-modal">
+  <div class="modal-box">
+    <h3 id="sched-modal-title">📅 새 일정 추가</h3>
+    <input type="hidden" id="sched-edit-id">
+    <div style="margin-bottom:10px">
+      <label class="modal-label">제목 *</label>
+      <input class="modal-input" id="sched-title" placeholder="일정 제목">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <div>
+        <label class="modal-label">시작일 *</label>
+        <input class="modal-input" id="sched-start" type="date">
+      </div>
+      <div>
+        <label class="modal-label">종료일</label>
+        <input class="modal-input" id="sched-end" type="date">
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <div>
+        <label class="modal-label">시작 시간</label>
+        <input class="modal-input" id="sched-time-start" type="time">
+      </div>
+      <div>
+        <label class="modal-label">종료 시간</label>
+        <input class="modal-input" id="sched-time-end" type="time">
+      </div>
+    </div>
+    <div style="margin-bottom:10px">
+      <label class="modal-label">장소</label>
+      <input class="modal-input" id="sched-location" placeholder="장소 (선택)">
+    </div>
+    <div style="margin-bottom:10px">
+      <label class="modal-label">색상</label>
+      <div style="display:flex;gap:8px" id="sched-colors">
+        <label style="cursor:pointer"><input type="radio" name="sched-color" value="#4f46e5" checked style="display:none"><span class="color-dot" style="background:#4f46e5"></span></label>
+        <label style="cursor:pointer"><input type="radio" name="sched-color" value="#16a34a" style="display:none"><span class="color-dot" style="background:#16a34a"></span></label>
+        <label style="cursor:pointer"><input type="radio" name="sched-color" value="#dc2626" style="display:none"><span class="color-dot" style="background:#dc2626"></span></label>
+        <label style="cursor:pointer"><input type="radio" name="sched-color" value="#f59e0b" style="display:none"><span class="color-dot" style="background:#f59e0b"></span></label>
+        <label style="cursor:pointer"><input type="radio" name="sched-color" value="#8b5cf6" style="display:none"><span class="color-dot" style="background:#8b5cf6"></span></label>
+      </div>
+    </div>
+    <div style="margin-bottom:10px">
+      <label class="modal-label">메모</label>
+      <textarea class="modal-input" id="sched-memo" rows="3" placeholder="메모 (선택)"></textarea>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="modal-btn cancel" onclick="closeScheduleModal()">취소</button>
+      <button class="modal-btn danger" id="sched-del-btn" onclick="deleteSchedule()" style="display:none">삭제</button>
+      <button class="modal-btn primary" onclick="saveSchedule()">저장</button>
     </div>
   </div>
 </div>
@@ -2186,6 +2321,194 @@ function switchPage(pageId, el) {
   if (el) el.classList.add('active');
   document.querySelector('.sidebar').classList.remove('open');
   if (pageId === 'notices') { backToNoticeList(); }
+  if (pageId === 'schedule') { loadSchedules(); }
+}
+
+/* ── 일정 관리 ── */
+var calYear, calMonth, scheduleCache = [];
+
+function initCal() {
+  var now = new Date();
+  calYear = now.getFullYear();
+  calMonth = now.getMonth();
+  // 관리자만 일정 추가 가능
+  if (window.currentUserRole === 'admin') {
+    document.getElementById('btn-add-schedule').style.display = '';
+  }
+}
+
+function calMove(dir) { calMonth += dir; if(calMonth<0){calMonth=11;calYear--} if(calMonth>11){calMonth=0;calYear++} renderCal(); }
+function calToday() { var n=new Date(); calYear=n.getFullYear(); calMonth=n.getMonth(); renderCal(); loadSchedules(); }
+
+function renderCal() {
+  document.getElementById('cal-title').textContent = calYear + '년 ' + (calMonth+1) + '월';
+  var first = new Date(calYear, calMonth, 1);
+  var startDay = first.getDay();
+  var daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+  var prevDays = new Date(calYear, calMonth, 0).getDate();
+  var today = new Date(); today.setHours(0,0,0,0);
+
+  var cells = '';
+  // Previous month
+  for (var p = startDay - 1; p >= 0; p--) {
+    var d = prevDays - p;
+    cells += '<div class="cal-cell other-month"><div class="cal-day">' + d + '</div></div>';
+  }
+  // Current month
+  for (var i = 1; i <= daysInMonth; i++) {
+    var dt = new Date(calYear, calMonth, i);
+    var isToday = dt.getTime() === today.getTime();
+    var dateStr = calYear + '-' + String(calMonth+1).padStart(2,'0') + '-' + String(i).padStart(2,'0');
+    var events = getEventsForDate(dateStr);
+    var evHtml = events.map(function(e) {
+      return '<div class="cal-event" style="background:' + (e.color||'#4f46e5') + '" onclick="event.stopPropagation();openScheduleDetail(\'' + e.id + '\')">' + escapeHtml(e.title) + '</div>';
+    }).join('');
+    cells += '<div class="cal-cell' + (isToday ? ' today' : '') + '" onclick="onCalCellClick(\'' + dateStr + '\')">'
+      + '<div class="cal-day">' + i + '</div>' + evHtml + '</div>';
+  }
+  // Next month fill
+  var total = startDay + daysInMonth;
+  var remaining = (7 - total % 7) % 7;
+  for (var n = 1; n <= remaining; n++) {
+    cells += '<div class="cal-cell other-month"><div class="cal-day">' + n + '</div></div>';
+  }
+
+  document.getElementById('cal-body').outerHTML = '<div id="cal-body" style="display:contents">' + cells + '</div>';
+  renderScheduleList();
+}
+
+function getEventsForDate(dateStr) {
+  return scheduleCache.filter(function(s) {
+    var end = s.endDate || s.startDate;
+    return dateStr >= s.startDate && dateStr <= end;
+  });
+}
+
+function renderScheduleList() {
+  var monthStr = calYear + '-' + String(calMonth+1).padStart(2,'0');
+  var monthEvents = scheduleCache.filter(function(s) {
+    return s.startDate && s.startDate.substring(0,7) <= monthStr && (s.endDate || s.startDate).substring(0,7) >= monthStr;
+  }).sort(function(a,b){ return a.startDate.localeCompare(b.startDate); });
+
+  document.getElementById('schedule-list-title').textContent = (calMonth+1) + '월 일정 (' + monthEvents.length + '건)';
+  var el = document.getElementById('schedule-list');
+  if (monthEvents.length === 0) {
+    el.innerHTML = '<div class="sched-empty">이번 달 일정이 없습니다.</div>';
+    return;
+  }
+  el.innerHTML = monthEvents.map(function(s) {
+    var dateDisplay = formatSchedDate(s);
+    var timeDisplay = '';
+    if (s.timeStart) timeDisplay = s.timeStart + (s.timeEnd ? ' ~ ' + s.timeEnd : '');
+    var locationDisplay = s.location ? ' · 📍 ' + escapeHtml(s.location) : '';
+    return '<div class="sched-item" onclick="openScheduleDetail(\'' + s.id + '\')">'
+      + '<div class="sched-dot" style="background:' + (s.color||'#4f46e5') + '"></div>'
+      + '<div class="sched-info">'
+      + '<div class="sched-title">' + escapeHtml(s.title) + '</div>'
+      + '<div class="sched-meta">' + dateDisplay + (timeDisplay ? ' · ' + timeDisplay : '') + locationDisplay + '</div>'
+      + (s.memo ? '<div style="font-size:12px;color:#888;margin-top:4px">' + escapeHtml(s.memo) + '</div>' : '')
+      + '</div></div>';
+  }).join('');
+}
+
+function formatSchedDate(s) {
+  var start = s.startDate.replace(/-/g, '.');
+  if (s.endDate && s.endDate !== s.startDate) return start + ' ~ ' + s.endDate.replace(/-/g, '.');
+  return start;
+}
+
+async function loadSchedules() {
+  if (!calYear) initCal();
+  try {
+    var snap = await window.fbGetSchedules();
+    scheduleCache = snap;
+    renderCal();
+  } catch(e) { console.error('일정 로드 실패:', e); }
+}
+
+function onCalCellClick(dateStr) {
+  if (window.currentUserRole !== 'admin') return;
+  document.getElementById('sched-edit-id').value = '';
+  document.getElementById('sched-modal-title').textContent = '📅 새 일정 추가';
+  document.getElementById('sched-title').value = '';
+  document.getElementById('sched-start').value = dateStr;
+  document.getElementById('sched-end').value = '';
+  document.getElementById('sched-time-start').value = '';
+  document.getElementById('sched-time-end').value = '';
+  document.getElementById('sched-location').value = '';
+  document.getElementById('sched-memo').value = '';
+  document.getElementById('sched-del-btn').style.display = 'none';
+  document.querySelector('input[name="sched-color"][value="#4f46e5"]').checked = true;
+  document.getElementById('schedule-modal').classList.add('show');
+}
+
+function openScheduleModal() {
+  var today = new Date().toISOString().split('T')[0];
+  onCalCellClick(today);
+}
+
+function openScheduleDetail(id) {
+  var s = scheduleCache.find(function(x){ return x.id === id; });
+  if (!s) return;
+  if (window.currentUserRole !== 'admin') {
+    alert(s.title + '\n\n' + formatSchedDate(s)
+      + (s.timeStart ? '\n시간: ' + s.timeStart + (s.timeEnd ? ' ~ ' + s.timeEnd : '') : '')
+      + (s.location ? '\n장소: ' + s.location : '')
+      + (s.memo ? '\n\n' + s.memo : ''));
+    return;
+  }
+  document.getElementById('sched-edit-id').value = s.id;
+  document.getElementById('sched-modal-title').textContent = '📅 일정 수정';
+  document.getElementById('sched-title').value = s.title || '';
+  document.getElementById('sched-start').value = s.startDate || '';
+  document.getElementById('sched-end').value = s.endDate || '';
+  document.getElementById('sched-time-start').value = s.timeStart || '';
+  document.getElementById('sched-time-end').value = s.timeEnd || '';
+  document.getElementById('sched-location').value = s.location || '';
+  document.getElementById('sched-memo').value = s.memo || '';
+  document.getElementById('sched-del-btn').style.display = '';
+  var colorRadio = document.querySelector('input[name="sched-color"][value="' + (s.color||'#4f46e5') + '"]');
+  if (colorRadio) colorRadio.checked = true;
+  document.getElementById('schedule-modal').classList.add('show');
+}
+
+function closeScheduleModal() { document.getElementById('schedule-modal').classList.remove('show'); }
+
+async function saveSchedule() {
+  var title = document.getElementById('sched-title').value.trim();
+  var startDate = document.getElementById('sched-start').value;
+  if (!title || !startDate) { alert('제목과 시작일을 입력하세요.'); return; }
+  var editId = document.getElementById('sched-edit-id').value;
+  var id = editId || 'sched_' + Date.now();
+  var color = '#4f46e5';
+  var checked = document.querySelector('input[name="sched-color"]:checked');
+  if (checked) color = checked.value;
+  var data = {
+    id: id, title: title, startDate: startDate,
+    endDate: document.getElementById('sched-end').value || startDate,
+    timeStart: document.getElementById('sched-time-start').value,
+    timeEnd: document.getElementById('sched-time-end').value,
+    location: document.getElementById('sched-location').value.trim(),
+    memo: document.getElementById('sched-memo').value.trim(),
+    color: color, updated: Date.now()
+  };
+  if (!editId) data.created = Date.now();
+  try {
+    await window.fbSaveSchedule(id, data);
+    closeScheduleModal();
+    loadSchedules();
+  } catch(e) { alert('저장 실패: ' + e.message); }
+}
+
+async function deleteSchedule() {
+  var id = document.getElementById('sched-edit-id').value;
+  if (!id) return;
+  if (!confirm('이 일정을 삭제하시겠습니까?')) return;
+  try {
+    await window.fbDeleteSchedule(id);
+    closeScheduleModal();
+    loadSchedules();
+  } catch(e) { alert('삭제 실패: ' + e.message); }
 }
 
 /* ── 공지사항 게시판 ── */
