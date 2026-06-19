@@ -4,8 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MOIDA · 조직관리</title>
-<meta name="version" content="v2.1">
+<meta name="version" content="v2.2">
+<meta http-equiv="Cache-Control" content="no-store">
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<script>
+  /* 로그인된 사용자가 ?app=1 없이 진입하면 즉시 대시보드로 */
+  if (!location.search.includes('app=1') && sessionStorage.getItem('moida_authed') === '1') {
+    location.replace('moida-dashboard.html');
+  }
+</script>
 <script src="//t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
 
   <!-- Firebase SDK -->
@@ -124,7 +131,9 @@
 
     // 로그아웃
     window.doLogout = async function() {
+      sessionStorage.removeItem('moida_authed');
       await signOut(auth);
+      window.location.href = 'index.html';
     };
 
     // 사용자 역할 확인
@@ -273,6 +282,9 @@
         }
         window.currentUserRole = roleInfo.role;
         window.currentTenantId = roleInfo.tenantId;
+
+        // 세션 플래그 설정 (빠른 재방문 감지용)
+        sessionStorage.setItem('moida_authed', '1');
 
         // 로그인 직후이거나, ?app=1 없이 index.html에 진입하면 대시보드로
         if (window._justLoggedIn || !new URLSearchParams(location.search).get('app')) {
