@@ -34,7 +34,7 @@
 
   window.doLogout = async function() {
     await signOut(auth);
-    window.location.href = 'index.html';
+    location.replace('index.html');
   };
 
   async function checkUserRole(email) {
@@ -162,20 +162,16 @@
 
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
-      sessionStorage.removeItem('moida_authed');
-      window.location.href = 'index.html';
+      location.replace('index.html');
       return;
     }
 
     const roleInfo = await checkUserRole(user.email);
     if (!roleInfo) {
-      sessionStorage.removeItem('moida_authed');
       await signOut(auth);
-      window.location.href = 'index.html';
+      location.replace('index.html');
       return;
     }
-
-    sessionStorage.setItem('moida_authed', '1');
     window.currentUserRole = roleInfo.role;
     window.currentTenantId = roleInfo.tenantId;
 
