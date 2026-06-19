@@ -482,7 +482,9 @@ async function loadDashboard() {
           + '<div class="tenant-badges">'
           + '<span class="badge-member">당원 ' + mc + '명</span>'
           + getExpiryBadge(t.subscriptionEnd)
-          + '</div></div></div>';
+          + '</div></div>'
+          + '<button class="btn-outline" onclick="downloadTenantCSV(\'' + escapeHtml(t.id) + '\',\'' + escapeHtml(t.name) + '\')" title="CSV 다운로드">↓ CSV</button>'
+          + '</div>';
       }
       el.innerHTML = html;
     }
@@ -512,6 +514,7 @@ async function loadTenants() {
         + getExpiryBadge(t.subscriptionEnd)
         + '</div></div>'
         + '<div class="tenant-actions">'
+        + '<button class="btn-outline" onclick="downloadTenantCSV(\'' + escapeHtml(t.id) + '\',\'' + escapeHtml(t.name) + '\')">↓ CSV</button>'
         + '<button class="btn-outline" onclick="openEditModal(\'' + escapeHtml(t.id) + '\')">수정</button>'
         + '<button class="btn btn-danger btn-sm" onclick="removeTenant(\'' + escapeHtml(t.id) + '\',\'' + escapeHtml(t.email) + '\')">삭제</button>'
         + '</div></div>';
@@ -700,6 +703,31 @@ async function saveSettings() {
     });
     showMsg('s-msg');
   } catch(e) { alert('저장 실패: ' + e.message); }
+}
+
+async function downloadTenantCSV(tenantId, tenantName) {
+  try {
+    var members = await window.fbGetDocs('tenants/' + tenantId + '/members');
+    if (members.length === 0) { alert(tenantName + ' 의원의 당원 데이터가 없습니다.'); return; }
+    var headers = ['성명','휴대전화','주민번호','행정동','당원구분','소속','투표결과','나이','연령대','성별','추천인','서브추천인','서드추천인','주소','카톡관리','카톡답장','문자관리','가족수','메모'];
+    var keys = ['name','phone','jumin','dong','member_type','affiliation','vote_result','age','age_group','gender','recommender','sub_recommender','third_recommender','address','kakao_mgmt','kakao_reply','text_reply','family_cnt','memo'];
+    var csv = '﻿' + headers.join(',') + '\n';
+    members.forEach(function(m) {
+      csv += keys.map(function(k) {
+        var v = (m[k] != null ? String(m[k]) : '');
+        if (v.indexOf(',') >= 0 || v.indexOf('"') >= 0 || v.indexOf('\n') >= 0) {
+          v = '"' + v.replace(/"/g, '""') + '"';
+        }
+        return v;
+      }).join(',') + '\n';
+    });
+    var blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = tenantName + '_당원목록_' + new Date().toISOString().split('T')[0] + '.csv';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  } catch(e) { alert('다운로드 실패: ' + e.message); }
 }
 
 function showMsg(id) {
