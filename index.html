@@ -288,6 +288,7 @@
             if (indicator) indicator.textContent = '✅ 서버 연결됨';
             if (typeof window.reloadData === 'function') window.reloadData();
             if (typeof window.loadNoticeList === 'function') window.loadNoticeList();
+            if (typeof window.loadDashboardPage === 'function') window.loadDashboardPage();
           } else {
             if (indicator) indicator.textContent = '🔄 초기 데이터 업로드 중...';
             if (typeof window.reloadData === 'function') window.reloadData();
@@ -489,6 +490,54 @@ html,body{height:100%;font-family:'Apple SD Gothic Neo','Malgun Gothic','Noto Sa
 .total-badge{
   background:#f0f0ff;color:#4f46e5;
   font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;
+}
+
+/* ─── 대시보드 ─── */
+.dash-page{padding:28px;overflow-y:auto;background:#f5f7fa;min-height:100vh}
+.dash-welcome{margin-bottom:24px}
+.dash-greeting{font-size:24px;font-weight:800;color:#1e1b4b}
+.dash-date{font-size:14px;color:#6b7280;margin-top:4px}
+.dash-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+.dash-stat-card{background:#fff;border-radius:12px;padding:18px;border:1px solid #e5e7eb;cursor:pointer;transition:box-shadow .15s;text-align:center}
+.dash-stat-card:hover{box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.dash-stat-icon{font-size:24px;margin-bottom:6px}
+.dash-stat-num{font-size:28px;font-weight:700;color:#4f46e5}
+.dash-stat-label{font-size:12px;color:#6b7280;margin-top:2px}
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.dash-card{background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:20px;min-height:200px}
+.dash-card-wide{grid-column:1/-1}
+.dash-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.dash-card-header h3{font-size:15px;font-weight:700;color:#333}
+.dash-card-link{font-size:12px;color:#4f46e5;cursor:pointer;font-weight:600}
+.dash-card-link:hover{text-decoration:underline}
+.dash-notice-item{padding:10px 0;border-bottom:1px solid #f0f2f5}
+.dash-notice-item:last-child{border-bottom:none}
+.dash-notice-title{font-size:13px;font-weight:600;color:#1a1a1a}
+.dash-notice-date{font-size:11px;color:#9ca3af;margin-top:2px}
+.dash-task-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f0f2f5}
+.dash-task-item:last-child{border-bottom:none}
+.dash-task-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dash-task-dot.todo{background:#d1d5db}
+.dash-task-dot.doing{background:#3b82f6}
+.dash-task-dot.done{background:#22c55e}
+.dash-task-name{font-size:13px;color:#333;flex:1}
+.dash-task-due{font-size:11px;color:#9ca3af}
+.dash-sched-item{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid #f0f2f5;align-items:flex-start}
+.dash-sched-item:last-child{border-bottom:none}
+.dash-sched-date-box{background:#4f46e5;color:#fff;border-radius:10px;padding:8px 12px;text-align:center;min-width:56px;flex-shrink:0}
+.dash-sched-date-box .month{font-size:10px;opacity:.8}
+.dash-sched-date-box .day{font-size:22px;font-weight:700;line-height:1.1}
+.dash-sched-info{flex:1}
+.dash-sched-title{font-size:14px;font-weight:600;color:#1a1a1a}
+.dash-sched-meta{font-size:12px;color:#9ca3af;margin-top:2px}
+.dash-empty{text-align:center;padding:20px;color:#bbb;font-size:13px}
+
+@media(max-width:768px){
+  .dash-page{padding:16px}
+  .dash-stats{grid-template-columns:1fr 1fr;gap:10px}
+  .dash-stat-num{font-size:22px}
+  .dash-grid{grid-template-columns:1fr}
+  .dash-greeting{font-size:20px}
 }
 
 /* ─── 일정 관리 ─── */
@@ -838,8 +887,13 @@ window.showInAppNotice = function(title, body) {
   </div>
   <div class="sidebar-divider"></div>
   <div class="sidebar-nav">
+    <div class="sidebar-item active" onclick="switchPage('dashboard',this)">
+      <span class="si-icon">🏠</span>
+      <span class="si-label">대시보드</span>
+    </div>
+    <div class="sidebar-divider" style="margin:4px 8px"></div>
     <div class="sidebar-section-label">메뉴</div>
-    <div class="sidebar-item active" onclick="switchPage('notices',this)">
+    <div class="sidebar-item" onclick="switchPage('notices',this)">
       <span class="si-icon">📢</span>
       <span class="si-label">공지사항</span>
       <span class="si-badge" id="notice-count" style="display:none">0</span>
@@ -857,7 +911,7 @@ window.showInAppNotice = function(title, body) {
       <span class="si-icon">📅</span>
       <span class="si-label">일정</span>
     </div>
-    <div class="sidebar-divider" style="margin:8px 8px"></div>
+    <div class="sidebar-divider" style="margin:4px 8px"></div>
     <div class="sidebar-section-label">준비중</div>
     <div class="sidebar-item" onclick="switchPage('stats',this)">
       <span class="si-icon">📊</span>
@@ -871,6 +925,70 @@ window.showInAppNotice = function(title, body) {
     </a>
     <div class="sb-email" id="sidebar-user"></div>
     <button onclick="window.doLogout()" class="sb-logout">🔓 로그아웃</button>
+  </div>
+</div>
+
+<!-- 페이지: 대시보드 -->
+<div class="with-sidebar page-container active" id="page-dashboard">
+  <div class="dash-page">
+    <div class="dash-welcome">
+      <div>
+        <div class="dash-greeting" id="dash-greeting">안녕하세요!</div>
+        <div class="dash-date" id="dash-date"></div>
+      </div>
+    </div>
+
+    <div class="dash-stats">
+      <div class="dash-stat-card" onclick="switchPageById('notices')">
+        <div class="dash-stat-icon">📢</div>
+        <div class="dash-stat-num" id="dash-s-notices">0</div>
+        <div class="dash-stat-label">공지사항</div>
+      </div>
+      <div class="dash-stat-card" onclick="switchPageById('members')">
+        <div class="dash-stat-icon">👥</div>
+        <div class="dash-stat-num" id="dash-s-members">0</div>
+        <div class="dash-stat-label">당원</div>
+      </div>
+      <div class="dash-stat-card" onclick="switchPageById('tasks')">
+        <div class="dash-stat-icon">☑️</div>
+        <div class="dash-stat-num" id="dash-s-tasks">0</div>
+        <div class="dash-stat-label">진행중 업무</div>
+      </div>
+      <div class="dash-stat-card" onclick="switchPageById('schedule')">
+        <div class="dash-stat-icon">📅</div>
+        <div class="dash-stat-num" id="dash-s-schedules">0</div>
+        <div class="dash-stat-label">이번주 일정</div>
+      </div>
+    </div>
+
+    <div class="dash-grid">
+      <!-- 최근 공지 -->
+      <div class="dash-card">
+        <div class="dash-card-header">
+          <h3>📢 최근 공지</h3>
+          <span class="dash-card-link" onclick="switchPageById('notices')">전체보기 →</span>
+        </div>
+        <div id="dash-notices"></div>
+      </div>
+
+      <!-- 업무 현황 -->
+      <div class="dash-card">
+        <div class="dash-card-header">
+          <h3>☑️ 업무 현황</h3>
+          <span class="dash-card-link" onclick="switchPageById('tasks')">전체보기 →</span>
+        </div>
+        <div id="dash-tasks"></div>
+      </div>
+
+      <!-- 다가오는 일정 -->
+      <div class="dash-card dash-card-wide">
+        <div class="dash-card-header">
+          <h3>📅 다가오는 일정</h3>
+          <span class="dash-card-link" onclick="switchPageById('schedule')">전체보기 →</span>
+        </div>
+        <div id="dash-schedules"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1248,7 +1366,7 @@ window.showInAppNotice = function(title, body) {
 </div><!-- /page-members -->
 
 <!-- 페이지: 공지사항 -->
-<div class="with-sidebar page-container active" id="page-notices">
+<div class="with-sidebar page-container" id="page-notices">
   <div class="notice-page">
     <!-- 목록 뷰 -->
     <div id="notice-list-view">
@@ -2437,6 +2555,106 @@ function switchPage(pageId, el) {
   if (pageId === 'notices') { backToNoticeList(); }
   if (pageId === 'schedule') { loadSchedules(); }
   if (pageId === 'tasks') { loadTasks(); }
+  if (pageId === 'dashboard') { loadDashboardPage(); }
+}
+
+function switchPageById(pageId) {
+  var items = document.querySelectorAll('.sidebar-item');
+  var target = null;
+  items.forEach(function(el) {
+    if (el.textContent.trim().indexOf(pageId === 'notices' ? '공지' : pageId === 'members' ? '당원' : pageId === 'tasks' ? '업무' : pageId === 'schedule' ? '일정' : '대시보드') >= 0) {
+      target = el;
+    }
+  });
+  switchPage(pageId, target);
+}
+
+/* ── 대시보드 ── */
+async function loadDashboardPage() {
+  // 인사말
+  var hour = new Date().getHours();
+  var greet = hour < 12 ? '좋은 아침입니다! ☀️' : hour < 18 ? '좋은 오후입니다! 🌤️' : '좋은 저녁입니다! 🌙';
+  document.getElementById('dash-greeting').textContent = greet;
+  var days = ['일','월','화','수','목','금','토'];
+  var now = new Date();
+  document.getElementById('dash-date').textContent = now.getFullYear() + '년 ' + (now.getMonth()+1) + '월 ' + now.getDate() + '일 ' + days[now.getDay()] + '요일';
+
+  try {
+    // 공지
+    var notices = [];
+    try { notices = await window.loadNotices(); } catch(e){}
+    document.getElementById('dash-s-notices').textContent = notices.length;
+    var recentNotices = notices.sort(function(a,b){ return (b.created||0)-(a.created||0); }).slice(0,4);
+    var nEl = document.getElementById('dash-notices');
+    if (recentNotices.length === 0) {
+      nEl.innerHTML = '<div class="dash-empty">공지사항이 없습니다.</div>';
+    } else {
+      nEl.innerHTML = recentNotices.map(function(n) {
+        var d = n.created ? new Date(n.created) : null;
+        var ds = d ? (d.getMonth()+1)+'/'+d.getDate() : '';
+        return '<div class="dash-notice-item"><div class="dash-notice-title">' + escapeHtml(n.title) + '</div><div class="dash-notice-date">' + ds + '</div></div>';
+      }).join('');
+    }
+
+    // 업무
+    var tasks = [];
+    try { tasks = await window.fbGetTasks(); } catch(e){}
+    var pendingTasks = tasks.filter(function(t){ return t.status !== 'done'; });
+    document.getElementById('dash-s-tasks').textContent = pendingTasks.length;
+    var tEl = document.getElementById('dash-tasks');
+    if (pendingTasks.length === 0) {
+      tEl.innerHTML = '<div class="dash-empty">진행중인 업무가 없습니다.</div>';
+    } else {
+      var showTasks = pendingTasks.sort(function(a,b){
+        if (a.priority === 'high' && b.priority !== 'high') return -1;
+        if (b.priority === 'high' && a.priority !== 'high') return 1;
+        return (a.dueDate||'9999').localeCompare(b.dueDate||'9999');
+      }).slice(0,5);
+      tEl.innerHTML = showTasks.map(function(t) {
+        return '<div class="dash-task-item">'
+          + '<div class="dash-task-dot ' + (t.status||'todo') + '"></div>'
+          + '<div class="dash-task-name">' + escapeHtml(t.title) + (t.priority==='high'?' 🔴':'') + '</div>'
+          + (t.dueDate ? '<div class="dash-task-due">' + t.dueDate.replace(/-/g,'.') + '</div>' : '')
+          + '</div>';
+      }).join('');
+    }
+
+    // 일정 (이번 주)
+    var schedules = [];
+    try { schedules = await window.fbGetSchedules(); } catch(e){}
+    var today = new Date(); today.setHours(0,0,0,0);
+    var weekEnd = new Date(today); weekEnd.setDate(weekEnd.getDate() + 7);
+    var todayStr = today.toISOString().split('T')[0];
+    var weekEndStr = weekEnd.toISOString().split('T')[0];
+    var upcoming = schedules.filter(function(s) {
+      var end = s.endDate || s.startDate;
+      return end >= todayStr && s.startDate <= weekEndStr;
+    }).sort(function(a,b){ return a.startDate.localeCompare(b.startDate); });
+    document.getElementById('dash-s-schedules').textContent = upcoming.length;
+    var sEl = document.getElementById('dash-schedules');
+    if (upcoming.length === 0) {
+      sEl.innerHTML = '<div class="dash-empty">이번 주 일정이 없습니다.</div>';
+    } else {
+      sEl.innerHTML = upcoming.slice(0,5).map(function(s) {
+        var dt = new Date(s.startDate + 'T00:00:00');
+        var dayNames = ['일','월','화','수','목','금','토'];
+        var timeStr = s.timeStart ? s.timeStart + (s.timeEnd ? ' ~ ' + s.timeEnd : '') : '종일';
+        return '<div class="dash-sched-item">'
+          + '<div class="dash-sched-date-box" style="background:' + (s.color||'#4f46e5') + '">'
+          + '<div class="month">' + (dt.getMonth()+1) + '월</div>'
+          + '<div class="day">' + dt.getDate() + '</div>'
+          + '</div>'
+          + '<div class="dash-sched-info">'
+          + '<div class="dash-sched-title">' + escapeHtml(s.title) + '</div>'
+          + '<div class="dash-sched-meta">' + s.startDate.replace(/-/g,'.') + ' (' + dayNames[dt.getDay()] + ') · ' + timeStr + (s.location ? ' · 📍 ' + escapeHtml(s.location) : '') + '</div>'
+          + '</div></div>';
+      }).join('');
+    }
+
+    // 당원 수
+    var memberCount = document.getElementById('total');
+    document.getElementById('dash-s-members').textContent = memberCount ? memberCount.textContent : '0';
+  } catch(e) { console.error('대시보드 로드 실패:', e); }
 }
 
 /* ── 일정 관리 ── */
