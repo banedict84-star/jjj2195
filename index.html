@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MOIDA · 조직관리</title>
-<meta name="version" content="v2.3">
+<meta name="version" content="v2.4">
 <meta http-equiv="Cache-Control" content="no-store">
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
 <script src="//t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
@@ -129,7 +129,7 @@
     // 로그아웃
     window.doLogout = async function() {
       await signOut(auth);
-      location.replace('index.html');
+      location.replace('/?login=1');
     };
 
     // 사용자 역할 확인
@@ -279,13 +279,20 @@
         window.currentUserRole = roleInfo.role;
         window.currentTenantId = roleInfo.tenantId;
 
-        // 로그인 직후이거나, ?app=1 없이 index.html에 진입하면 대시보드로
-        if (window._justLoggedIn || !new URLSearchParams(location.search).get('app')) {
+        // 로그인 직후이거나, ?app=1 / ?login=1 없이 진입 → 대시보드로
+        const _p = new URLSearchParams(location.search);
+        if (window._justLoggedIn || (!_p.get('app') && !_p.get('login'))) {
           window._justLoggedIn = false;
-          location.replace('moida-dashboard.html');
+          location.replace('/moida-dashboard');
           return;
         }
-        // ?app=1 파라미터로 조직관리 페이지에 직접 진입한 경우 → 앱 표시
+        // ?login=1 → 로그인 화면 유지 (대시보드에서 인증 실패 후 리다이렉트)
+        if (_p.get('login')) {
+          loginScreen.style.display = 'flex';
+          appScreen.style.display = 'none';
+          return;
+        }
+        // ?app=1 → 조직관리 앱 표시
         loginScreen.style.display = 'none';
         appScreen.style.display = 'block';
         if (userInfo) userInfo.textContent = user.email;
@@ -858,8 +865,8 @@ window.showInAppNotice = function(title, body) {
     <button class="collapse-btn" onclick="toggleSidebar()" aria-label="사이드바 접기"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
   </div>
   <nav>
-    <a class="nav-item" href="moida-dashboard.html" data-tip="대시보드"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg><span class="nm">대시보드</span></a>
-    <a class="nav-item" href="moida-notices.html" data-tip="공지사항"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 14-6v14L3 13z"/><path d="M3 11v2a2 2 0 0 0 2 2h2"/></svg><span class="nm">공지사항</span><span class="badge" id="notice-count" style="display:none">0</span></a>
+    <a class="nav-item" href="/moida-dashboard" data-tip="대시보드"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg><span class="nm">대시보드</span></a>
+    <a class="nav-item" href="/moida-notices" data-tip="공지사항"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 14-6v14L3 13z"/><path d="M3 11v2a2 2 0 0 0 2 2h2"/></svg><span class="nm">공지사항</span><span class="badge" id="notice-count" style="display:none">0</span></a>
     <a class="nav-item active" onclick="switchPage('members',this)" data-tip="조직관리"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="7" r="2.3"/><path d="M16.5 13.5a5 5 0 0 1 4.5 5"/></svg><span class="nm">조직관리</span></a>
     <a class="nav-item" data-tip="업무"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4" width="17" height="17" rx="3"/><path d="m8 12 3 3 5-6"/></svg><span class="nm">업무</span></a>
     <a class="nav-item" data-tip="일정"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16" rx="3"/><path d="M3.5 9h17M8 3v3M16 3v3"/></svg><span class="nm">일정</span></a>
