@@ -707,6 +707,22 @@ window.showInAppNotice = function(title, body) {
 };
 </script>
 
+<!-- 로그인 화면 -->
+<div id="login-screen" style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(176deg,#bfe6ec 0%,#b7e1da 26%,#cfe6d4 50%,#e8ecdf 70%,#f2f1e9 86%,#f3f5f8 100%)">
+  <div style="text-align:center;background:#fff;padding:48px 40px;border-radius:20px;box-shadow:0 8px 40px rgba(22,26,45,.12);max-width:400px;width:90%">
+    <div style="width:56px;height:56px;border-radius:16px;background:linear-gradient(140deg,#6a5cf5,#4f46e5,#4338ca);display:inline-flex;align-items:center;justify-content:center;margin-bottom:20px;box-shadow:0 6px 18px rgba(79,70,229,.35)">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M7 8.5 12 14.5 17 8.5" stroke="#fff" stroke-opacity=".55" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7" cy="8" r="2.6" fill="#fff"/><circle cx="17" cy="8" r="2.6" fill="#fff"/><circle cx="12" cy="15.5" r="3.1" fill="#fff"/></svg>
+    </div>
+    <div style="font-size:24px;font-weight:800;letter-spacing:-.03em;color:#1c2030;margin-bottom:4px">MO<span style="color:#4f46e5">IDA</span></div>
+    <div style="font-size:14px;color:#5a6072;margin-bottom:32px">당원 관리 시스템에 로그인하세요</div>
+    <button onclick="doGoogleLogin()" style="display:inline-flex;align-items:center;gap:10px;padding:14px 32px;background:#fff;border:1.5px solid #e5e7eb;border-radius:12px;font-size:15px;font-weight:600;color:#1c2030;cursor:pointer;font-family:inherit;transition:all .15s;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+      <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.5 30.3 0 24 0 14.6 0 6.7 5.5 2.8 13.5l7.9 6.1C12.7 13.1 17.9 9.5 24 9.5z"/><path fill="#4285F4" d="M46.9 24.5c0-1.8-.2-3.5-.5-5.2H24v9.9h12.8c-.6 3-2.3 5.5-4.8 7.2l7.7 6c4.5-4.1 7.2-10.2 7.2-17.9z"/><path fill="#34A853" d="M10.7 28.4A14.5 14.5 0 0 1 9.5 24c0-1.5.3-3 .7-4.4l-7.9-6.1A24 24 0 0 0 0 24c0 3.8.9 7.5 2.5 10.7l8.2-6.3z"/><path fill="#FBBC05" d="M24 48c6.5 0 11.9-2.1 15.8-5.8l-7.7-6c-2.1 1.4-4.9 2.3-8.1 2.3-6.1 0-11.3-3.6-13.3-8.9l-8 6.2C6.7 42.5 14.6 48 24 48z"/></svg>
+      Google로 로그인
+    </button>
+    <div id="login-error" style="margin-top:16px;font-size:13px;color:#dc2626;min-height:20px"></div>
+  </div>
+</div>
+
 <!-- 앱 본체 -->
 <div id="app-screen" style="display:none">
 <div class="app-grid" id="app-grid">
