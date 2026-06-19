@@ -701,29 +701,6 @@ window.showInAppNotice = function(title, body) {
 };
 </script>
 
-<!-- 로그인 화면 -->
-<div id="login-screen" style="
-  display:flex; flex-direction:column; align-items:center; justify-content:center;
-  min-height:100vh; background:linear-gradient(135deg,#1e1b4b 0%,#312e81 100%);
-">
-  <div style="background:#fff;border-radius:20px;padding:48px 40px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);max-width:360px;width:90%">
-    <div style="font-size:36px;margin-bottom:8px">🗳️</div>
-    <div style="font-size:20px;font-weight:800;color:#1e1b4b;margin-bottom:4px">당원 관리 시스템</div>
-    <div style="font-size:13px;color:#6b7280;margin-bottom:32px">의원 전용 페이지</div>
-    <button onclick="window.doGoogleLogin()" style="
-      display:flex;align-items:center;justify-content:center;gap:10px;
-      width:100%;padding:14px;border:2px solid #e5e7eb;border-radius:12px;
-      background:#fff;cursor:pointer;font-size:15px;font-weight:600;color:#374151;
-      transition:all .15s;
-    " onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='#fff'">
-      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="22">
-      Google 계정으로 로그인
-    </button>
-    <div id="login-error" style="margin-top:16px;font-size:12px;color:#dc2626;min-height:18px"></div>
-    <div style="margin-top:24px;font-size:11px;color:#9ca3af">승인된 계정만 접근 가능합니다</div>
-  </div>
-</div>
-
 <!-- 앱 본체 -->
 <div id="app-screen" style="display:none">
 
