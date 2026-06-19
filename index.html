@@ -272,9 +272,8 @@
         window.currentUserRole = roleInfo.role;
         window.currentTenantId = roleInfo.tenantId;
 
-        // 로그인 성공 → 앱 표시
-        loginScreen.style.display = 'none';
-        appScreen.style.display = 'block';
+        // 로그인 성공 → 대시보드로 이동
+        window.location.href = 'moida-dashboard.html';
         if (userInfo) userInfo.textContent = user.email;
         var sidebarUser = document.getElementById('sidebar-user');
         if (sidebarUser) sidebarUser.textContent = user.email;

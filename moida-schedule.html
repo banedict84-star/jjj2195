@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MOIDA · 일정</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+  :root{
+    --bg:#f3f5f8; --surface:#ffffff; --line:#e8eaf0; --line-soft:#f1f3f7;
+    --ink:#1c2030; --ink-2:#5a6072; --ink-3:#9298a8; --ink-4:#b6bcca;
+    --primary:#4f46e5; --primary-600:#4338ca; --primary-soft:#eef0fe;
+    --shadow-sm:0 1px 2px rgba(22,26,45,.04),0 1px 3px rgba(22,26,45,.03);
+    --shadow-md:0 4px 16px rgba(22,26,45,.06),0 1px 3px rgba(22,26,45,.04);
+    --shadow-panel:0 2px 6px rgba(22,26,45,.05),0 12px 32px rgba(22,26,45,.10);
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; }
+  body{ font-family:"Pretendard Variable",Pretendard,-apple-system,system-ui,sans-serif; background:var(--bg); color:var(--ink); -webkit-font-smoothing:antialiased; letter-spacing:-.01em; }
+  .app{ display:grid; grid-template-columns:236px 1fr; min-height:100vh; transition:grid-template-columns .22s ease; }
+  a{ color:inherit; text-decoration:none; }
+
+  /* ===== Sidebar (shared) ===== */
+  .sidebar{ background:var(--surface); border-right:1px solid var(--line); display:flex; flex-direction:column; padding:18px 16px; position:sticky; top:0; height:100vh; overflow-y:auto; }
+  .logo{ display:flex; align-items:center; gap:11px; padding:8px 8px 18px; }
+  .logo-mark{ width:36px; height:36px; border-radius:11px; flex-shrink:0; background:linear-gradient(140deg,#6a5cf5 0%,#4f46e5 60%,#4338ca 100%); display:flex; align-items:center; justify-content:center; box-shadow:0 5px 14px rgba(79,70,229,.34); position:relative; overflow:hidden; }
+  .logo-mark::after{ content:""; position:absolute; inset:0; background:radial-gradient(65% 55% at 28% 20%, rgba(255,255,255,.42), rgba(255,255,255,0) 70%); }
+  .logo-name{ font-size:20px; font-weight:800; letter-spacing:-.04em; color:#1c2030; line-height:1; }
+  .logo-name b{ color:var(--primary); font-weight:800; }
+
+  /* collapse toggle */
+  .side-top{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .collapse-btn{ position:absolute; top:29px; right:16px; z-index:5; width:30px; height:30px; border-radius:9px; border:1px solid var(--line); background:var(--surface); color:var(--ink-3); display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; transition:background .14s,color .14s; }
+  .collapse-btn:hover{ background:var(--line-soft); color:var(--ink-2); }
+  .collapse-btn svg{ transition:transform .22s ease; }
+  /* collapsed state */
+  .app.collapsed{ grid-template-columns:72px 1fr; }
+  .app.collapsed .sidebar{ padding:18px 12px; align-items:stretch; }
+  .app.collapsed .side-top{ flex-direction:column; gap:12px; }
+  .app.collapsed .logo{ justify-content:center; }
+  .app.collapsed .logo-name{ display:none; }
+  .app.collapsed .collapse-btn{ position:static; transform:none; }
+  .app.collapsed .collapse-btn svg{ transform:rotate(180deg); }
+  .app.collapsed .new-btn{ display:none; }
+  .app.collapsed nav{ align-items:stretch; }
+  .app.collapsed .nav-item{ justify-content:center; padding:11px 0; gap:0; }
+  .app.collapsed .nav-item .nm,
+  .app.collapsed .nav-item .badge{ display:none; }
+  .app.collapsed .sec{ display:none; }
+  .app.collapsed .upd-item{ display:none; }
+  .app.collapsed .foot-item{ justify-content:center; gap:0; padding:9px 0; }
+  .app.collapsed .foot-item span{ display:none; }
+  .app.collapsed .foot-mail{ display:none; }
+
+  /* hover tooltips when collapsed */
+  .app.collapsed .sidebar{ overflow:visible; z-index:40; }
+  .app.collapsed .nav-item, .app.collapsed .foot-item{ position:relative; }
+  .app.collapsed .nav-item[data-tip]:hover::after,
+  .app.collapsed .foot-item[data-tip]:hover::after{
+    content:attr(data-tip); position:absolute; left:calc(100% + 14px); top:50%; transform:translateY(-50%);
+    background:#15182a; color:#fff; font-size:12.5px; font-weight:600; padding:7px 11px; border-radius:9px;
+    white-space:nowrap; z-index:60; box-shadow:0 8px 20px rgba(22,26,45,.24); pointer-events:none;
+  }
+  .app.collapsed .nav-item[data-tip]:hover::before,
+  .app.collapsed .foot-item[data-tip]:hover::before{
+    content:""; position:absolute; left:calc(100% + 8px); top:50%; transform:translateY(-50%) rotate(45deg);
+    width:9px; height:9px; background:#15182a; z-index:60; pointer-events:none; border-radius:1px;
+  }
+  .new-btn{ display:flex; align-items:center; justify-content:center; gap:8px; background:#15182a; color:#fff; border:none; border-radius:12px; padding:13px; font-size:14.5px; font-weight:700; cursor:pointer; font-family:inherit; transition:transform .12s,box-shadow .15s; box-shadow:0 6px 16px rgba(21,24,42,.22); }
+  .new-btn:hover{ transform:translateY(-1px); box-shadow:0 10px 22px rgba(21,24,42,.3); }
+  nav{ display:flex; flex-direction:column; gap:2px; margin-top:14px; }
+  .nav-item{ display:flex; align-items:center; gap:11px; padding:10px 10px; border-radius:11px; cursor:pointer; color:var(--ink-2); font-size:14px; font-weight:600; transition:background .14s,color .14s; }
+  .nav-item:hover{ background:var(--line-soft); color:var(--ink); }
+  .nav-item.active{ background:var(--primary-soft); color:var(--primary); }
+  .nav-item.active svg{ color:var(--primary); }
+  .nav-item svg{ color:var(--ink-3); }
+  .nav-item .nm{ flex:1; }
+  .badge{ min-width:19px; height:19px; padding:0 6px; border-radius:20px; background:var(--primary); color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+  .badge.muted{ background:#eef0f5; color:var(--ink-3); font-size:10.5px; font-weight:600; }
+  .nav-item.dim{ color:var(--ink-3); cursor:default; }
+  .nav-item.dim:hover{ background:transparent; }
+  .sec{ display:flex; align-items:center; justify-content:space-between; padding:18px 10px 8px; }
+  .sec-t{ font-size:11.5px; font-weight:700; color:var(--ink-3); letter-spacing:.04em; }
+  .swatch{ width:14px; height:14px; border-radius:5px; flex-shrink:0; }
+  .s-blue{ background:#3b82f6;} .s-orange{ background:#f59e0b;} .s-red{ background:#ef4444;} .s-yellow{ background:#eab308;} .s-sky{ background:#38bdf8;} .s-green{background:#22c55e;} .s-violet{background:#8b5cf6;} .s-slate{background:#64748b;}
+  .upd-item{ display:flex; align-items:center; gap:11px; padding:8px 10px; border-radius:10px; cursor:pointer; color:var(--ink-2); font-size:13.5px; font-weight:600; transition:background .14s; }
+  .upd-item:hover{ background:var(--line-soft); }
+  .side-foot{ margin-top:auto; padding-top:14px; border-top:1px solid var(--line); display:flex; flex-direction:column; gap:1px; }
+  .foot-item{ display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:10px; color:var(--ink-2); font-size:13.5px; font-weight:600; cursor:pointer; transition:background .14s; }
+  .foot-item:hover{ background:var(--line-soft); }
+  .foot-item svg{ color:var(--ink-3); }
+  .foot-mail{ font-size:11.5px; color:var(--ink-3); padding:4px 10px 2px; font-weight:500; }
+
+  /* ===== Main / page ===== */
+  .main{ display:flex; flex-direction:column; min-width:0; }
+  .page-head{ display:flex; align-items:flex-start; gap:16px; padding:22px 28px 0; }
+  .ph-mark{ width:46px; height:46px; border-radius:13px; background:linear-gradient(140deg,#6a5cf5,#4338ca); color:#fff; display:flex; align-items:center; justify-content:center; font-size:21px; font-weight:800; flex-shrink:0; box-shadow:0 6px 16px rgba(79,70,229,.3); }
+  .ph-info h1{ font-size:21px; font-weight:800; letter-spacing:-.025em; }
+  .ph-sub{ margin-top:5px; font-size:13px; color:var(--ink-2); font-weight:500; }
+  .ph-conn{ display:inline-flex; align-items:center; gap:5px; margin-top:7px; font-size:12px; font-weight:600; color:#10936a; }
+  .ph-conn .led{ width:7px; height:7px; border-radius:50%; background:#10b981; box-shadow:0 0 0 3px rgba(16,185,129,.16); }
+  .ph-right{ margin-left:auto; display:flex; align-items:center; gap:10px; }
+  .count-pill{ display:inline-flex; align-items:center; gap:6px; background:var(--primary-soft); color:var(--primary-600); font-size:13px; font-weight:700; padding:8px 14px; border-radius:999px; }
+  .logout-btn{ font-size:12.5px; font-weight:600; color:var(--ink-2); border:1px solid var(--line); background:var(--surface); padding:8px 13px; border-radius:10px; cursor:pointer; font-family:inherit; transition:background .14s; }
+  .logout-btn:hover{ background:var(--line-soft); }
+
+  /* schedule */
+  .ext-badge{ font-size:11.5px; font-weight:700; color:#dc2626; background:#fdecec; padding:2px 8px; border-radius:7px; vertical-align:middle; margin-left:7px; }
+  .view-toggle{ display:inline-flex; background:var(--line-soft); border:1px solid var(--line); border-radius:10px; padding:3px; gap:2px; }
+  .vbtn{ display:inline-flex; align-items:center; gap:6px; padding:7px 13px; border:none; background:transparent; border-radius:8px; font-family:inherit; font-size:13px; font-weight:600; color:var(--ink-2); cursor:pointer; }
+  .vbtn.active{ background:#fff; color:var(--primary); box-shadow:var(--shadow-sm); }
+  .vbtn svg{ width:15px; height:15px; }
+  .add-ev{ display:inline-flex; align-items:center; gap:6px; background:var(--primary); color:#fff; border:1px solid var(--primary); padding:9px 14px; border-radius:10px; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; box-shadow:0 4px 12px rgba(79,70,229,.24); }
+  .add-ev svg{ width:15px; height:15px; }
+  .sched-wrap{ display:grid; grid-template-columns:1fr 300px; gap:18px; padding:18px 28px 30px; align-items:start; }
+  .sched-main{ min-width:0; display:flex; flex-direction:column; gap:14px; }
+  .compose{ background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow-sm); overflow:hidden; }
+  .compose-tabs{ display:flex; gap:4px; padding:10px 12px; border-bottom:1px solid var(--line-soft); }
+  .ctab{ display:inline-flex; align-items:center; gap:6px; padding:7px 12px; border-radius:9px; font-size:13px; font-weight:600; color:var(--ink-3); cursor:pointer; }
+  .ctab.active{ background:var(--primary-soft); color:var(--primary); }
+  .ctab svg{ width:15px; height:15px; }
+  .compose-input{ padding:14px 16px; font-size:13.5px; color:var(--ink-4); }
+  .feed-bar{ display:flex; align-items:center; gap:14px; padding:0 4px; }
+  .fb-all{ font-size:13.5px; font-weight:700; color:var(--ink); }
+  .fb-all b{ color:var(--primary); margin-left:3px; }
+  .fb-filter{ display:inline-flex; align-items:center; gap:5px; font-size:13px; color:var(--ink-3); font-weight:600; cursor:pointer; }
+  .fb-filter svg{ width:14px; height:14px; }
+  .feed{ display:flex; flex-direction:column; gap:9px; }
+  .ev{ display:flex; align-items:center; gap:14px; background:var(--surface); border:1px solid var(--line); border-radius:13px; padding:15px 18px; box-shadow:var(--shadow-sm); cursor:pointer; transition:box-shadow .14s,transform .12s,border-color .14s; }
+  .ev:hover{ box-shadow:var(--shadow-md); transform:translateY(-1px); }
+  .ev-ico{ width:36px; height:36px; border-radius:10px; background:#eef0fe; color:var(--primary); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .ev-main{ flex:1; min-width:0; }
+  .ev-t{ font-size:14.5px; font-weight:700; color:var(--ink); }
+  .ev-meta{ font-size:12px; color:var(--ink-3); margin-top:4px; font-weight:500; }
+  .ev-date{ font-size:13.5px; font-weight:700; color:var(--ink); white-space:nowrap; flex-shrink:0; }
+  .cal{ background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow-sm); padding:18px; }
+  .cal-head{ display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+  .cal-title{ font-size:17px; font-weight:800; letter-spacing:-.02em; }
+  .cal-nav{ width:30px; height:30px; border-radius:8px; border:1px solid var(--line); background:#fff; cursor:pointer; color:var(--ink-2); font-size:15px; }
+  .cal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  .cal-dow{ background:#fafbfd; padding:8px; text-align:center; font-size:12px; font-weight:700; color:var(--ink-3); }
+  .cal-dow.sun{ color:#dc2626; } .cal-dow.sat{ color:#2563eb; }
+  .cal-cell{ background:#fff; min-height:94px; padding:6px 7px; }
+  .cal-cell.off{ background:#fafbfd; }
+  .cal-dnum{ font-size:12px; font-weight:600; color:var(--ink-2); margin-bottom:5px; }
+  .cal-cell.sun .cal-dnum{ color:#dc2626; } .cal-cell.sat .cal-dnum{ color:#2563eb; }
+  .cal-cell.off .cal-dnum{ color:var(--ink-4); }
+  .cal-cell.today .cal-dnum{ background:var(--primary); color:#fff; width:21px; height:21px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; }
+  .cal-ev{ font-size:11px; color:var(--ink-2); background:#eef0fe; border-radius:5px; padding:2px 5px; margin-bottom:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .cal-ev .t{ color:var(--primary); font-weight:700; }
+  .parts{ background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow-sm); position:sticky; top:18px; overflow:hidden; }
+  .parts-h{ font-size:14px; font-weight:700; padding:16px 18px 4px; }
+  .parts-h span{ color:var(--ink-3); margin-left:4px; }
+  .pgroup{ padding:10px 18px; }
+  .pg-t{ font-size:12px; font-weight:700; color:var(--ink-2); margin-bottom:8px; }
+  .pg-t span{ color:var(--ink-4); }
+  .prow{ display:flex; align-items:center; gap:10px; padding:7px 0; }
+  .pava{ width:34px; height:34px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; color:#fff; font-size:13px; font-weight:700; }
+  .pinfo{ flex:1; min-width:0; }
+  .pname{ font-size:13.5px; font-weight:700; color:var(--ink); }
+  .pname small{ font-size:11.5px; color:var(--primary); font-weight:600; margin-left:4px; }
+  .porg{ font-size:11.5px; color:var(--ink-3); margin-top:1px; }
+  .parts-foot{ display:grid; grid-template-columns:1fr 1fr; border-top:1px solid var(--line); }
+  .parts-foot button{ padding:13px; border:none; background:#fff; font-family:inherit; font-size:13px; font-weight:600; color:var(--ink-2); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; }
+  .parts-foot button:first-child{ border-right:1px solid var(--line); }
+  .parts-foot button:hover{ background:var(--line-soft); }
+  @media(max-width:1100px){ .sched-wrap{ grid-template-columns:1fr; } .parts{ position:static; } }
+  /* event compose modal */
+  .ev-modal-overlay{ display:none; position:fixed; inset:0; background:rgba(22,26,45,.45); z-index:1000; align-items:flex-start; justify-content:center; padding:46px 20px; backdrop-filter:blur(2px); }
+  .ev-modal-overlay.show{ display:flex; }
+  .ev-modal{ background:#fff; border-radius:18px; width:560px; max-width:100%; max-height:86vh; display:flex; flex-direction:column; box-shadow:0 24px 70px rgba(22,26,45,.3); overflow:hidden; }
+  .evm-head{ display:flex; align-items:center; justify-content:space-between; padding:17px 22px; border-bottom:1px solid var(--line); }
+  .evm-title{ font-size:15px; font-weight:700; display:flex; align-items:center; gap:8px; }
+  .evm-dot{ width:14px; height:14px; border-radius:4px; background:var(--primary); }
+  .evm-title .sub{ color:var(--ink-3); font-weight:500; font-size:13px; }
+  .evm-x{ width:30px; height:30px; border:none; background:transparent; color:var(--ink-3); font-size:15px; cursor:pointer; border-radius:8px; }
+  .evm-x:hover{ background:var(--line-soft); color:var(--ink-2); }
+  .evm-tabs{ display:flex; padding:12px 22px 0; border-bottom:1px solid var(--line); }
+  .evm-tab{ display:inline-flex; align-items:center; gap:6px; padding:9px 2px; margin-right:20px; font-size:13.5px; font-weight:700; color:var(--ink-3); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; }
+  .evm-tab svg{ width:15px; height:15px; }
+  .evm-tab.active{ color:var(--primary); border-bottom-color:var(--primary); }
+  .evm-body{ padding:16px 22px; overflow-y:auto; }
+  .evm-titleinput{ width:100%; border:none; border-bottom:1.5px solid var(--line); padding:9px 2px; font-size:18px; font-weight:600; font-family:inherit; outline:none; margin-bottom:6px; color:var(--ink); }
+  .evm-titleinput::placeholder{ color:var(--ink-4); font-weight:500; }
+  .evm-row{ display:flex; align-items:center; gap:11px; padding:11px 0; border-bottom:1px solid var(--line-soft); font-size:13.5px; color:var(--ink-2); }
+  .evm-row>svg{ color:var(--ink-3); flex-shrink:0; }
+  .evm-input{ border:none; font-family:inherit; font-size:13.5px; outline:none; color:var(--ink); padding:3px 2px; background:transparent; }
+  .evm-input.date{ font-weight:600; width:160px; border-bottom:1px solid transparent; }
+  .evm-input.date:focus{ border-bottom-color:var(--primary); }
+  .evm-input.grow{ flex:1; }
+  .evm-dash{ color:var(--ink-4); }
+  .evm-allday{ margin-left:auto; display:flex; align-items:center; gap:6px; font-size:13px; color:var(--ink-2); font-weight:600; }
+  .evm-chip{ display:inline-flex; align-items:center; gap:6px; background:var(--line-soft); padding:4px 6px 4px 4px; border-radius:20px; font-size:12.5px; font-weight:600; color:var(--ink); }
+  .evm-chip .pa{ width:22px; height:22px; border-radius:50%; background:#3b82f6; color:#fff; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; }
+  .evm-chip .rm{ color:var(--ink-3); cursor:pointer; }
+  .evm-link{ color:var(--primary); font-weight:600; cursor:pointer; }
+  .evm-row select{ border:none; font-family:inherit; font-size:13.5px; color:var(--ink); outline:none; background:transparent; cursor:pointer; font-weight:500; }
+  .evm-content{ width:100%; border:none; resize:vertical; min-height:190px; font-family:inherit; font-size:14px; outline:none; margin-top:14px; line-height:1.7; color:var(--ink); }
+  .evm-content::placeholder{ color:var(--ink-4); }
+  .evm-foot{ display:flex; align-items:center; justify-content:space-between; padding:13px 22px; border-top:1px solid var(--line); background:#fff; }
+  .evm-foot-left{ display:flex; gap:6px; }
+  .evm-foot-left button{ width:32px; height:32px; border:none; background:transparent; color:var(--ink-3); border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .evm-foot-left button:hover{ background:var(--line-soft); }
+  .evm-foot-right{ display:flex; align-items:center; gap:10px; }
+  .evm-scope{ font-size:12.5px; color:var(--ink-2); font-weight:600; display:inline-flex; align-items:center; gap:5px; cursor:pointer; }
+  .evm-draft{ padding:9px 14px; border:1px solid var(--line); background:#fff; border-radius:9px; font-family:inherit; font-size:13px; font-weight:600; color:var(--ink-2); cursor:pointer; }
+  .evm-submit{ padding:9px 22px; border:none; background:var(--primary); color:#fff; border-radius:9px; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; box-shadow:0 4px 12px rgba(79,70,229,.26); }
+  .evm-submit:hover{ background:var(--primary-600); }
+  /* date-time picker + location autocomplete */
+  .dtp{ position:fixed; z-index:1100; display:none; width:266px; background:#fff; border:1px solid var(--line); border-radius:14px; box-shadow:0 16px 40px rgba(22,26,45,.22); padding:14px; }
+  .dtp.show{ display:block; }
+  .dtp-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .dtp-y{ font-size:14px; font-weight:700; }
+  .dtp-nav{ width:26px; height:26px; border:none; background:transparent; color:var(--ink-3); cursor:pointer; border-radius:7px; font-size:15px; }
+  .dtp-nav:hover{ background:var(--line-soft); }
+  .dtp-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+  .dtp-dow{ text-align:center; font-size:11px; font-weight:700; color:var(--ink-3); padding:4px 0; }
+  .dtp-dow.s{ color:#dc2626; }
+  .dtp-day{ height:30px; display:flex; align-items:center; justify-content:center; font-size:12.5px; border-radius:8px; cursor:pointer; color:var(--ink-2); }
+  .dtp-day:hover{ background:var(--line-soft); }
+  .dtp-day.off{ color:var(--ink-4); pointer-events:none; }
+  .dtp-day.sel{ background:var(--primary); color:#fff; font-weight:700; }
+  .dtp-time{ display:flex; align-items:center; justify-content:center; gap:8px; margin:12px 0 10px; }
+  .dtp-time input{ width:56px; text-align:center; border:1px solid var(--line); border-radius:8px; padding:7px; font-family:inherit; font-size:14px; outline:none; }
+  .dtp-time input:focus{ border-color:var(--primary); }
+  .dtp-time span{ font-weight:700; color:var(--ink-3); }
+  .dtp-ok{ width:100%; padding:10px; border:none; background:var(--primary); color:#fff; border-radius:9px; font-family:inherit; font-size:13.5px; font-weight:700; cursor:pointer; }
+  .dtp-ok:hover{ background:var(--primary-600); }
+  .loc-drop{ position:fixed; z-index:1100; display:none; background:#fff; border:1px solid var(--line); border-radius:12px; box-shadow:0 16px 40px rgba(22,26,45,.2); padding:6px; min-width:330px; max-width:92vw; }
+  .loc-drop.show{ display:block; }
+  .loc-item{ display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:9px; cursor:pointer; font-size:13px; }
+  .loc-item:hover{ background:var(--line-soft); }
+  .loc-item svg{ color:var(--ink-3); flex-shrink:0; }
+  .loc-item b{ font-weight:700; color:var(--ink); }
+  .loc-item span{ color:var(--ink-3); }
+  .loc-foot{ text-align:right; font-size:10px; color:var(--ink-4); padding:3px 8px 2px; }
+  @keyframes evpop{ from{ opacity:0; transform:translateY(-8px); box-shadow:0 0 0 3px var(--primary-soft); } to{ opacity:1; transform:none; } }
+  .evm-files{ display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+  .evm-file{ display:inline-flex; align-items:center; gap:7px; background:var(--line-soft); border:1px solid var(--line); border-radius:9px; padding:7px 10px; font-size:12.5px; font-weight:600; color:var(--ink); max-width:100%; }
+  .evm-file svg{ color:var(--primary); flex-shrink:0; }
+  .evm-file span:not(.x){ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .evm-file .x{ color:var(--ink-3); cursor:pointer; margin-left:2px; flex-shrink:0; }
+  .evm-file .x:hover{ color:#dc2626; }
+  /* event detail side panel */
+  .evd-ovl{ position:fixed; inset:0; background:rgba(22,26,45,.28); z-index:1190; opacity:0; pointer-events:none; transition:opacity .22s; }
+  .evd-ovl.show{ opacity:1; pointer-events:auto; }
+  .evd{ position:fixed; top:0; right:-430px; width:390px; max-width:92vw; height:100vh; background:#fff; border-left:1px solid var(--line); box-shadow:-12px 0 40px rgba(22,26,45,.14); z-index:1200; transition:right .28s cubic-bezier(.4,0,.2,1); display:flex; flex-direction:column; }
+  .evd.show{ right:0; }
+  .evd-head{ display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--line); }
+  .evd-h-t{ display:flex; align-items:center; gap:8px; font-size:14px; font-weight:700; }
+  .evd-dot{ width:13px; height:13px; border-radius:4px; background:var(--primary); }
+  .evd-x{ width:30px; height:30px; border:none; background:transparent; color:var(--ink-3); cursor:pointer; border-radius:8px; display:flex; align-items:center; justify-content:center; }
+  .evd-x:hover{ background:var(--line-soft); }
+  .evd-body{ padding:18px 20px; flex:1; overflow-y:auto; }
+  .evd-author{ display:flex; align-items:center; gap:10px; padding-bottom:16px; border-bottom:1px solid var(--line-soft); }
+  .evd-ava{ width:36px; height:36px; border-radius:50%; background:linear-gradient(140deg,#ec4899,#8b5cf6); color:#fff; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; }
+  .evd-an{ font-size:13.5px; font-weight:700; }
+  .evd-ac{ font-size:11.5px; color:var(--ink-3); margin-top:2px; }
+  .evd-main{ display:flex; align-items:center; gap:16px; padding:20px 0; }
+  .evd-chip{ width:62px; height:64px; border-radius:14px; background:linear-gradient(160deg,#10b981,#22c55e); color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 6px 14px rgba(16,185,129,.26); }
+  .evd-chip .m{ font-size:10px; font-weight:600; opacity:.92; }
+  .evd-chip .d{ font-size:24px; font-weight:800; line-height:1.1; }
+  .evd-title{ font-size:18px; font-weight:800; letter-spacing:-.02em; }
+  .evd-time{ font-size:13.5px; color:var(--ink-2); margin-top:6px; font-weight:500; }
+  .evd-row{ display:flex; align-items:center; gap:11px; padding:14px 0; border-top:1px solid var(--line-soft); font-size:13.5px; color:var(--ink-2); font-weight:500; }
+  .evd-row svg{ color:var(--ink-3); flex-shrink:0; }
+  .evd-row b{ font-weight:700; }
+  .evd-actions{ display:flex; gap:18px; padding:14px 0 0; border-top:1px solid var(--line-soft); margin-top:4px; }
+  .evd-actions span{ display:inline-flex; align-items:center; gap:6px; font-size:13px; color:var(--ink-3); font-weight:600; cursor:pointer; }
+  .evd-actions span:hover{ color:var(--primary); }
+  .evd-foot{ padding:14px 20px; border-top:1px solid var(--line); }
+  .evd-foot input{ width:100%; border:1px solid var(--line); border-radius:11px; padding:12px 14px; font-family:inherit; font-size:13px; outline:none; }
+  .evd-foot input:focus{ border-color:var(--primary); box-shadow:0 0 0 3px var(--primary-soft); }
+  @media (max-width:1080px){ .app, .app.collapsed{ grid-template-columns:1fr; } .sidebar{ display:none; } .page-head,.sched-wrap{ padding-left:16px; padding-right:16px; } }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ===== Sidebar ===== -->
+  <aside class="sidebar">
+    <div class="side-top">
+    <div class="logo">
+      <div class="logo-mark"><svg width="21" height="21" viewBox="0 0 24 24" fill="none"><path d="M7 8.5 12 14.5 17 8.5" stroke="#fff" stroke-opacity=".55" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7" cy="8" r="2.6" fill="#fff"/><circle cx="17" cy="8" r="2.6" fill="#fff"/><circle cx="12" cy="15.5" r="3.1" fill="#fff"/></svg></div>
+      <div class="logo-name">MO<b>IDA</b></div>
+    </div>
+    <button class="collapse-btn" data-collapse aria-label="사이드바 접기"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
+    </div>
+    <button class="new-btn"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>빠른 작성</button>
+    <nav>
+      <a class="nav-item" href="moida-dashboard.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg><span class="nm">대시보드</span></a>
+      <a class="nav-item" href="moida-notices.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 14-6v14L3 13z"/><path d="M3 11v2a2 2 0 0 0 2 2h2"/></svg><span class="nm">공지사항</span><span class="badge">1</span></a>
+      <a class="nav-item" href="index.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="7" r="2.3"/><path d="M16.5 13.5a5 5 0 0 1 4.5 5"/></svg><span class="nm">조직관리</span></a>
+      <a class="nav-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4" width="17" height="17" rx="3"/><path d="m8 12 3 3 5-6"/></svg><span class="nm">업무</span></a>
+      <a class="nav-item active"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16" rx="3"/><path d="M3.5 9h17M8 3v3M16 3v3"/></svg><span class="nm">일정</span></a>
+    </nav>
+    <div class="sec"><span class="sec-t">바로가기</span></div>
+    <div>
+      <div class="upd-item"><span class="swatch s-blue"></span>경기도의원 일정</div>
+      <div class="upd-item"><span class="swatch s-orange"></span>당원 명부</div>
+      <div class="upd-item"><span class="swatch s-red"></span>후원회 관리</div>
+      <div class="upd-item"><span class="swatch s-yellow"></span>현안 자료실</div>
+      <div class="upd-item"><span class="swatch s-sky"></span>지역 민원</div>
+    </div>
+    <div class="sec"><span class="sec-t">준비중</span></div>
+    <nav>
+      <a class="nav-item dim"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V4M4 20h16"/><rect x="8" y="11" width="3" height="6"/><rect x="13" y="7" width="3" height="10"/></svg><span class="nm">통계 / 분석</span><span class="badge muted">곧 출시</span></a>
+    </nav>
+    <div class="side-foot">
+      <a class="foot-item" href="admin.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 7 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7H1a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 2.6 7a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 7 2.6h.1A1.6 1.6 0 0 0 9 1.1V1a2 2 0 1 1 4 0v.1A1.6 1.6 0 0 0 17 2.6a1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1.1 2.7H23a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg><span>관리자 페이지</span></a>
+      <div class="foot-mail">banedict84@gmail.com</div>
+      <a class="foot-item" href="#" onclick="doLogout();return false;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 17l5-5-5-5M15 12H3"/></svg><span>로그아웃</span></a>
+    </div>
+  </aside>
+
+  <!-- ===== Main ===== -->
+  <main class="main">
+    <div class="page-head">
+      <div class="ph-mark"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16" rx="3"/><path d="M3.5 9h17M8 3v3M16 3v3"/></svg></div>
+      <div class="ph-info">
+        <h1>경기도의원 일정 <span class="ext-badge">외부</span></h1>
+        <div class="ph-sub">경기도의원 장윤정 · 안산시 상록구 이동·일동·성포동</div>
+        <div class="ph-conn"><span class="led"></span>서버 연결됨</div>
+      </div>
+      <div class="ph-right">
+        <div class="view-toggle">
+          <button class="vbtn active" data-view="feed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>목록</button>
+          <button class="vbtn" data-view="cal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16" rx="3"/><path d="M3.5 9h17M8 3v3M16 3v3"/></svg>캘린더</button>
+        </div>
+        <button class="add-ev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>일정 추가</button>
+      </div>
+    </div>
+
+    <div class="sched-wrap">
+      <div class="sched-main">
+        <div class="compose">
+          <div class="compose-tabs">
+            <span class="ctab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>글</span>
+            <span class="ctab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>업무</span>
+            <span class="ctab active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16" rx="3"/><path d="M3.5 9h17M8 3v3M16 3v3"/></svg>일정</span>
+            <span class="ctab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4" width="17" height="17" rx="3"/><path d="m8 12 3 3 5-6"/></svg>할일</span>
+            <span class="ctab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v12H7l-3 3z"/></svg>투표</span>
+          </div>
+          <div class="compose-input">제목과 일시를 입력해 새 일정을 추가하세요…</div>
+        </div>
+        <div class="feed-bar"><span class="fb-all">전체 <b id="evCount">9</b></span><span class="fb-filter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>필터</span></div>
+        <div id="feedView" class="feed"></div>
+        <div id="calView" class="cal" hidden>
+          <div class="cal-head"><button class="cal-nav">‹</button><div class="cal-title">2026년 6월</div><button class="cal-nav">›</button></div>
+          <div class="cal-grid" id="calGrid"></div>
+        </div>
+      </div>
+      <aside class="parts">
+        <div class="parts-h">참여자 <span>5</span></div>
+        <div class="pgroup">
+          <div class="pg-t">프로젝트 관리자 <span>3</span></div>
+          <div class="prow"><span class="pava" style="background:#8b5cf6">박</span><div class="pinfo"><div class="pname">박지영</div><div class="porg">주식회사이레</div></div></div>
+          <div class="prow"><span class="pava" style="background:#3b82f6">방</span><div class="pinfo"><div class="pname">방민성 <small>(나) 대표이사</small></div><div class="porg">주식회사이레</div></div></div>
+          <div class="prow"><span class="pava" style="background:#ec4899">장</span><div class="pinfo"><div class="pname">장윤정 <small>경기도의원</small></div><div class="porg">주식회사이레</div></div></div>
+        </div>
+        <div class="pgroup">
+          <div class="pg-t">외부인 <span>1</span></div>
+          <div class="prow"><span class="pava" style="background:#94a3b8">문</span><div class="pinfo"><div class="pname">문혜인</div></div></div>
+        </div>
+        <div class="pgroup">
+          <div class="pg-t">임직원 <span>1</span></div>
+          <div class="prow"><span class="pava" style="background:#f59e0b">반</span><div class="pinfo"><div class="pname">반수정 <small>행정책임자</small></div><div class="porg">주식회사이레</div></div></div>
+        </div>
+        <div class="parts-foot">
+          <button><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>채팅</button>
+          <button><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>화상회의</button>
+        </div>
+      </aside>
+    </div>
+  </main>
+</div>
+
+<div class="ev-modal-overlay" id="evModal">
+  <div class="ev-modal">
+    <div class="evm-head">
+      <div class="evm-title"><span class="evm-dot"></span>게시물 작성 <span class="sub">· 경기도의원 일정</span></div>
+      <button class="evm-x" data-evclose aria-label="닫기"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="evm-tabs">
+      <span class="evm-tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>글</span>
+      <span class="evm-tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>업무</span>
+      <span class="evm-tab active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16" rx="3"/><path d="M3.5 9h17M8 3v3M16 3v3"/></svg>일정</span>
+      <span class="evm-tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4" width="17" height="17" rx="3"/><path d="m8 12 3 3 5-6"/></svg>할일</span>
+      <span class="evm-tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v12H7l-3 3z"/></svg>투표</span>
+    </div>
+    <div class="evm-body">
+      <input class="evm-titleinput" placeholder="제목을 입력하세요">
+      <div class="evm-row">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16" rx="3"/><path d="M3.5 9h17M8 3v3M16 3v3"/></svg>
+        <input class="evm-input date" value="2026-06-19 (금), 14:40">
+        <span class="evm-dash">—</span>
+        <input class="evm-input date" value="2026-06-19 (금), 15:40">
+        <label class="evm-allday"><input type="checkbox"> 종일</label>
+      </div>
+      <div class="evm-row">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/></svg>
+        <span class="evm-chip"><span class="pa">방</span>방민성 <span class="rm">✕</span></span>
+        <input class="evm-input grow" placeholder="참석자 추가">
+      </div>
+      <div class="evm-row">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.6-7-11a7 7 0 0 1 14 0c0 5.4-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+        <input class="evm-input grow" placeholder="장소를 입력하세요">
+      </div>
+      <div class="evm-row">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+        <span class="evm-link">화상회의 추가</span>
+      </div>
+      <div class="evm-row">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+        <select><option>10분 전 미리 알림</option><option>30분 전 미리 알림</option><option>1시간 전 미리 알림</option><option>하루 전 미리 알림</option><option>알림 없음</option></select>
+      </div>
+      <textarea class="evm-content" placeholder="여기에 내용을 작성해 주세요"></textarea>
+    </div>
+    <div class="evm-foot">
+      <div class="evm-foot-left">
+        <button title="AI"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8z"/></svg></button>
+        <button title="서식"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7V5h14v2M9 19h6M12 5v14"/></svg></button>
+        <button title="첨부"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9.5 9.5a3.5 3.5 0 0 1-5-5L15 4a2.3 2.3 0 0 1 3.3 3.3L9 16.5"/></svg></button>
+      </div>
+      <div class="evm-foot-right">
+        <span class="evm-scope">프로젝트 참여자만 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span>
+        <button class="evm-draft">임시저장</button>
+        <button class="evm-submit" data-evclose>등록</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase Auth -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAIjhvbCztHoF7YwP2IYIk2C6jCI64uFhs",
+    authDomain: "jjj2195-1bd15.firebaseapp.com",
+    projectId: "jjj2195-1bd15",
+    storageBucket: "jjj2195-1bd15.firebasestorage.app",
+    messagingSenderId: "989607549074",
+    appId: "1:989607549074:web:64b860ffe269408c8e498c"
+  };
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  onAuthStateChanged(auth, (user) => {
+    if (!user) {
+      window.location.href = 'index.html';
+    }
+  });
+
+  window.doLogout = async function() {
+    await signOut(auth);
+    window.location.href = 'index.html';
+  };
+</script>
+
+<script>
+  const events = [
+    { title:"안산학교", author:"장윤정", created:"2026-06-17 13:43", date:"2026-06-25", time:"18:00", d:25 },
+    { title:"보험미팅", author:"장윤정", created:"2026-06-17 11:32", date:"2026-06-23", time:"14:00", d:23 },
+    { title:"임종성의원", author:"장윤정", created:"2026-06-16 20:52", date:"2026-06-18", time:"19:00", d:18 },
+    { title:"만찬안내 (한,정,황,장)", author:"방민성", created:"2026-06-16 15:21", date:"2026-07-01", time:"18:00", d:null },
+    { title:"된장만들기 체험 주민자치사업", author:"방민성", created:"2026-06-16 15:20", date:"2026-06-21", time:"10:30", d:21 },
+    { title:"된장만들기 체험 성포주민자치회 자치사업", author:"방민성", created:"2026-06-16 15:20", date:"2026-06-20", time:"10:30", d:20 },
+    { title:"성포·일·이동 주민자치회장 미팅", author:"장윤정", created:"2026-06-16 14:07", date:"2026-06-22", time:"18:30", d:22 },
+    { title:"수암 119센터 개청식", author:"방민성", created:"2026-06-16 12:28", date:"2026-06-23", time:"10:00", d:23 },
+    { title:"박은경의원 미팅", author:"방민성", created:"2026-06-16 11:42", date:"2026-06-17", time:"10:00", d:17 },
+  ];
+
+  const calIco = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16" rx="3"/><path d="M3.5 9h17M8 3v3M16 3v3"/></svg>';
+  document.getElementById('feedView').innerHTML = events.map(function(e){ return '<div class="ev"><div class="ev-ico">'+calIco+'</div><div class="ev-main"><div class="ev-t">'+e.title+'</div><div class="ev-meta">'+e.author+' · '+e.created+'</div></div><div class="ev-date">'+e.date+' '+e.time+'</div></div>'; }).join('');
+  document.getElementById('evCount').textContent = events.length;
+
+  (function(){
+    const grid = document.getElementById('calGrid');
+    const dows = ['일','월','화','수','목','금','토'];
+    let html = dows.map(function(d,i){ return '<div class="cal-dow '+(i===0?'sun':i===6?'sat':'')+'">'+d+'</div>'; }).join('');
+    const startDow = new Date(2026,5,1).getDay();
+    const prevDays = new Date(2026,5,0).getDate();
+    const cells = [];
+    for(let i=startDow-1;i>=0;i--) cells.push({off:true,n:prevDays-i});
+    for(let d=1;d<=30;d++) cells.push({off:false,n:d});
+    let nx=1; while(cells.length%7!==0) cells.push({off:true,n:nx++});
+    const byDay = {}; events.forEach(function(e){ if(e.d){ (byDay[e.d]=byDay[e.d]||[]).push(e); } });
+    const today = new Date();
+    const todayNum = (today.getFullYear()===2026 && today.getMonth()===5) ? today.getDate() : -1;
+    html += cells.map(function(c,i){
+      const dow=i%7;
+      const evs = (!c.off && byDay[c.n]) ? byDay[c.n].map(function(e){ return '<div class="cal-ev"><span class="t">'+e.time+'</span> '+e.title+'</div>'; }).join('') : '';
+      return '<div class="cal-cell '+(c.off?'off ':'')+(dow===0?'sun ':dow===6?'sat ':'')+((!c.off&&c.n===todayNum)?'today':'')+'"><div class="cal-dnum">'+c.n+'</div>'+evs+'</div>';
+    }).join('');
+    grid.innerHTML = html;
+  })();
+
+  document.querySelectorAll('.vbtn').forEach(function(b){ b.addEventListener('click',function(){
+    document.querySelectorAll('.vbtn').forEach(function(x){ x.classList.remove('active'); }); b.classList.add('active');
+    var v=b.dataset.view;
+    document.getElementById('feedView').style.display = v==='feed'?'flex':'none';
+    document.querySelector('.feed-bar').style.display = v==='feed'?'flex':'none';
+    document.getElementById('calView').style.display = v==='cal'?'block':'none';
+  }); });
+  document.querySelectorAll('.ctab').forEach(function(t){ t.addEventListener('click',function(){
+    document.querySelectorAll('.ctab').forEach(function(x){ x.classList.remove('active'); }); t.classList.add('active');
+  }); });
+
+  // event compose modal
+  (function(){
+    var m = document.getElementById('evModal');
+    function open(){ m.classList.add('show'); }
+    function close(){ m.classList.remove('show'); }
+    document.querySelectorAll('.ctab').forEach(function(t){ t.addEventListener('click', open); });
+    var add = document.querySelector('.add-ev'); if(add) add.addEventListener('click', open);
+    document.querySelectorAll('[data-evclose]').forEach(function(b){ b.addEventListener('click', close); });
+    m.addEventListener('click', function(e){ if(e.target===m) close(); });
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape') close(); });
+    document.querySelectorAll('.evm-tab').forEach(function(t){ t.addEventListener('click', function(){ document.querySelectorAll('.evm-tab').forEach(function(x){ x.classList.remove('active'); }); t.classList.add('active'); }); });
+  })();
+
+  // date-time picker + location autocomplete
+  (function(){
+    var dtp = document.createElement('div'); dtp.className='dtp'; document.body.appendChild(dtp);
+    var target=null, yr=2026, mo=5, sel=19, hh='14', mm='40';
+    var dows=['일','월','화','수','목','금','토'];
+    function render(){
+      var h='<div class="dtp-head"><button class="dtp-nav" data-m="-1">‹</button><div class="dtp-y">'+yr+' · '+(mo+1)+'월</div><button class="dtp-nav" data-m="1">›</button></div><div class="dtp-grid">';
+      h+=dows.map(function(d,i){ return '<div class="dtp-dow '+(i===0?'s':'')+'">'+d+'</div>'; }).join('');
+      var start=new Date(yr,mo,1).getDay(), dim=new Date(yr,mo+1,0).getDate(), prev=new Date(yr,mo,0).getDate();
+      for(var i=start-1;i>=0;i--) h+='<div class="dtp-day off">'+(prev-i)+'</div>';
+      for(var d=1;d<=dim;d++) h+='<div class="dtp-day '+(d===sel?'sel':'')+'" data-d="'+d+'">'+d+'</div>';
+      h+='</div><div class="dtp-time"><input id="dtpH" value="'+hh+'" maxlength="2"><span>:</span><input id="dtpM" value="'+mm+'" maxlength="2"></div><button class="dtp-ok">선택</button>';
+      dtp.innerHTML=h;
+    }
+    function fmt(){ var dn=dows[new Date(yr,mo,sel).getDay()]; return yr+'-'+String(mo+1).padStart(2,'0')+'-'+String(sel).padStart(2,'0')+' ('+dn+'), '+hh+':'+mm; }
+    function open(inp){ target=inp; render(); var r=inp.getBoundingClientRect(); dtp.style.left=Math.min(r.left, window.innerWidth-282)+'px'; dtp.style.top=(r.bottom+6)+'px'; dtp.classList.add('show'); }
+    dtp.addEventListener('click',function(e){
+      var nav=e.target.closest('.dtp-nav');
+      if(nav){ mo+=+nav.dataset.m; if(mo<0){mo=11;yr--;} if(mo>11){mo=0;yr++;} render(); return; }
+      var day=e.target.closest('.dtp-day[data-d]'); if(day){ sel=+day.dataset.d; render(); return; }
+      if(e.target.closest('.dtp-ok')){ hh=(document.getElementById('dtpH').value||'00').padStart(2,'0'); mm=(document.getElementById('dtpM').value||'00').padStart(2,'0'); if(target) target.value=fmt(); dtp.classList.remove('show'); }
+    });
+    document.querySelectorAll('.evm-input.date').forEach(function(inp){ inp.readOnly=true; inp.style.cursor='pointer'; inp.addEventListener('click',function(){ open(inp); }); });
+
+    var loc=document.createElement('div'); loc.className='loc-drop'; document.body.appendChild(loc);
+    var pin='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.6-7-11a7 7 0 0 1 14 0c0 5.4-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>';
+    var sugg=[{b:'안산시',s:'대한민국 경기도'},{b:'안산 시',s:'중국 랴오닝 성'},{b:'안산시청',s:'대한민국 경기도 안산시 단원구 화랑로'},{b:'안산시',s:'프랑스'},{b:'단원구 골안길',s:'대한민국 경기도 안산시'}];
+    var locInput=document.querySelector('.evm-input.grow[placeholder="장소를 입력하세요"]');
+    function showLoc(){ loc.innerHTML=sugg.map(function(x){ return '<div class="loc-item">'+pin+'<div><b>'+x.b+'</b> <span>'+x.s+'</span></div></div>'; }).join('')+'<div class="loc-foot">powered by Google</div>'; var r=locInput.getBoundingClientRect(); loc.style.left=Math.min(r.left, window.innerWidth-346)+'px'; loc.style.top=(r.bottom+6)+'px'; loc.classList.add('show'); }
+    if(locInput){
+      locInput.addEventListener('input',function(){ if(locInput.value.trim()) showLoc(); else loc.classList.remove('show'); });
+      loc.addEventListener('click',function(e){ var it=e.target.closest('.loc-item'); if(it){ locInput.value=it.querySelector('b').textContent; loc.classList.remove('show'); } });
+    }
+    document.addEventListener('mousedown',function(e){
+      if(!dtp.contains(e.target) && !(e.target.classList&&e.target.classList.contains('date'))) dtp.classList.remove('show');
+      if(!loc.contains(e.target) && e.target!==locInput) loc.classList.remove('show');
+    });
+  })();
+
+  // register event on submit
+  (function(){
+    var sb=document.querySelector('.evm-submit'); if(!sb) return;
+    var feed=document.getElementById('feedView');
+    var ico='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16" rx="3"/><path d="M3.5 9h17M8 3v3M16 3v3"/></svg>';
+    sb.addEventListener('click',function(){
+      var ti=document.querySelector('.evm-titleinput');
+      var title=(ti.value||'').trim()||'(제목 없음)';
+      var start=document.querySelectorAll('.evm-input.date')[0].value;
+      var now=new Date();
+      var p=function(n){ return String(n).padStart(2,'0'); };
+      var created=now.getFullYear()+'-'+p(now.getMonth()+1)+'-'+p(now.getDate())+' '+p(now.getHours())+':'+p(now.getMinutes());
+      var mt=start.match(/(\d{4}-\d{2}-\d{2}).*?(\d{2}:\d{2})/);
+      var evdate=mt?(mt[1]+' '+mt[2]):start;
+      var el=document.createElement('div'); el.className='ev'; el.style.animation='evpop .35s ease';
+      el.innerHTML='<div class="ev-ico">'+ico+'</div><div class="ev-main"><div class="ev-t">'+title+'</div><div class="ev-meta">방민성 · '+created+'</div></div><div class="ev-date">'+evdate+'</div>';
+      feed.insertBefore(el, feed.firstChild);
+      var cnt=document.getElementById('evCount'); if(cnt) cnt.textContent=(+cnt.textContent+1);
+      var fb=document.querySelector('.vbtn[data-view="feed"]'); if(fb) fb.click();
+      ti.value=''; var ct=document.querySelector('.evm-content'); if(ct) ct.value='';
+    });
+  })();
+
+  // file attach
+  (function(){
+    var btn=document.querySelector('.evm-foot-left button[title="첨부"]'); if(!btn) return;
+    var body=document.querySelector('.evm-body');
+    var fi=document.createElement('input'); fi.type='file'; fi.multiple=true; fi.style.display='none'; document.body.appendChild(fi);
+    var box=null;
+    btn.addEventListener('click',function(){ fi.click(); });
+    fi.addEventListener('change',function(){
+      if(!fi.files.length) return;
+      if(!box){ box=document.createElement('div'); box.className='evm-files'; body.appendChild(box); }
+      Array.prototype.forEach.call(fi.files,function(f){
+        var kb=f.size<1024?f.size+'B':(f.size<1048576?Math.round(f.size/1024)+'KB':(f.size/1048576).toFixed(1)+'MB');
+        var chip=document.createElement('div'); chip.className='evm-file';
+        chip.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9.5 9.5a3.5 3.5 0 0 1-5-5L15 4a2.3 2.3 0 0 1 3.3 3.3L9 16.5"/></svg><span>'+f.name+'</span><span style="color:var(--ink-3);font-weight:500">'+kb+'</span><span class="x">✕</span>';
+        chip.querySelector('.x').addEventListener('click',function(){ chip.remove(); });
+        box.appendChild(chip);
+      });
+      fi.value='';
+    });
+  })();
+
+  // event detail side panel
+  (function(){
+    var feed=document.getElementById('feedView'); if(!feed) return;
+    var ovl=document.createElement('div'); ovl.className='evd-ovl'; document.body.appendChild(ovl);
+    var p=document.createElement('div'); p.className='evd';
+    p.innerHTML='<div class="evd-head"><div class="evd-h-t"><span class="evd-dot"></span>경기도의원 일정</div><button class="evd-x" data-x><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>'+
+      '<div class="evd-body">'+
+      '<div class="evd-author"><span class="evd-ava" id="evdAva">장</span><div><div class="evd-an" id="evdAuthor"></div><div class="evd-ac" id="evdCreated"></div></div></div>'+
+      '<div class="evd-main"><div class="evd-chip"><span class="m" id="evdMon"></span><span class="d" id="evdDay"></span></div><div><div class="evd-title" id="evdTitle"></div><div class="evd-time" id="evdTime"></div></div></div>'+
+      '<div class="evd-row"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/></svg><span>참석 <b style="color:#10b981">1</b> · 불참 <b style="color:#dc2626">0</b> · 미정 <b style="color:#9298a8">0</b></span></div>'+
+      '<div class="evd-row"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>10분 전 미리 알림</div>'+
+      '<div class="evd-actions"><span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 11v8H4v-8zM7 11l4-7a2 2 0 0 1 3 2l-1 5h5a2 2 0 0 1 2 2.3l-1 5A2 2 0 0 1 16 21H7"/></svg>좋아요</span><span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg>북마크</span><span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>다시 알림</span></div>'+
+      '</div>'+
+      '<div class="evd-foot"><input placeholder="줄바꿈 Shift + Enter / 입력 Enter 입니다."></div>';
+    document.body.appendChild(p);
+    var dows=['일','월','화','수','목','금','토'];
+    function close(){ p.style.right='-430px'; p.classList.remove('show'); ovl.classList.remove('show'); }
+    p.querySelector('[data-x]').addEventListener('click', close);
+    ovl.addEventListener('click', close);
+    document.addEventListener('keydown',function(e){ if(e.key==='Escape') close(); });
+    feed.addEventListener('click',function(e){
+      var ev=e.target.closest('.ev'); if(!ev) return;
+      var title=ev.querySelector('.ev-t').textContent.trim();
+      var meta=ev.querySelector('.ev-meta').textContent.trim();
+      var author=meta.split('·')[0].trim();
+      var created=meta.split('·').slice(1).join('·').trim();
+      var dt=ev.querySelector('.ev-date').textContent.trim();
+      var mm=dt.match(/(\d{4})-(\d{2})-(\d{2})(?:\s*(\d{2}:\d{2}))?/);
+      p.querySelector('#evdAuthor').textContent=author;
+      p.querySelector('#evdAva').textContent=author.charAt(0);
+      p.querySelector('#evdCreated').textContent=created;
+      p.querySelector('#evdTitle').textContent=title;
+      if(mm){
+        var dObj=new Date(+mm[1],+mm[2]-1,+mm[3]);
+        p.querySelector('#evdMon').textContent=mm[1]+'-'+mm[2];
+        p.querySelector('#evdDay').textContent=+mm[3];
+        p.querySelector('#evdTime').textContent=mm[1]+'-'+mm[2]+'-'+mm[3]+' ('+dows[dObj.getDay()]+')'+(mm[4]?', '+mm[4]:'');
+      } else { p.querySelector('#evdTime').textContent=dt; }
+      p.style.right='0px'; p.classList.add('show'); ovl.classList.add('show');
+    });
+  })();
+
+  // sidebar collapse
+  (function(){
+    var app=document.querySelector('.app'); var KEY='moida_sidebar_collapsed';
+    if(localStorage.getItem(KEY)==='1') app.classList.add('collapsed');
+    document.querySelectorAll('.nav-item').forEach(function(n){ var t=n.querySelector('.nm'); if(t) n.setAttribute('data-tip', t.textContent.trim()); });
+    document.querySelectorAll('.foot-item').forEach(function(n){ var t=n.querySelector('span'); if(t) n.setAttribute('data-tip', t.textContent.trim()); });
+    document.querySelectorAll('[data-collapse]').forEach(function(b){ b.addEventListener('click',function(){
+      app.classList.toggle('collapsed');
+      localStorage.setItem(KEY, app.classList.contains('collapsed')?'1':'0');
+    }); });
+  })();
+</script>
+</body>
+</html>
