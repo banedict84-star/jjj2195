@@ -358,8 +358,8 @@ html,body{height:100%;font-family:'Apple SD Gothic Neo','Malgun Gothic','Noto Sa
 .sidebar-nav{flex:1;padding:12px 8px;overflow-y:auto}
 .sidebar-section-label{font-size:10px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px 4px}
 .sidebar-item{
-  display:flex;align-items:center;gap:10px;padding:9px 12px;
-  cursor:pointer;color:#4b5563;font-size:13px;font-weight:500;
+  display:flex;align-items:center;gap:10px;padding:10px 14px;
+  cursor:pointer;color:#4b5563;font-size:14px;font-weight:500;
   transition:all .1s;border-radius:8px;margin-bottom:2px;
   white-space:nowrap;overflow:hidden;
 }
@@ -419,7 +419,7 @@ html,body{height:100%;font-family:'Apple SD Gothic Neo','Malgun Gothic','Noto Sa
 /* ─── 공지사항 게시판 ─── */
 .notice-page{padding:24px 28px;overflow-y:auto;background:transparent;min-height:100vh}
 .notice-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
-.notice-header h2{font-size:20px;font-weight:800;color:#1a237e}
+.notice-header h2{font-size:22px;font-weight:800;color:#1a237e}
 .notice-board{
   background:#fff;border-radius:16px;overflow:hidden;
   box-shadow:0 2px 12px rgba(0,0,0,.06);border:none;
@@ -494,64 +494,69 @@ html,body{height:100%;font-family:'Apple SD Gothic Neo','Malgun Gothic','Noto Sa
 }
 
 /* ─── 대시보드 ─── */
-.dash-page{padding:28px;overflow-y:auto;background:transparent;min-height:100vh}
-.dash-welcome{margin-bottom:24px;background:linear-gradient(135deg,#4facfe 0%,#00f2fe 100%);border-radius:16px;padding:28px 32px;color:#fff;position:relative;overflow:hidden}
+.dash-page{padding:32px;overflow-y:auto;background:transparent;min-height:100vh}
+.dash-welcome{margin-bottom:28px;background:linear-gradient(135deg,#4facfe 0%,#00f2fe 100%);border-radius:18px;padding:36px 40px;color:#fff;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:space-between}
 .dash-welcome::after{content:'';position:absolute;right:-30px;top:-30px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.12)}
 .dash-welcome::before{content:'';position:absolute;right:60px;bottom:-40px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.08)}
-.dash-greeting{font-size:24px;font-weight:800;color:#fff}
-.dash-date{font-size:14px;color:rgba(255,255,255,.85);margin-top:4px}
-.dash-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
-.dash-stat-card{background:#fff;border-radius:16px;padding:20px;border:none;cursor:pointer;transition:all .2s;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.06)}
+.dash-greeting{font-size:28px;font-weight:800;color:#fff}
+.dash-date{font-size:15px;color:rgba(255,255,255,.9);position:relative;z-index:1;text-align:right;white-space:nowrap}
+.dash-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
+.dash-stat-card{background:#fff;border-radius:16px;padding:22px 16px;border:none;cursor:pointer;transition:all .2s;text-align:left;box-shadow:0 2px 12px rgba(0,0,0,.06);display:flex;align-items:center;gap:16px}
 .dash-stat-card:hover{box-shadow:0 6px 20px rgba(0,0,0,.1);transform:translateY(-2px)}
-.dash-stat-icon{font-size:28px;margin-bottom:8px;width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px}
+.dash-stat-icon{font-size:28px;width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .dash-stat-card:nth-child(1) .dash-stat-icon{background:#e8f4fd}
 .dash-stat-card:nth-child(2) .dash-stat-icon{background:#fef3e2}
 .dash-stat-card:nth-child(3) .dash-stat-icon{background:#e8fdf0}
 .dash-stat-card:nth-child(4) .dash-stat-icon{background:#fde8e8}
-.dash-stat-num{font-size:28px;font-weight:700;color:#1a1a2e}
-.dash-stat-label{font-size:12px;color:#6b7280;margin-top:2px;font-weight:500}
-.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.dash-card{background:#fff;border-radius:16px;border:none;padding:22px;min-height:200px;box-shadow:0 2px 12px rgba(0,0,0,.06)}
+.dash-stat-text{flex:1}
+.dash-stat-num{font-size:24px;font-weight:700;color:#1a1a2e;margin-top:2px}
+.dash-stat-unit{font-size:14px;font-weight:500;color:#6b7280;margin-left:2px}
+.dash-stat-label{font-size:13px;color:#6b7280;font-weight:500}
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.dash-card{background:#fff;border-radius:16px;border:none;padding:24px;min-height:200px;box-shadow:0 2px 12px rgba(0,0,0,.06)}
 .dash-card-wide{grid-column:1/-1}
-.dash-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
-.dash-card-header h3{font-size:15px;font-weight:700;color:#333}
-.dash-card-link{font-size:12px;color:#2196F3;cursor:pointer;font-weight:600}
+.dash-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #f0f2f5}
+.dash-card-header h3{font-size:17px;font-weight:700;color:#1a1a2e}
+.dash-card-link{font-size:13px;color:#2196F3;cursor:pointer;font-weight:600}
 .dash-card-link:hover{text-decoration:underline}
-.dash-notice-item{padding:10px 0;border-bottom:1px solid #f0f2f5}
+.dash-notice-item{padding:12px 0;border-bottom:1px solid #f0f2f5}
 .dash-notice-item:last-child{border-bottom:none}
-.dash-notice-title{font-size:13px;font-weight:600;color:#1a1a1a}
-.dash-notice-date{font-size:11px;color:#9ca3af;margin-top:2px}
-.dash-task-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f0f2f5}
+.dash-notice-title{font-size:14px;font-weight:600;color:#1a1a1a}
+.dash-notice-date{font-size:12px;color:#9ca3af;margin-top:3px}
+.dash-task-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f0f2f5}
 .dash-task-item:last-child{border-bottom:none}
-.dash-task-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dash-task-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 .dash-task-dot.todo{background:#d1d5db}
 .dash-task-dot.doing{background:#3b82f6}
 .dash-task-dot.done{background:#22c55e}
-.dash-task-name{font-size:13px;color:#333;flex:1}
-.dash-task-due{font-size:11px;color:#9ca3af}
-.dash-sched-item{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid #f0f2f5;align-items:flex-start}
+.dash-task-name{font-size:14px;color:#333;flex:1}
+.dash-task-due{font-size:12px;color:#9ca3af}
+.dash-sched-item{display:flex;gap:14px;padding:12px 0;border-bottom:1px solid #f0f2f5;align-items:flex-start}
 .dash-sched-item:last-child{border-bottom:none}
-.dash-sched-date-box{background:linear-gradient(135deg,#4facfe,#00c6fb);color:#fff;border-radius:12px;padding:8px 12px;text-align:center;min-width:56px;flex-shrink:0}
-.dash-sched-date-box .month{font-size:10px;opacity:.8}
-.dash-sched-date-box .day{font-size:22px;font-weight:700;line-height:1.1}
+.dash-sched-date-box{background:linear-gradient(135deg,#4facfe,#00c6fb);color:#fff;border-radius:12px;padding:10px 14px;text-align:center;min-width:60px;flex-shrink:0}
+.dash-sched-date-box .month{font-size:11px;opacity:.8}
+.dash-sched-date-box .day{font-size:24px;font-weight:700;line-height:1.1}
 .dash-sched-info{flex:1}
-.dash-sched-title{font-size:14px;font-weight:600;color:#1a1a1a}
-.dash-sched-meta{font-size:12px;color:#9ca3af;margin-top:2px}
-.dash-empty{text-align:center;padding:20px;color:#bbb;font-size:13px}
+.dash-sched-title{font-size:15px;font-weight:600;color:#1a1a1a}
+.dash-sched-meta{font-size:13px;color:#9ca3af;margin-top:3px}
+.dash-empty{text-align:center;padding:24px;color:#bbb;font-size:14px}
 
 @media(max-width:768px){
   .dash-page{padding:16px}
   .dash-stats{grid-template-columns:1fr 1fr;gap:10px}
-  .dash-stat-num{font-size:22px}
+  .dash-stat-num{font-size:20px}
+  .dash-stat-card{padding:14px 12px;gap:10px}
+  .dash-stat-icon{width:42px;height:42px;font-size:22px}
   .dash-grid{grid-template-columns:1fr}
-  .dash-greeting{font-size:20px}
-  .dash-welcome{padding:20px 24px}
+  .dash-greeting{font-size:22px}
+  .dash-welcome{padding:22px 20px;flex-direction:column;align-items:flex-start;gap:4px}
+  .dash-date{text-align:left}
 }
 
 /* ─── 일정 관리 ─── */
 .schedule-page{padding:24px 28px;overflow-y:auto;background:transparent;min-height:100vh}
 .schedule-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
-.schedule-header h2{font-size:20px;font-weight:800;color:#1a237e}
+.schedule-header h2{font-size:22px;font-weight:800;color:#1a237e}
 .cal-nav{display:flex;align-items:center;gap:10px;margin-bottom:16px;justify-content:center}
 .cal-nav-title{font-size:18px;font-weight:700;color:#1a237e;min-width:120px;text-align:center}
 .cal-nav-btn{background:#fff;border:1px solid #d1d5db;border-radius:8px;padding:6px 14px;font-size:14px;cursor:pointer;color:#333}
@@ -607,7 +612,7 @@ input[name="sched-color"]:checked+.color-dot{border-color:#333}
 /* ─── 업무 관리 ─── */
 .task-page{padding:24px 28px;overflow-y:auto;background:transparent;min-height:100vh}
 .task-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
-.task-header h2{font-size:20px;font-weight:800;color:#1a237e}
+.task-header h2{font-size:22px;font-weight:800;color:#1a237e}
 .task-filters{display:flex;gap:6px;margin-bottom:16px}
 .task-filter-btn{padding:7px 16px;border:1px solid #d1d5db;border-radius:20px;background:#fff;font-size:13px;font-weight:600;color:#666;cursor:pointer}
 .task-filter-btn:hover{background:#f3f4f6}
@@ -940,32 +945,26 @@ window.showInAppNotice = function(title, body) {
 <div class="with-sidebar page-container active" id="page-dashboard">
   <div class="dash-page">
     <div class="dash-welcome">
-      <div>
-        <div class="dash-greeting" id="dash-greeting">안녕하세요!</div>
-        <div class="dash-date" id="dash-date"></div>
-      </div>
+      <div class="dash-greeting" id="dash-greeting">안녕하세요!</div>
+      <div class="dash-date" id="dash-date"></div>
     </div>
 
     <div class="dash-stats">
       <div class="dash-stat-card" onclick="switchPageById('notices')">
         <div class="dash-stat-icon">📢</div>
-        <div class="dash-stat-num" id="dash-s-notices">0</div>
-        <div class="dash-stat-label">공지사항</div>
+        <div class="dash-stat-text"><div class="dash-stat-label">공지사항</div><div class="dash-stat-num" id="dash-s-notices">0<span class="dash-stat-unit">건</span></div></div>
       </div>
       <div class="dash-stat-card" onclick="switchPageById('members')">
         <div class="dash-stat-icon">👥</div>
-        <div class="dash-stat-num" id="dash-s-members">0</div>
-        <div class="dash-stat-label">당원</div>
+        <div class="dash-stat-text"><div class="dash-stat-label">당원</div><div class="dash-stat-num" id="dash-s-members">0<span class="dash-stat-unit">명</span></div></div>
       </div>
       <div class="dash-stat-card" onclick="switchPageById('tasks')">
         <div class="dash-stat-icon">☑️</div>
-        <div class="dash-stat-num" id="dash-s-tasks">0</div>
-        <div class="dash-stat-label">진행중 업무</div>
+        <div class="dash-stat-text"><div class="dash-stat-label">진행중 업무</div><div class="dash-stat-num" id="dash-s-tasks">0<span class="dash-stat-unit">건</span></div></div>
       </div>
       <div class="dash-stat-card" onclick="switchPageById('schedule')">
         <div class="dash-stat-icon">📅</div>
-        <div class="dash-stat-num" id="dash-s-schedules">0</div>
-        <div class="dash-stat-label">이번주 일정</div>
+        <div class="dash-stat-text"><div class="dash-stat-label">이번주 일정</div><div class="dash-stat-num" id="dash-s-schedules">0<span class="dash-stat-unit">건</span></div></div>
       </div>
     </div>
 
@@ -2581,7 +2580,10 @@ function switchPageById(pageId) {
 async function loadDashboardPage() {
   // 인사말
   var hour = new Date().getHours();
-  var greet = hour < 12 ? '좋은 아침입니다! ☀️' : hour < 18 ? '좋은 오후입니다! 🌤️' : '좋은 저녁입니다! 🌙';
+  var timeGreet = hour < 12 ? '좋은 아침입니다! ☀️' : hour < 18 ? '좋은 오후입니다! 🌤️' : '좋은 저녁입니다! 🌙';
+  var sub = document.getElementById('sidebar-brand-sub');
+  var userName = sub ? sub.textContent.trim() : '';
+  var greet = userName ? userName + '님 ' + timeGreet : timeGreet;
   document.getElementById('dash-greeting').textContent = greet;
   var days = ['일','월','화','수','목','금','토'];
   var now = new Date();
@@ -2591,7 +2593,7 @@ async function loadDashboardPage() {
     // 공지
     var notices = [];
     try { notices = await window.loadNotices(); } catch(e){}
-    document.getElementById('dash-s-notices').textContent = notices.length;
+    document.getElementById('dash-s-notices').innerHTML = notices.length + '<span class="dash-stat-unit">건</span>';
     var recentNotices = notices.sort(function(a,b){ return (b.created||0)-(a.created||0); }).slice(0,4);
     var nEl = document.getElementById('dash-notices');
     if (recentNotices.length === 0) {
@@ -2608,7 +2610,7 @@ async function loadDashboardPage() {
     var tasks = [];
     try { tasks = await window.fbGetTasks(); } catch(e){}
     var pendingTasks = tasks.filter(function(t){ return t.status !== 'done'; });
-    document.getElementById('dash-s-tasks').textContent = pendingTasks.length;
+    document.getElementById('dash-s-tasks').innerHTML = pendingTasks.length + '<span class="dash-stat-unit">건</span>';
     var tEl = document.getElementById('dash-tasks');
     if (pendingTasks.length === 0) {
       tEl.innerHTML = '<div class="dash-empty">진행중인 업무가 없습니다.</div>';
@@ -2638,7 +2640,7 @@ async function loadDashboardPage() {
       var end = s.endDate || s.startDate;
       return end >= todayStr && s.startDate <= weekEndStr;
     }).sort(function(a,b){ return a.startDate.localeCompare(b.startDate); });
-    document.getElementById('dash-s-schedules').textContent = upcoming.length;
+    document.getElementById('dash-s-schedules').innerHTML = upcoming.length + '<span class="dash-stat-unit">건</span>';
     var sEl = document.getElementById('dash-schedules');
     if (upcoming.length === 0) {
       sEl.innerHTML = '<div class="dash-empty">이번 주 일정이 없습니다.</div>';
@@ -2661,7 +2663,7 @@ async function loadDashboardPage() {
 
     // 당원 수
     var memberCount = document.getElementById('total');
-    document.getElementById('dash-s-members').textContent = memberCount ? memberCount.textContent : '0';
+    document.getElementById('dash-s-members').innerHTML = (memberCount ? memberCount.textContent : '0') + '<span class="dash-stat-unit">명</span>';
   } catch(e) { console.error('대시보드 로드 실패:', e); }
 }
 
