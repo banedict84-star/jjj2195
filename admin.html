@@ -387,6 +387,13 @@ textarea.form-input{resize:vertical;min-height:120px}
           <div>의원용 페이지: <strong><a href="index.html" style="color:#4f46e5">index.html</a></strong></div>
         </div>
       </div>
+
+      <div class="card" style="border:1px solid #fde68a;background:#fffbeb">
+        <h3>🧪 샘플 데이터</h3>
+        <p class="desc">기존 당원 데이터를 모두 삭제하고 가짜 샘플 10명을 입력합니다. (관리자 members 컬렉션)</p>
+        <button class="btn btn-danger" onclick="seedSampleData()">기존 삭제 + 샘플 10명 입력</button>
+        <span class="msg" id="seed-msg">완료!</span>
+      </div>
     </div>
   </div>
 </div>
@@ -681,6 +688,50 @@ function showMsg(id) {
   var el = document.getElementById(id);
   el.style.display = 'inline';
   setTimeout(function(){ el.style.display = 'none'; }, 2000);
+}
+
+async function seedSampleData() {
+  if (!confirm('⚠️ 관리자(members) 컬렉션의 기존 당원 데이터를 모두 삭제하고\n샘플 10명을 새로 입력합니다.\n\n계속하시겠습니까?')) return;
+  try {
+    var existing = await window.fbGetDocs('members');
+    for (var i = 0; i < existing.length; i++) {
+      if (existing[i]._id) await window.fbDeleteDoc('members', String(existing[i]._id));
+      else if (existing[i].name) await window.fbDeleteDoc('members', 'sample_' + i);
+    }
+
+    var dongs = ['이동','일동','성포동'];
+    var types = ['권리당원','기존당원','신규당원'];
+    var genders = ['남성','여성'];
+    var samples = [
+      {name:'김민수',phone:'010-1234-5678',jumin:'850315-1',dong:'이동',member_type:'권리당원',age:41,age_group:'40대',gender:'남성',address:'경기도 안산시 상록구 이동 123-4',recommender:'박영희',kakao_mgmt:'O',vote_result:'투표'},
+      {name:'이수진',phone:'010-2345-6789',jumin:'900722-2',dong:'성포동',member_type:'권리당원',age:36,age_group:'30대',gender:'여성',address:'경기도 안산시 상록구 성포동 456-7',recommender:'김민수',kakao_mgmt:'O',vote_result:'투표'},
+      {name:'박영희',phone:'010-3456-7890',jumin:'780105-2',dong:'일동',member_type:'기존당원',age:48,age_group:'40대',gender:'여성',address:'경기도 안산시 상록구 일동 789-1',recommender:'',kakao_mgmt:'X',vote_result:'불참'},
+      {name:'정대한',phone:'010-4567-8901',jumin:'650830-1',dong:'이동',member_type:'기존당원',age:61,age_group:'60대',gender:'남성',address:'경기도 안산시 상록구 이동 234-5',recommender:'김민수',kakao_mgmt:'O',vote_result:'투표'},
+      {name:'최은정',phone:'010-5678-9012',jumin:'950412-2',dong:'성포동',member_type:'신규당원',age:31,age_group:'30대',gender:'여성',address:'경기도 안산시 상록구 성포동 567-8',recommender:'이수진',kakao_mgmt:'O',vote_result:'미확인'},
+      {name:'한승우',phone:'010-6789-0123',jumin:'880619-1',dong:'일동',member_type:'권리당원',age:38,age_group:'30대',gender:'남성',address:'경기도 안산시 상록구 일동 890-2',recommender:'정대한',kakao_mgmt:'X',vote_result:'투표'},
+      {name:'윤서연',phone:'010-7890-1234',jumin:'010225-4',dong:'이동',member_type:'신규당원',age:25,age_group:'20대',gender:'여성',address:'경기도 안산시 상록구 이동 345-6',recommender:'최은정',kakao_mgmt:'O',vote_result:'미확인'},
+      {name:'오재현',phone:'010-8901-2345',jumin:'720918-1',dong:'성포동',member_type:'기존당원',age:54,age_group:'50대',gender:'남성',address:'경기도 안산시 상록구 성포동 678-9',recommender:'',kakao_mgmt:'X',vote_result:'불참'},
+      {name:'강미래',phone:'010-9012-3456',jumin:'980703-2',dong:'일동',member_type:'권리당원',age:28,age_group:'20대',gender:'여성',address:'경기도 안산시 상록구 일동 901-3',recommender:'한승우',kakao_mgmt:'O',vote_result:'투표'},
+      {name:'임동혁',phone:'010-0123-4567',jumin:'830211-1',dong:'이동',member_type:'기존당원',age:43,age_group:'40대',gender:'남성',address:'경기도 안산시 상록구 이동 012-4',recommender:'박영희',kakao_mgmt:'O',vote_result:'투표'}
+    ];
+
+    for (var j = 0; j < samples.length; j++) {
+      var s = samples[j];
+      s._id = j + 1;
+      s.family_cnt = 0;
+      s.score = 0;
+      s.kakao_reply = '';
+      s.text_reply = '';
+      s.sub_recommender = '';
+      s.third_recommender = '';
+      s.affiliation = '';
+      s.memo = '';
+      s.activities = '';
+      await window.fbSetDoc(window.fbDoc('members', String(s._id)), s);
+    }
+    showMsg('seed-msg');
+    loadDashboard();
+  } catch(e) { alert('실패: ' + e.message); }
 }
 </script>
 </body>
