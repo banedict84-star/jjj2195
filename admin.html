@@ -160,6 +160,13 @@ textarea.form-input{resize:vertical;min-height:120px}
     return snap.size;
   };
   window.fbDeleteDoc = async function(path, id) { await deleteDoc(doc(db, path, id)); };
+  window.fbDeleteAll = async function(path) {
+    const snap = await getDocs(collection(db, path));
+    const promises = [];
+    snap.forEach(d => promises.push(deleteDoc(d.ref)));
+    await Promise.all(promises);
+    return snap.size;
+  };
 
   window.getFcmTokenCount = async function() {
     try {
@@ -693,11 +700,8 @@ function showMsg(id) {
 async function seedSampleData() {
   if (!confirm('⚠️ 관리자(members) 컬렉션의 기존 당원 데이터를 모두 삭제하고\n샘플 10명을 새로 입력합니다.\n\n계속하시겠습니까?')) return;
   try {
-    var existing = await window.fbGetDocs('members');
-    for (var i = 0; i < existing.length; i++) {
-      if (existing[i]._id) await window.fbDeleteDoc('members', String(existing[i]._id));
-      else if (existing[i].name) await window.fbDeleteDoc('members', 'sample_' + i);
-    }
+    var deleted = await window.fbDeleteAll('members');
+    console.log('삭제된 문서:', deleted);
 
     var dongs = ['이동','일동','성포동'];
     var types = ['권리당원','기존당원','신규당원'];
