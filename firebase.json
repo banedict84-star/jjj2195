@@ -1,4 +1,16 @@
 {
+  "hosting": {
+    "public": ".",
+    "cleanUrls": true,
+    "ignore": [
+      "firebase.json",
+      ".firebaserc",
+      ".gitignore",
+      "**/.*",
+      "**/node_modules/**",
+      "functions/**"
+    ]
+  },
   "functions": {
     "source": "functions"
   }
