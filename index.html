@@ -326,7 +326,7 @@ html,body{height:100%;font-family:'Apple SD Gothic Neo','Malgun Gothic','Noto Sa
 .sidebar.collapsed{width:52px}
 .sidebar-top{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 8px;min-height:48px}
 .sidebar.collapsed .sidebar-top{justify-content:center;padding:12px 0 8px}
-.sidebar.collapsed .sidebar-top .sidebar-brand-logo{display:none}
+.sidebar.collapsed .sidebar-top img{display:none}
 .sidebar.collapsed .sidebar-collapse-btn{border:none;font-size:16px}
 .sidebar.collapsed .sidebar-brand{display:none}
 .sidebar.collapsed .sidebar-divider{margin:0 8px}
@@ -876,13 +876,13 @@ window.showInAppNotice = function(title, body) {
 <button class="sb-open-btn" id="sb-open-btn" onclick="toggleSidebar()" title="메뉴 열기">☰</button>
 <div class="sidebar" id="sidebar">
   <div class="sidebar-top">
-    <div class="sidebar-brand-logo">M</div>
+    <img src="moida-logo.svg" alt="M" style="width:32px;height:32px;">
     <button class="sidebar-collapse-btn" onclick="toggleSidebar()" title="사이드바 접기">✕</button>
   </div>
   <div class="sidebar-brand">
+    <img src="moida-logo.svg" alt="MOIDA" style="height:32px;width:auto;">
     <div class="sidebar-brand-text">
-      <div class="sidebar-brand-name">MOIDA</div>
-      <div class="sidebar-brand-sub">경기도의원 장윤정</div>
+      <div class="sidebar-brand-sub" id="sidebar-brand-sub">경기도의원 장윤정</div>
     </div>
   </div>
   <div class="sidebar-divider"></div>
