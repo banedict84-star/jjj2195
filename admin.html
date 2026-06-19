@@ -109,7 +109,7 @@ textarea.form-input{resize:vertical;min-height:120px}
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, doc, setDoc, getDoc, getDocs, collection, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFirestore, doc, setDoc, getDoc, getDocs, collection, deleteDoc, query, orderBy, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
   import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
   const firebaseConfig = {
@@ -162,10 +162,21 @@ textarea.form-input{resize:vertical;min-height:120px}
   window.fbDeleteDoc = async function(path, id) { await deleteDoc(doc(db, path, id)); };
   window.fbDeleteAll = async function(path) {
     const snap = await getDocs(collection(db, path));
-    const promises = [];
-    snap.forEach(d => promises.push(deleteDoc(d.ref)));
-    await Promise.all(promises);
-    return snap.size;
+    let total = 0;
+    let batch = writeBatch(db);
+    let count = 0;
+    snap.forEach(d => {
+      batch.delete(d.ref);
+      count++;
+      total++;
+      if (count >= 400) {
+        batch.commit();
+        batch = writeBatch(db);
+        count = 0;
+      }
+    });
+    if (count > 0) await batch.commit();
+    return total;
   };
 
   window.getFcmTokenCount = async function() {
@@ -698,10 +709,13 @@ function showMsg(id) {
 }
 
 async function seedSampleData() {
-  if (!confirm('⚠️ 관리자(members) 컬렉션의 기존 당원 데이터를 모두 삭제하고\n샘플 10명을 새로 입력합니다.\n\n계속하시겠습니까?')) return;
+  if (!confirm('⚠️ 관리자(members) 컬렉션의 기존 당원 데이터를 모두 삭제하고\n샘플 10명을 새로 입력합니다.\n\n⏳ 데이터가 많으면 시간이 걸릴 수 있습니다.\n계속하시겠습니까?')) return;
   try {
+    document.getElementById('seed-msg').textContent = '⏳ 삭제 중...';
+    document.getElementById('seed-msg').style.display = 'inline';
+    document.getElementById('seed-msg').style.color = '#f59e0b';
     var deleted = await window.fbDeleteAll('members');
-    console.log('삭제된 문서:', deleted);
+    document.getElementById('seed-msg').textContent = '✅ ' + deleted + '건 삭제 완료! 샘플 입력 중...';
 
     var dongs = ['이동','일동','성포동'];
     var types = ['권리당원','기존당원','신규당원'];
