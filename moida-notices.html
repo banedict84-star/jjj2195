@@ -9,7 +9,7 @@
   :root{
     --bg:#f3f5f8; --surface:#ffffff; --line:#e8eaf0; --line-soft:#f1f3f7;
     --ink:#1c2030; --ink-2:#5a6072; --ink-3:#9298a8; --ink-4:#b6bcca;
-    --primary:#4f46e5; --primary-600:#4338ca; --primary-soft:#eef0fe;
+    --primary:#1452a0; --primary-600:#0e3f80; --primary-soft:#e7f0fb;
     --shadow-sm:0 1px 2px rgba(22,26,45,.04),0 1px 3px rgba(22,26,45,.03);
     --shadow-md:0 4px 16px rgba(22,26,45,.06),0 1px 3px rgba(22,26,45,.04);
     --shadow-panel:0 2px 6px rgba(22,26,45,.05),0 12px 32px rgba(22,26,45,.10);
@@ -20,13 +20,14 @@
   .app{ display:grid; grid-template-columns:236px 1fr; min-height:100vh; transition:grid-template-columns .22s ease; }
   a{ color:inherit; text-decoration:none; }
 
-  /* ===== Sidebar (shared) ===== */
+  /* ===== Sidebar ===== */
   .sidebar{ background:var(--surface); border-right:1px solid var(--line); display:flex; flex-direction:column; padding:18px 16px; position:sticky; top:0; height:100vh; overflow-y:auto; }
   .logo{ display:flex; align-items:center; gap:11px; padding:8px 8px 18px; }
-  .logo-mark{ width:36px; height:36px; border-radius:11px; flex-shrink:0; background:linear-gradient(140deg,#6a5cf5 0%,#4f46e5 60%,#4338ca 100%); display:flex; align-items:center; justify-content:center; box-shadow:0 5px 14px rgba(79,70,229,.34); position:relative; overflow:hidden; }
+  .logo-mark{ width:36px; height:36px; border-radius:11px; flex-shrink:0; background:linear-gradient(140deg,#2f74c9 0%,#1452a0 60%,#0e3f80 100%); display:flex; align-items:center; justify-content:center; box-shadow:0 5px 14px rgba(20,82,160,.34); position:relative; overflow:hidden; }
   .logo-mark::after{ content:""; position:absolute; inset:0; background:radial-gradient(65% 55% at 28% 20%, rgba(255,255,255,.42), rgba(255,255,255,0) 70%); }
   .logo-name{ font-size:20px; font-weight:800; letter-spacing:-.04em; color:#1c2030; line-height:1; }
   .logo-name b{ color:var(--primary); font-weight:800; }
+
   .side-top{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
   .collapse-btn{ position:absolute; top:29px; right:16px; z-index:5; width:30px; height:30px; border-radius:9px; border:1px solid var(--line); background:var(--surface); color:var(--ink-3); display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; transition:background .14s,color .14s; }
   .collapse-btn:hover{ background:var(--line-soft); color:var(--ink-2); }
@@ -38,13 +39,10 @@
   .app.collapsed .logo-name{ display:none; }
   .app.collapsed .collapse-btn{ position:static; transform:none; }
   .app.collapsed .collapse-btn svg{ transform:rotate(180deg); }
-  .app.collapsed .new-btn{ display:none; }
   .app.collapsed nav{ align-items:stretch; }
   .app.collapsed .nav-item{ justify-content:center; padding:11px 0; gap:0; }
   .app.collapsed .nav-item .nm,
   .app.collapsed .nav-item .badge{ display:none; }
-  .app.collapsed .sec{ display:none; }
-  .app.collapsed .upd-item{ display:none; }
   .app.collapsed .foot-item{ justify-content:center; gap:0; padding:9px 0; }
   .app.collapsed .foot-item span{ display:none; }
   .app.collapsed .foot-mail{ display:none; }
@@ -61,8 +59,6 @@
     content:""; position:absolute; left:calc(100% + 8px); top:50%; transform:translateY(-50%) rotate(45deg);
     width:9px; height:9px; background:#15182a; z-index:60; pointer-events:none; border-radius:1px;
   }
-  .new-btn{ display:flex; align-items:center; justify-content:center; gap:8px; background:#15182a; color:#fff; border:none; border-radius:12px; padding:13px; font-size:14.5px; font-weight:700; cursor:pointer; font-family:inherit; transition:transform .12s,box-shadow .15s; box-shadow:0 6px 16px rgba(21,24,42,.22); }
-  .new-btn:hover{ transform:translateY(-1px); box-shadow:0 10px 22px rgba(21,24,42,.3); }
   nav{ display:flex; flex-direction:column; gap:2px; margin-top:14px; }
   .nav-item{ display:flex; align-items:center; gap:11px; padding:10px 10px; border-radius:11px; cursor:pointer; color:var(--ink-2); font-size:14px; font-weight:600; transition:background .14s,color .14s; }
   .nav-item:hover{ background:var(--line-soft); color:var(--ink); }
@@ -71,25 +67,16 @@
   .nav-item svg{ color:var(--ink-3); }
   .nav-item .nm{ flex:1; }
   .badge{ min-width:19px; height:19px; padding:0 6px; border-radius:20px; background:var(--primary); color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; }
-  .badge.muted{ background:#eef0f5; color:var(--ink-3); font-size:10.5px; font-weight:600; }
-  .nav-item.dim{ color:var(--ink-3); cursor:default; }
-  .nav-item.dim:hover{ background:transparent; }
-  .sec{ display:flex; align-items:center; justify-content:space-between; padding:18px 10px 8px; }
-  .sec-t{ font-size:11.5px; font-weight:700; color:var(--ink-3); letter-spacing:.04em; }
-  .swatch{ width:14px; height:14px; border-radius:5px; flex-shrink:0; }
-  .s-blue{ background:#3b82f6;} .s-orange{ background:#f59e0b;} .s-red{ background:#ef4444;} .s-yellow{ background:#eab308;} .s-sky{ background:#38bdf8;}
-  .upd-item{ display:flex; align-items:center; gap:11px; padding:8px 10px; border-radius:10px; cursor:pointer; color:var(--ink-2); font-size:13.5px; font-weight:600; transition:background .14s; }
-  .upd-item:hover{ background:var(--line-soft); }
   .side-foot{ margin-top:auto; padding-top:14px; border-top:1px solid var(--line); display:flex; flex-direction:column; gap:1px; }
   .foot-item{ display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:10px; color:var(--ink-2); font-size:13.5px; font-weight:600; cursor:pointer; transition:background .14s; }
   .foot-item:hover{ background:var(--line-soft); }
   .foot-item svg{ color:var(--ink-3); }
   .foot-mail{ font-size:11.5px; color:var(--ink-3); padding:4px 10px 2px; font-weight:500; }
 
-  /* ===== Main / page ===== */
+  /* ===== Main ===== */
   .main{ display:flex; flex-direction:column; min-width:0; }
   .page-head{ display:flex; align-items:flex-start; gap:16px; padding:22px 28px 0; }
-  .ph-mark{ width:46px; height:46px; border-radius:13px; background:linear-gradient(140deg,#6a5cf5,#4338ca); color:#fff; display:flex; align-items:center; justify-content:center; font-size:21px; font-weight:800; flex-shrink:0; box-shadow:0 6px 16px rgba(79,70,229,.3); }
+  .ph-mark{ width:46px; height:46px; border-radius:13px; background:linear-gradient(140deg,#2f74c9,#0e3f80); color:#fff; display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 6px 16px rgba(20,82,160,.3); }
   .ph-info h1{ font-size:21px; font-weight:800; letter-spacing:-.025em; }
   .ph-sub{ margin-top:5px; font-size:13px; color:var(--ink-2); font-weight:500; }
   .ph-conn{ display:inline-flex; align-items:center; gap:5px; margin-top:7px; font-size:12px; font-weight:600; color:#10936a; }
@@ -100,9 +87,9 @@
   .logout-btn:hover{ background:var(--line-soft); }
 
   /* notices */
-  .work{ display:grid; grid-template-columns:1fr 372px; gap:18px; padding:18px 28px 24px; align-items:start; min-width:0; }
   .ro-banner{ display:flex; align-items:center; gap:9px; margin:16px 28px 0; padding:12px 16px; background:#fff8ec; border:1px solid #f6e3bf; border-radius:12px; color:#9a6a12; font-size:13px; font-weight:600; }
   .ro-banner svg{ color:#cd7d18; flex-shrink:0; }
+  .work{ display:grid; grid-template-columns:1fr 480px; gap:18px; padding:18px 28px 24px; align-items:start; min-width:0; }
   .nlist{ display:flex; flex-direction:column; gap:11px; }
   .ncard{ background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:18px 20px; cursor:pointer; box-shadow:var(--shadow-sm); transition:box-shadow .15s,border-color .15s,transform .12s; }
   .ncard:hover{ box-shadow:var(--shadow-md); transform:translateY(-1px); }
@@ -124,7 +111,7 @@
 <!-- Firebase SDK -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, getDocs, collection, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFirestore, getDocs, collection } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
   import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
   const firebaseConfig = {
@@ -136,7 +123,6 @@
     appId: "1:370852437825:web:b0a891d6a99b426d230bc0",
     measurementId: "G-D1R6WDHP0F"
   };
-  const SUPER_ADMIN = 'banedict84@gmail.com';
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
@@ -156,13 +142,19 @@
     const footMail = document.querySelector('.foot-mail');
     if (footMail) footMail.textContent = user.email;
 
-    // Load notices from Firestore
     try {
       const snap = await getDocs(collection(db, 'admin_notices'));
       const notices = [];
       snap.forEach(d => {
         const data = d.data();
-        notices.push({ id: d.id, title: data.title || '', body: data.body || '', date: data.created ? new Date(data.created).toLocaleDateString('ko-KR', {year:'numeric',month:'2-digit',day:'2-digit'}).replace(/\. /g,'.').replace(/\.$/,'') : '', isNew: data.created && (Date.now() - data.created < 3*24*60*60*1000), author: data.author || '총관리자' });
+        notices.push({
+          id: d.id,
+          title: data.title || '',
+          body: data.body || '',
+          date: data.created ? new Date(data.created).toLocaleDateString('ko-KR', {year:'numeric',month:'2-digit',day:'2-digit'}).replace(/\. /g,'.').replace(/\.$/,'') : '',
+          isNew: data.created && (Date.now() - data.created < 3*24*60*60*1000),
+          author: data.author || '총관리자'
+        });
       });
       notices.sort((a,b) => (b.date > a.date ? 1 : -1));
 
@@ -220,25 +212,11 @@
     </div>
     <button class="collapse-btn" data-collapse aria-label="사이드바 접기"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
     </div>
-    <button class="new-btn"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>빠른 작성</button>
     <nav>
       <a class="nav-item" href="moida-dashboard.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg><span class="nm">대시보드</span></a>
       <a class="nav-item active"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 14-6v14L3 13z"/><path d="M3 11v2a2 2 0 0 0 2 2h2"/></svg><span class="nm">공지사항</span><span class="badge">0</span></a>
       <a class="nav-item" href="index.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="7" r="2.3"/><path d="M16.5 13.5a5 5 0 0 1 4.5 5"/></svg><span class="nm">조직관리</span></a>
-      <a class="nav-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4" width="17" height="17" rx="3"/><path d="m8 12 3 3 5-6"/></svg><span class="nm">업무</span></a>
-      <a class="nav-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16" rx="3"/><path d="M3.5 9h17M8 3v3M16 3v3"/></svg><span class="nm">일정</span></a>
-    </nav>
-    <div class="sec"><span class="sec-t">바로가기</span></div>
-    <div>
-      <div class="upd-item"><span class="swatch s-blue"></span>경기도의원 일정</div>
-      <div class="upd-item"><span class="swatch s-orange"></span>당원 명부</div>
-      <div class="upd-item"><span class="swatch s-red"></span>후원회 관리</div>
-      <div class="upd-item"><span class="swatch s-yellow"></span>현안 자료실</div>
-      <div class="upd-item"><span class="swatch s-sky"></span>지역 민원</div>
-    </div>
-    <div class="sec"><span class="sec-t">준비중</span></div>
-    <nav>
-      <a class="nav-item dim"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V4M4 20h16"/><rect x="8" y="11" width="3" height="6"/><rect x="13" y="7" width="3" height="10"/></svg><span class="nm">통계 / 분석</span><span class="badge muted">곧 출시</span></a>
+      <a class="nav-item" href="moida-schedule.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16" rx="3"/><path d="M3.5 9h17M8 3v3M16 3v3"/></svg><span class="nm">일정관리</span></a>
     </nav>
     <div class="side-foot">
       <a class="foot-item" href="admin.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 7 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7H1a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 2.6 7a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 7 2.6h.1A1.6 1.6 0 0 0 9 1.1V1a2 2 0 1 1 4 0v.1A1.6 1.6 0 0 0 17 2.6a1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1.1 2.7H23a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg><span>관리자 페이지</span></a>
@@ -250,14 +228,15 @@
   <!-- ===== Main ===== -->
   <main class="main">
     <div class="page-head">
-      <div class="ph-mark">M</div>
+      <div class="ph-mark"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M7 8.5 12 14.5 17 8.5" stroke="#fff" stroke-opacity=".55" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7" cy="8" r="2.6" fill="#fff"/><circle cx="17" cy="8" r="2.6" fill="#fff"/><circle cx="12" cy="15.5" r="3.1" fill="#fff"/></svg></div>
       <div class="ph-info">
         <h1>공지사항</h1>
-        <div class="ph-sub">경기도의원 장윤정 · 안산시 상록구</div>
+        <div class="ph-sub">경기도의원 장윤정 · 안산시 상록구 이동·일동·성포동</div>
         <div class="ph-conn"><span class="led"></span>서버 연결됨</div>
       </div>
       <div class="ph-right">
         <span class="count-pill"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 14-6v14L3 13z"/><path d="M3 11v2a2 2 0 0 0 2 2h2"/></svg>총 -건</span>
+        <button class="logout-btn" onclick="doLogout()">로그아웃</button>
       </div>
     </div>
 
