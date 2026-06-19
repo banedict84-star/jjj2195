@@ -1,0 +1,14 @@
+{
+  "name": "kakao-claude-demo",
+  "version": "1.0.0",
+  "description": "Claude + KakaoTalk 자동화 데모",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "schedule": "node schedule-notify.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.30.0",
+    "dotenv": "^16.4.5"
+  }
+}
