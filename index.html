@@ -702,12 +702,54 @@
   /* ===== Animations ===== */
   @keyframes slideDown{ from{transform:translateY(-100%)} to{transform:translateY(0)} }
 
+  /* ===== Design-file compatible classes ===== */
+  .search{ display:flex; align-items:center; gap:9px; background:var(--surface); border:1px solid var(--line); border-radius:11px; padding:9px 14px; min-width:280px; flex:1 1 280px; max-width:380px; }
+  .search input{ flex:1; border:none; background:transparent; font-family:inherit; font-size:13.5px; color:var(--ink); outline:none; }
+  .search input::placeholder{ color:var(--ink-3); }
+  .search svg{ color:var(--ink-3); }
+  .selbox{ display:inline-flex; align-items:center; gap:7px; background:var(--surface); border:1px solid var(--line); border-radius:11px; padding:9px 13px; font-size:13px; font-weight:600; color:var(--ink-2); cursor:pointer; transition:background .14s,border-color .14s,color .14s; white-space:nowrap; }
+  .selbox:hover{ background:var(--line-soft); }
+  .selbox.active{ border-color:var(--primary); background:var(--primary-soft); color:var(--primary); }
+  .tb-spacer{ flex:1; }
+  .work{ display:grid; grid-template-columns:1fr 372px; gap:18px; padding:18px 28px 24px; align-items:start; min-width:0; }
+  .table-card{ background:var(--surface); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow-md); overflow:hidden; min-width:0; }
+  .table-scroll{ overflow-x:auto; }
+  .table-foot{ display:flex; align-items:center; justify-content:space-between; padding:13px 18px; border-top:1px solid var(--line); background:#fafbfd; font-size:13px; }
+  .tf-left{ color:var(--ink-2); font-weight:600; }
+  .tf-left b{ color:var(--primary); }
+  .detail{ background:var(--surface); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow-panel); position:sticky; top:18px; overflow:hidden; display:flex; flex-direction:column; }
+  .dt-head{ display:flex; align-items:center; gap:11px; padding:18px 20px 0; }
+  .dt-head h2{ font-size:16px; font-weight:800; }
+  .dt-sub{ font-size:12px; color:var(--ink-3); margin-top:3px; font-weight:500; }
+  .tabs{ display:flex; gap:4px; padding:16px 20px 0; border-bottom:1px solid var(--line); }
+  .tab,.tb{ padding:9px 4px; margin-right:14px; font-size:13.5px; font-weight:700; color:var(--ink-3); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; transition:color .14s; }
+  .tab.on,.tb.on{ color:var(--primary); border-bottom-color:var(--primary); }
+  .dt-body{ overflow-y:auto; flex:1; padding:18px 20px 14px; max-height:calc(100vh - 290px); }
+  .dt-foot{ display:flex; gap:8px; padding:13px 18px; border-top:1px solid var(--line); background:#fafbfd; }
+  .dt-foot .btn{ flex:1; justify-content:center; }
+  .btn{ display:inline-flex; align-items:center; gap:7px; padding:9px 14px; border-radius:11px; font-size:13px; font-weight:700; cursor:pointer; border:1px solid var(--line); background:var(--surface); color:var(--ink-2); font-family:inherit; transition:background .14s,box-shadow .14s,transform .12s; }
+  .btn:hover{ background:var(--line-soft); }
+  .btn svg{ width:15px; height:15px; }
+  .btn.ghost-red{ color:#dc2626; border-color:#f3d2d2; }
+  .btn.ghost-red:hover{ background:#fdf0f0; }
+  .btn.primary{ background:var(--primary); border-color:var(--primary); color:#fff; box-shadow:0 4px 12px rgba(20,82,160,.28); }
+  .btn.primary:hover{ background:var(--primary-600); transform:translateY(-1px); }
+  .btn.warn{ background:#fff8ec; border-color:#f6e3bf; color:#b97e10; }
+  .btn.warn:hover{ background:#fdf0d8; }
+  .btn.save{ background:var(--primary); border-color:var(--primary); color:#fff; }
+  .btn.save:hover{ background:var(--primary-600); }
+  .btn.add{ background:#0f9d63; border-color:#0f9d63; color:#fff; }
+  .btn.add:hover{ background:#0c8a56; }
+  .btn.del{ background:#fff; border-color:#f3d2d2; color:#dc2626; }
+  .btn.del:hover{ background:#fdf0f0; }
+  .ico-btn{ width:40px; height:40px; flex:0 0 auto !important; border-radius:11px; padding:0 !important; justify-content:center; }
+
   /* ===== Responsive ===== */
-  @media (max-width:1280px){ .main-layout{ grid-template-columns:1fr; } .detail-panel{ position:static; } }
+  @media (max-width:1280px){ .main-layout,.work{ grid-template-columns:1fr; } .detail-panel,.detail{ position:static; } }
   @media (max-width:1080px){
     .app-grid, .app-grid.collapsed{ grid-template-columns:1fr; }
     .sidebar{ display:none; }
-    .page-head,.chips,.toolbar,.main-layout{ padding-left:16px; padding-right:16px; }
+    .page-head,.chips,.toolbar,.main-layout,.work{ padding-left:16px; padding-right:16px; }
   }
 </style>
 </head>
@@ -910,10 +952,13 @@ window.showInAppNotice = function(title, body) {
 
 <!-- 툴바 -->
 <div class="toolbar">
-  <input type="text" id="q" placeholder="이름·전화·주소·추천인 검색" oninput="go()">
+  <div class="search">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></svg>
+    <input id="q" placeholder="이름·전화·주소·추천인 검색" oninput="go()">
+  </div>
 
   <div class="mf-wrap" id="mf-dong">
-    <button class="mf-btn" onclick="toggleMF('mf-dong')">행정동 <span class="mf-badge" id="mf-dong-badge"></span>&#9660;</button>
+    <div class="selbox" onclick="toggleMF('mf-dong')">행정동 <span class="mf-badge" id="mf-dong-badge" style="display:none;background:var(--primary);color:#fff;border-radius:10px;padding:0 5px;font-size:10px;font-weight:700"></span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></div>
     <div class="mf-drop">
       <label><input type="checkbox" value="이동" onchange="mfChange('fd',this)"> 이동</label>
       <label><input type="checkbox" value="일동" onchange="mfChange('fd',this)"> 일동</label>
@@ -922,7 +967,7 @@ window.showInAppNotice = function(title, body) {
   </div>
 
   <div class="mf-wrap" id="mf-mem">
-    <button class="mf-btn" onclick="toggleMF('mf-mem')">당원구분 <span class="mf-badge" id="mf-mem-badge"></span>&#9660;</button>
+    <div class="selbox" onclick="toggleMF('mf-mem')">당원구분 <span class="mf-badge" id="mf-mem-badge" style="display:none;background:var(--primary);color:#fff;border-radius:10px;padding:0 5px;font-size:10px;font-weight:700"></span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></div>
     <div class="mf-drop">
       <label><input type="checkbox" value="기존" onchange="mfChange('fm',this)"> 기존</label>
       <label><input type="checkbox" value="신규" onchange="mfChange('fm',this)"> 신규</label>
@@ -934,7 +979,7 @@ window.showInAppNotice = function(title, body) {
   </div>
 
   <div class="mf-wrap" id="mf-vote">
-    <button class="mf-btn" onclick="toggleMF('mf-vote')">투표결과 <span class="mf-badge" id="mf-vote-badge"></span>&#9660;</button>
+    <div class="selbox" onclick="toggleMF('mf-vote')">투표결과 <span class="mf-badge" id="mf-vote-badge" style="display:none;background:var(--primary);color:#fff;border-radius:10px;padding:0 5px;font-size:10px;font-weight:700"></span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></div>
     <div class="mf-drop">
       <label><input type="checkbox" value="투표완료" onchange="mfChange('fv',this)"> 투표완료</label>
       <label><input type="checkbox" value="시장투표자" onchange="mfChange('fv',this)"> 시장투표자</label>
@@ -944,7 +989,7 @@ window.showInAppNotice = function(title, body) {
   </div>
 
   <div class="mf-wrap" id="mf-age">
-    <button class="mf-btn" onclick="toggleMF('mf-age')">연령대 <span class="mf-badge" id="mf-age-badge"></span>&#9660;</button>
+    <div class="selbox" onclick="toggleMF('mf-age')">연령대 <span class="mf-badge" id="mf-age-badge" style="display:none;background:var(--primary);color:#fff;border-radius:10px;padding:0 5px;font-size:10px;font-weight:700"></span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></div>
     <div class="mf-drop">
       <label><input type="checkbox" value="20대" onchange="mfChange('fa',this)"> 20대</label>
       <label><input type="checkbox" value="30대" onchange="mfChange('fa',this)"> 30대</label>
@@ -957,28 +1002,27 @@ window.showInAppNotice = function(title, body) {
   </div>
 
   <div class="mf-wrap" id="mf-gender">
-    <button class="mf-btn" onclick="toggleMF('mf-gender')">성별 <span class="mf-badge" id="mf-gender-badge"></span>&#9660;</button>
+    <div class="selbox" onclick="toggleMF('mf-gender')">성별 <span class="mf-badge" id="mf-gender-badge" style="display:none;background:var(--primary);color:#fff;border-radius:10px;padding:0 5px;font-size:10px;font-weight:700"></span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></div>
     <div class="mf-drop">
       <label><input type="checkbox" value="남성" onchange="mfChange('fg2',this)"> 남성</label>
       <label><input type="checkbox" value="여성" onchange="mfChange('fg2',this)"> 여성</label>
     </div>
   </div>
 
-  <button class="mf-reset" onclick="resetFilters()">✕ 초기화</button>
-
-  <div class="tb-sep"></div>
-  <button class="tb-btn success" onclick="newRec()">+ 신규추가</button>
-  <button class="tb-btn gray" onclick="doCSV()">↓ CSV저장</button>
-  <button class="tb-btn gray" onclick="importCSV()">↑ CSV가져오기</button>
-  <button class="tb-btn" onclick="dlTemplate()">📋 양식</button>
-  <button class="tb-btn" style="background:#f59e0b;color:#fff;border-color:#f59e0b" onclick="recalcAllScores()">🔄 점수재계산</button>
+  <button class="btn ghost-red" onclick="resetFilters()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>초기화</button>
+  <div class="tb-spacer"></div>
+  <button class="btn primary" onclick="newRec()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>신규추가</button>
+  <button class="btn" onclick="doCSV()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 11l5 4 5-4"/><path d="M5 21h14"/></svg>CSV저장</button>
+  <button class="btn" onclick="importCSV()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7 7l5-4 5 4"/><path d="M5 21h14"/></svg>CSV가져오기</button>
+  <button class="btn" onclick="dlTemplate()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>양식</button>
+  <button class="btn warn" onclick="recalcAllScores()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 14 3-3 3 3 5-6"/></svg>점수재계산</button>
   <input type="file" id="csvFile" accept=".csv" style="display:none" onchange="onCSVFile(event)">
 </div>
 
 <!-- 메인 -->
-<div class="main-layout">
-  <div class="table-panel">
-    <div class="table-wrap">
+<div class="work">
+  <div class="table-card">
+    <div class="table-scroll">
       <table>
         <thead><tr>
           <th style="width:36px;color:#ccc">No</th>
@@ -1005,31 +1049,31 @@ window.showInAppNotice = function(title, body) {
         <tbody id="tb"></tbody>
       </table>
     </div>
-    <div class="statusbar">
-      <span>조회 <b id="fc">0</b>명</span>
-      <span id="si" style="color:#aaa">당원을 클릭하면 상세정보가 표시됩니다</span>
+    <div class="table-foot">
+      <div class="tf-left">조회 <b id="fc">0</b>명 · 당원을 클릭하면 상세정보가 표시됩니다</div>
+      <div id="si" style="font-size:12px;color:var(--ink-3)"></div>
     </div>
   </div>
 
   <!-- 오른쪽 패널 -->
-  <div class="detail-panel">
-    <div class="panel-header">
+  <aside class="detail">
+    <div class="dt-head">
       <div class="dt-ava" id="dtAva">홍</div>
       <div>
-        <div class="panel-title" id="pt">당원 정보</div>
-        <div class="panel-sub" id="pb">기본정보를 입력하거나 수정하세요</div>
+        <h2 id="pt">당원 정보</h2>
+        <div class="dt-sub" id="pb">기본정보를 입력하거나 수정하세요</div>
       </div>
     </div>
     <div class="edit-bar" id="ebar">
       ✏️ <span id="emsg">편집 중</span>
       <button onclick="cancelEdit()" style="margin-left:auto;padding:2px 8px;font-size:11px;border:1px solid #fde68a;border-radius:5px;background:#fff;cursor:pointer;color:#92400e">취소</button>
     </div>
-    <div class="tab-row">
-      <div class="tab-item on" onclick="swTab(this,'p1')">기본정보</div>
-      <div class="tab-item" onclick="swTab(this,'p2')">투표·활동</div>
-      <div class="tab-item" onclick="swTab(this,'p3')">메모</div>
+    <div class="tabs">
+      <div class="tab tb on" onclick="swTab(this,'p1')">기본정보</div>
+      <div class="tab tb" onclick="swTab(this,'p2')">투표·활동</div>
+      <div class="tab tb" onclick="swTab(this,'p3')">메모</div>
     </div>
-    <div class="form-body">
+    <div class="dt-body">
       <div id="p1" class="pg on">
         <div class="form-section">필수 입력</div>
 
@@ -1138,14 +1182,13 @@ window.showInAppNotice = function(title, body) {
         <textarea class="form-input" id="fmm" placeholder="특이사항, 관계, 활동내역 등..."></textarea>
       </div>
     </div>
-    <div class="form-footer">
-      <button class="tb-btn primary" id="btnSave" onclick="saveRec()">✓ 저장</button>
-      <button class="tb-btn success" onclick="newRec()">+ 신규</button>
-      <button class="tb-btn danger" id="btnDel" onclick="askDel()">🗑 삭제</button>
-      <button class="tb-btn" onclick="callTel()" title="전화">📞</button>
-      <button class="tb-btn" onclick="doSMS()" title="문자">💬</button>
+    <div class="dt-foot">
+      <button class="btn save" id="btnSave" onclick="saveRec()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>저장</button>
+      <button class="btn add" onclick="newRec()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>신규</button>
+      <button class="btn del" id="btnDel" onclick="askDel()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>삭제</button>
+      <button class="btn ico-btn" onclick="callTel()" title="전화"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg></button>
     </div>
-  </div>
+  </aside>
 </div>
 
 <!-- CSV 가져오기 모달 -->
@@ -1392,12 +1435,13 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
     else { for(var i=0;i<arr.length;i++){if(arr[i]===cb.value){arr.splice(i,1);break;}} }
     var m = MF_MAP[fid];
     var badge = document.getElementById(m.badge);
-    var btn = document.querySelector('#'+m.wrap+' .mf-btn');
+    var btn = document.querySelector('#'+m.wrap+' .selbox');
     if (arr.length > 0) {
-      badge.textContent = arr.length; badge.className = 'mf-badge show';
-      btn.className = 'mf-btn active';
+      badge.textContent = arr.length; badge.style.display = 'inline-block';
+      if(btn) btn.classList.add('active');
     } else {
-      badge.className = 'mf-badge'; btn.className = 'mf-btn';
+      badge.style.display = 'none';
+      if(btn) btn.classList.remove('active');
     }
     go();
   }
@@ -1417,9 +1461,9 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
     for(var i=0;i<cbs.length;i++) cbs[i].checked = false;
     for (var fid in MF_MAP) {
       var m = MF_MAP[fid];
-      document.getElementById(m.badge).className = 'mf-badge';
-      var btn = document.querySelector('#'+m.wrap+' .mf-btn');
-      if(btn) btn.className = 'mf-btn';
+      document.getElementById(m.badge).style.display = 'none';
+      var btn = document.querySelector('#'+m.wrap+' .selbox');
+      if(btn) btn.classList.remove('active');
     }
     go();
   }
