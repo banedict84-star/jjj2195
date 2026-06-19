@@ -313,15 +313,16 @@
   </script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;font-family:'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif;font-size:13px;background:#f5f7fa;color:#222}
+html,body{height:100%;font-family:'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif;font-size:13px;background:linear-gradient(180deg,#e8f4fc 0%,#f0f6ff 40%,#f5f7fa 100%);color:#222}
 #page-members{overflow:hidden}
 
 /* ─── 사이드바 (Claude 스타일) ─── */
 .sidebar{
-  width:260px;flex-shrink:0;background:#f9fafb;color:#333;
+  width:260px;flex-shrink:0;background:#ffffff;color:#333;
   display:flex;flex-direction:column;height:100vh;position:fixed;left:0;top:0;z-index:200;
   transition:width .3s cubic-bezier(.4,0,.2,1);
-  overflow:hidden;border-right:1px solid #e5e7eb;
+  overflow:hidden;border-right:1px solid #e0e8f0;
+  box-shadow:2px 0 12px rgba(0,0,0,.04);
 }
 .sidebar.collapsed{width:52px}
 .sidebar-top{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 8px;min-height:48px}
@@ -346,7 +347,7 @@ html,body{height:100%;font-family:'Apple SD Gothic Neo','Malgun Gothic','Noto Sa
 .sidebar-brand{padding:4px 16px 16px;display:flex;align-items:center;gap:10px}
 .sidebar-brand-logo{
   width:34px;height:34px;min-width:34px;border-radius:10px;
-  background:linear-gradient(135deg,#4f46e5,#7c3aed);
+  background:linear-gradient(135deg,#2196F3,#42a5f5);
   display:flex;align-items:center;justify-content:center;
   color:#fff;font-weight:800;font-size:14px;
 }
@@ -362,12 +363,12 @@ html,body{height:100%;font-family:'Apple SD Gothic Neo','Malgun Gothic','Noto Sa
   transition:all .1s;border-radius:8px;margin-bottom:2px;
   white-space:nowrap;overflow:hidden;
 }
-.sidebar-item:hover{background:#f3f4f6;color:#1f2937}
-.sidebar-item.active{background:#ede9fe;color:#4f46e5;font-weight:600}
+.sidebar-item:hover{background:#eef5ff;color:#1a6cc4}
+.sidebar-item.active{background:#e0f0ff;color:#1a6cc4;font-weight:600;border-left:3px solid #2196F3}
 .sidebar-item .si-icon{font-size:15px;min-width:20px;text-align:center}
 .sidebar-item .si-label{overflow:hidden}
 .sidebar-item .si-badge{
-  margin-left:auto;background:#e0e7ff;color:#4f46e5;font-size:10px;
+  margin-left:auto;background:#e3f2fd;color:#1976D2;font-size:10px;
   padding:2px 8px;border-radius:10px;font-weight:600;
 }
 .sidebar-item .si-badge-warn{
@@ -399,7 +400,7 @@ html,body{height:100%;font-family:'Apple SD Gothic Neo','Malgun Gothic','Noto Sa
   .detail-panel{
     position:fixed;bottom:0;left:0;right:0;width:100%!important;
     height:70vh;z-index:300;border-left:none!important;
-    border-top:2px solid #4f46e5;border-radius:16px 16px 0 0;
+    border-top:2px solid #2196F3;border-radius:16px 16px 0 0;
     box-shadow:0 -4px 20px rgba(0,0,0,.15);
     transform:translateY(100%);transition:transform .3s ease;
   }
@@ -416,12 +417,12 @@ html,body{height:100%;font-family:'Apple SD Gothic Neo','Malgun Gothic','Noto Sa
 .page-container.active{display:block;min-height:100vh}
 
 /* ─── 공지사항 게시판 ─── */
-.notice-page{padding:24px 28px;overflow-y:auto;background:#f5f7fa;min-height:100vh}
+.notice-page{padding:24px 28px;overflow-y:auto;background:transparent;min-height:100vh}
 .notice-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
-.notice-header h2{font-size:20px;font-weight:800;color:#1e1b4b}
+.notice-header h2{font-size:20px;font-weight:800;color:#1a237e}
 .notice-board{
-  background:#fff;border-radius:12px;overflow:hidden;
-  box-shadow:0 1px 4px rgba(0,0,0,.06);
+  background:#fff;border-radius:16px;overflow:hidden;
+  box-shadow:0 2px 12px rgba(0,0,0,.06);border:none;
 }
 .notice-board-head{
   display:grid;grid-template-columns:60px 1fr 120px 100px;
@@ -435,27 +436,27 @@ html,body{height:100%;font-family:'Apple SD Gothic Neo','Malgun Gothic','Noto Sa
   transition:background .08s;align-items:center;
 }
 .notice-row:last-child{border-bottom:none}
-.notice-row:hover{background:#f5f7ff}
+.notice-row:hover{background:#e8f4fd}
 .notice-row>div{padding:12px 8px}
 .notice-row .nr-no{text-align:center;color:#999;font-size:12px}
-.notice-row .nr-title{font-weight:600;color:#1e1b4b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.notice-row .nr-title:hover{color:#4f46e5}
+.notice-row .nr-title{font-weight:600;color:#1a237e;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.notice-row .nr-title:hover{color:#2196F3}
 .notice-row .nr-date{text-align:center;color:#999;font-size:12px}
 .notice-row .nr-author{text-align:center;color:#777;font-size:12px}
 .notice-view{
-  background:#fff;border-radius:12px;padding:28px 32px;
-  box-shadow:0 1px 4px rgba(0,0,0,.06);
+  background:#fff;border-radius:16px;padding:28px 32px;
+  box-shadow:0 2px 12px rgba(0,0,0,.06);
 }
-.notice-view-title{font-size:18px;font-weight:800;color:#1e1b4b;margin-bottom:8px}
+.notice-view-title{font-size:18px;font-weight:800;color:#1a237e;margin-bottom:8px}
 .notice-view-meta{font-size:12px;color:#999;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid #e8eaed;display:flex;gap:16px}
 .notice-view-body{font-size:14px;color:#333;line-height:1.8;white-space:pre-wrap;min-height:200px}
 .notice-view-actions{margin-top:24px;padding-top:14px;border-top:1px solid #e8eaed;display:flex;gap:8px;justify-content:flex-end}
-.notice-form{background:#fff;border-radius:12px;padding:24px 28px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.notice-form{background:#fff;border-radius:16px;padding:24px 28px;box-shadow:0 2px 12px rgba(0,0,0,.06)}
 .notice-form input{
   width:100%;padding:10px 14px;border:1px solid #e0e0e0;border-radius:8px;
   font-size:14px;margin-bottom:12px;font-family:inherit;
 }
-.notice-form input:focus,.notice-form textarea:focus{border-color:#4f46e5;outline:none;box-shadow:0 0 0 3px rgba(79,70,229,.1)}
+.notice-form input:focus,.notice-form textarea:focus{border-color:#2196F3;outline:none;box-shadow:0 0 0 3px rgba(33,150,243,.12)}
 .notice-form textarea{
   width:100%;padding:12px 14px;border:1px solid #e0e0e0;border-radius:8px;
   font-size:13px;margin-bottom:12px;font-family:inherit;
@@ -469,7 +470,7 @@ html,body{height:100%;font-family:'Apple SD Gothic Neo','Malgun Gothic','Noto Sa
   cursor:pointer;transition:all .12s;margin-bottom:-2px;
 }
 .notice-tab:hover{color:#6b7280}
-.notice-tab.active{color:#4f46e5;border-bottom-color:#4f46e5}
+.notice-tab.active{color:#2196F3;border-bottom-color:#2196F3}
 
 /* ─── 헤더 ─── */
 .app-header{
@@ -480,7 +481,7 @@ html,body{height:100%;font-family:'Apple SD Gothic Neo','Malgun Gothic','Noto Sa
 .brand{display:flex;align-items:center;gap:10px}
 .brand-logo{
   width:32px;height:32px;border-radius:8px;
-  background:linear-gradient(135deg,#4f46e5,#7c3aed);
+  background:linear-gradient(135deg,#2196F3,#42a5f5);
   display:flex;align-items:center;justify-content:center;
   color:#fff;font-weight:800;font-size:14px;letter-spacing:-1px;
 }
@@ -488,27 +489,33 @@ html,body{height:100%;font-family:'Apple SD Gothic Neo','Malgun Gothic','Noto Sa
 .brand-sub{font-size:11px;color:#888;margin-top:1px}
 .header-right{display:flex;align-items:center;gap:8px}
 .total-badge{
-  background:#f0f0ff;color:#4f46e5;
+  background:#e3f2fd;color:#2196F3;
   font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;
 }
 
 /* ─── 대시보드 ─── */
-.dash-page{padding:28px;overflow-y:auto;background:#f5f7fa;min-height:100vh}
-.dash-welcome{margin-bottom:24px}
-.dash-greeting{font-size:24px;font-weight:800;color:#1e1b4b}
-.dash-date{font-size:14px;color:#6b7280;margin-top:4px}
+.dash-page{padding:28px;overflow-y:auto;background:transparent;min-height:100vh}
+.dash-welcome{margin-bottom:24px;background:linear-gradient(135deg,#4facfe 0%,#00f2fe 100%);border-radius:16px;padding:28px 32px;color:#fff;position:relative;overflow:hidden}
+.dash-welcome::after{content:'';position:absolute;right:-30px;top:-30px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.12)}
+.dash-welcome::before{content:'';position:absolute;right:60px;bottom:-40px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.08)}
+.dash-greeting{font-size:24px;font-weight:800;color:#fff}
+.dash-date{font-size:14px;color:rgba(255,255,255,.85);margin-top:4px}
 .dash-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
-.dash-stat-card{background:#fff;border-radius:12px;padding:18px;border:1px solid #e5e7eb;cursor:pointer;transition:box-shadow .15s;text-align:center}
-.dash-stat-card:hover{box-shadow:0 4px 12px rgba(0,0,0,.08)}
-.dash-stat-icon{font-size:24px;margin-bottom:6px}
-.dash-stat-num{font-size:28px;font-weight:700;color:#4f46e5}
-.dash-stat-label{font-size:12px;color:#6b7280;margin-top:2px}
+.dash-stat-card{background:#fff;border-radius:16px;padding:20px;border:none;cursor:pointer;transition:all .2s;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.06)}
+.dash-stat-card:hover{box-shadow:0 6px 20px rgba(0,0,0,.1);transform:translateY(-2px)}
+.dash-stat-icon{font-size:28px;margin-bottom:8px;width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px}
+.dash-stat-card:nth-child(1) .dash-stat-icon{background:#e8f4fd}
+.dash-stat-card:nth-child(2) .dash-stat-icon{background:#fef3e2}
+.dash-stat-card:nth-child(3) .dash-stat-icon{background:#e8fdf0}
+.dash-stat-card:nth-child(4) .dash-stat-icon{background:#fde8e8}
+.dash-stat-num{font-size:28px;font-weight:700;color:#1a1a2e}
+.dash-stat-label{font-size:12px;color:#6b7280;margin-top:2px;font-weight:500}
 .dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.dash-card{background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:20px;min-height:200px}
+.dash-card{background:#fff;border-radius:16px;border:none;padding:22px;min-height:200px;box-shadow:0 2px 12px rgba(0,0,0,.06)}
 .dash-card-wide{grid-column:1/-1}
 .dash-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
 .dash-card-header h3{font-size:15px;font-weight:700;color:#333}
-.dash-card-link{font-size:12px;color:#4f46e5;cursor:pointer;font-weight:600}
+.dash-card-link{font-size:12px;color:#2196F3;cursor:pointer;font-weight:600}
 .dash-card-link:hover{text-decoration:underline}
 .dash-notice-item{padding:10px 0;border-bottom:1px solid #f0f2f5}
 .dash-notice-item:last-child{border-bottom:none}
@@ -524,7 +531,7 @@ html,body{height:100%;font-family:'Apple SD Gothic Neo','Malgun Gothic','Noto Sa
 .dash-task-due{font-size:11px;color:#9ca3af}
 .dash-sched-item{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid #f0f2f5;align-items:flex-start}
 .dash-sched-item:last-child{border-bottom:none}
-.dash-sched-date-box{background:#4f46e5;color:#fff;border-radius:10px;padding:8px 12px;text-align:center;min-width:56px;flex-shrink:0}
+.dash-sched-date-box{background:linear-gradient(135deg,#4facfe,#00c6fb);color:#fff;border-radius:12px;padding:8px 12px;text-align:center;min-width:56px;flex-shrink:0}
 .dash-sched-date-box .month{font-size:10px;opacity:.8}
 .dash-sched-date-box .day{font-size:22px;font-weight:700;line-height:1.1}
 .dash-sched-info{flex:1}
@@ -538,14 +545,15 @@ html,body{height:100%;font-family:'Apple SD Gothic Neo','Malgun Gothic','Noto Sa
   .dash-stat-num{font-size:22px}
   .dash-grid{grid-template-columns:1fr}
   .dash-greeting{font-size:20px}
+  .dash-welcome{padding:20px 24px}
 }
 
 /* ─── 일정 관리 ─── */
-.schedule-page{padding:24px 28px;overflow-y:auto;background:#f5f7fa;min-height:100vh}
+.schedule-page{padding:24px 28px;overflow-y:auto;background:transparent;min-height:100vh}
 .schedule-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
-.schedule-header h2{font-size:20px;font-weight:800;color:#1e1b4b}
+.schedule-header h2{font-size:20px;font-weight:800;color:#1a237e}
 .cal-nav{display:flex;align-items:center;gap:10px;margin-bottom:16px;justify-content:center}
-.cal-nav-title{font-size:18px;font-weight:700;color:#1e1b4b;min-width:120px;text-align:center}
+.cal-nav-title{font-size:18px;font-weight:700;color:#1a237e;min-width:120px;text-align:center}
 .cal-nav-btn{background:#fff;border:1px solid #d1d5db;border-radius:8px;padding:6px 14px;font-size:14px;cursor:pointer;color:#333}
 .cal-nav-btn:hover{background:#f3f4f6}
 .cal-grid{background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.06);overflow:hidden;margin-bottom:24px;display:grid;grid-template-columns:repeat(7,1fr)}
@@ -553,11 +561,11 @@ html,body{height:100%;font-family:'Apple SD Gothic Neo','Malgun Gothic','Noto Sa
 .cal-head:first-child{color:#dc2626}
 .cal-head:last-child{color:#2563eb}
 .cal-cell{min-height:80px;padding:4px;border:1px solid #f0f2f5;position:relative;cursor:pointer;transition:background .1s}
-.cal-cell:hover{background:#f5f7ff}
+.cal-cell:hover{background:#e8f4fd}
 .cal-cell.other-month{background:#fafafa}
 .cal-cell.other-month .cal-day{color:#ccc}
-.cal-cell.today{background:#eef2ff}
-.cal-cell.today .cal-day{background:#4f46e5;color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center}
+.cal-cell.today{background:#e3f2fd}
+.cal-cell.today .cal-day{background:#2196F3;color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center}
 .cal-day{font-size:12px;font-weight:600;color:#333;margin-bottom:2px;padding:2px}
 .cal-cell:nth-child(7n+1) .cal-day{color:#dc2626}
 .cal-cell:nth-child(7n) .cal-day{color:#2563eb}
@@ -577,13 +585,13 @@ html,body{height:100%;font-family:'Apple SD Gothic Neo','Malgun Gothic','Noto Sa
 .modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.4);z-index:1000;align-items:center;justify-content:center}
 .modal-overlay.show{display:flex}
 .modal-box{background:#fff;border-radius:14px;padding:28px;max-width:460px;width:90%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
-.modal-box h3{font-size:17px;font-weight:700;margin-bottom:16px;color:#1e1b4b}
+.modal-box h3{font-size:17px;font-weight:700;margin-bottom:16px;color:#1a237e}
 .modal-label{display:block;font-size:12px;font-weight:600;color:#555;margin-bottom:4px}
 .modal-input{width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box}
-.modal-input:focus{outline:none;border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.1)}
+.modal-input:focus{outline:none;border-color:#2196F3;box-shadow:0 0 0 3px rgba(33,150,243,.12)}
 textarea.modal-input{resize:vertical}
 .modal-btn{padding:8px 20px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer}
-.modal-btn.primary{background:#4f46e5;color:#fff}.modal-btn.primary:hover{background:#4338ca}
+.modal-btn.primary{background:#2196F3;color:#fff}.modal-btn.primary:hover{background:#1976D2}
 .modal-btn.cancel{background:#f3f4f6;color:#666}.modal-btn.cancel:hover{background:#e5e7eb}
 .modal-btn.danger{background:#ef4444;color:#fff}.modal-btn.danger:hover{background:#dc2626}
 .color-dot{display:inline-block;width:24px;height:24px;border-radius:50%;border:3px solid transparent;transition:border .15s}
@@ -597,13 +605,13 @@ input[name="sched-color"]:checked+.color-dot{border-color:#333}
 }
 
 /* ─── 업무 관리 ─── */
-.task-page{padding:24px 28px;overflow-y:auto;background:#f5f7fa;min-height:100vh}
+.task-page{padding:24px 28px;overflow-y:auto;background:transparent;min-height:100vh}
 .task-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
-.task-header h2{font-size:20px;font-weight:800;color:#1e1b4b}
+.task-header h2{font-size:20px;font-weight:800;color:#1a237e}
 .task-filters{display:flex;gap:6px;margin-bottom:16px}
 .task-filter-btn{padding:7px 16px;border:1px solid #d1d5db;border-radius:20px;background:#fff;font-size:13px;font-weight:600;color:#666;cursor:pointer}
 .task-filter-btn:hover{background:#f3f4f6}
-.task-filter-btn.active{background:#4f46e5;color:#fff;border-color:#4f46e5}
+.task-filter-btn.active{background:#2196F3;color:#fff;border-color:#2196F3}
 .task-group-title{font-size:14px;font-weight:700;color:#666;margin:16px 0 8px;display:flex;align-items:center;gap:8px}
 .task-group-title .cnt{font-size:12px;color:#aaa;font-weight:400}
 .task-item{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;background:#fff;border-radius:10px;margin-bottom:6px;border:1px solid #e5e7eb;cursor:pointer;transition:box-shadow .15s}
@@ -656,7 +664,7 @@ input[name="sched-color"]:checked+.color-dot{border-color:#333}
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23aaa' stroke-width='2.5'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
   background-repeat:no-repeat;background-position:9px 50%;
 }
-.toolbar input[type=text]:focus{border-color:#4f46e5;background-color:#fff;box-shadow:0 0 0 3px rgba(79,70,229,.1)}
+.toolbar input[type=text]:focus{border-color:#2196F3;background-color:#fff;box-shadow:0 0 0 3px rgba(33,150,243,.12)}
 .tb-btn{
   font-size:12px;padding:6px 12px;border:1px solid #e0e0e0;
   border-radius:8px;background:#fff;color:#444;cursor:pointer;
@@ -664,8 +672,8 @@ input[name="sched-color"]:checked+.color-dot{border-color:#333}
   transition:all .12s;font-weight:500;
 }
 .tb-btn:hover{background:#f5f5f5;border-color:#bbb}
-.tb-btn.primary{background:#4f46e5;color:#fff;border-color:#4f46e5}
-.tb-btn.primary:hover{background:#4338ca}
+.tb-btn.primary{background:#2196F3;color:#fff;border-color:#2196F3}
+.tb-btn.primary:hover{background:#1976D2}
 .tb-btn.danger{background:#dc2626;color:#fff;border-color:#dc2626}
 .tb-btn.danger:hover{background:#b91c1c}
 .tb-btn.success{background:#16a34a;color:#fff;border-color:#16a34a}
@@ -682,9 +690,9 @@ input[name="sched-color"]:checked+.color-dot{border-color:#333}
   color:#444;font-weight:500;transition:all .12s;
 }
 .mf-btn:hover{background:#f5f5f5}
-.mf-btn.active{border-color:#4f46e5;background:#eef2ff;color:#4f46e5}
+.mf-btn.active{border-color:#2196F3;background:#e3f2fd;color:#2196F3}
 .mf-badge{
-  background:#4f46e5;color:#fff;border-radius:10px;padding:0 5px;
+  background:#2196F3;color:#fff;border-radius:10px;padding:0 5px;
   font-size:10px;font-weight:700;min-width:16px;text-align:center;display:none
 }
 .mf-badge.show{display:inline-block}
@@ -698,8 +706,8 @@ input[name="sched-color"]:checked+.color-dot{border-color:#333}
   display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;
   font-size:12px;color:#111;white-space:nowrap;transition:background .1s
 }
-.mf-drop label:hover{background:#f5f7ff}
-.mf-drop input[type=checkbox]{width:14px;height:14px;cursor:pointer;accent-color:#4f46e5}
+.mf-drop label:hover{background:#e8f4fd}
+.mf-drop input[type=checkbox]{width:14px;height:14px;cursor:pointer;accent-color:#2196F3}
 .mf-reset{
   font-size:11px;padding:5px 10px;border:1px solid #fca5a5;border-radius:8px;
   background:#fef2f2;color:#dc2626;cursor:pointer;font-weight:500;
@@ -725,16 +733,16 @@ th{
   color:#666;white-space:nowrap;cursor:pointer;user-select:none;
   transition:color .1s;
 }
-th:hover{color:#4f46e5}
+th:hover{color:#2196F3}
 td{
   padding:7px 10px;border-bottom:1px solid #f0f2f5;
   white-space:nowrap;text-align:center;background:#fff;
   transition:background .08s;
 }
 tr:last-child td{border-bottom:none}
-tr:hover td{background:#f5f7ff!important;cursor:pointer}
-tr.sel td{background:#eef2ff!important;border-bottom-color:#c7d2fe}
-tr.sel td:first-child{border-left:3px solid #4f46e5}
+tr:hover td{background:#e8f4fd!important;cursor:pointer}
+tr.sel td{background:#e3f2fd!important;border-bottom-color:#c7d2fe}
+tr.sel td:first-child{border-left:3px solid #2196F3}
 
 /* ─── 배지 ─── */
 .bx{display:inline-block;font-size:10px;padding:2px 7px;border-radius:5px;font-weight:700;letter-spacing:.2px}
@@ -783,7 +791,7 @@ tr.sel td:first-child{border-left:3px solid #4f46e5}
   cursor:pointer;color:#888;border-bottom:2px solid transparent;transition:all .12s;
   font-weight:500;
 }
-.tab-item.on{color:#4f46e5;border-color:#4f46e5;font-weight:700}
+.tab-item.on{color:#2196F3;border-color:#2196F3;font-weight:700}
 .form-body{overflow-y:auto;flex:1;padding:12px 14px}
 .pg{display:none}
 .pg.on{display:block}
@@ -794,7 +802,7 @@ tr.sel td:first-child{border-left:3px solid #4f46e5}
   font-size:12px;padding:6px 9px;border:1px solid #e0e0e0;border-radius:7px;
   width:100%;background:#fafafa;color:#1e2d45;outline:none;transition:all .15s;
 }
-.form-input:focus{outline:none;border-color:#4f46e5;background:#fff;box-shadow:0 0 0 3px rgba(79,70,229,.1)}
+.form-input:focus{outline:none;border-color:#2196F3;background:#fff;box-shadow:0 0 0 3px rgba(33,150,243,.12)}
 textarea.form-input{min-height:85px;resize:vertical;line-height:1.5}
 .form-footer{
   padding:8px 12px;border-top:1px solid #e8eaed;display:flex;gap:5px;background:#fff
@@ -828,7 +836,7 @@ textarea.form-input{min-height:85px;resize:vertical;line-height:1.5}
 <body>
 
 <!-- 인앱 알림 배너 -->
-<div id="in-app-notice-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:#4f46e5;color:#fff;padding:14px 20px;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,.15);cursor:pointer;animation:slideDown .3s ease" onclick="this.style.display='none'">
+<div id="in-app-notice-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(135deg,#4facfe,#00c6fb);color:#fff;padding:14px 20px;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,.15);cursor:pointer;animation:slideDown .3s ease" onclick="this.style.display='none'">
   <strong id="in-app-notice-title"></strong>
   <div id="in-app-notice-body" style="font-size:13px;margin-top:4px;opacity:.9"></div>
   <div style="font-size:11px;margin-top:4px;opacity:.6">탭하여 닫기</div>
@@ -848,11 +856,11 @@ window.showInAppNotice = function(title, body) {
 <!-- 로그인 화면 -->
 <div id="login-screen" style="
   display:flex; flex-direction:column; align-items:center; justify-content:center;
-  min-height:100vh; background:linear-gradient(135deg,#1e1b4b 0%,#312e81 100%);
+  min-height:100vh; background:linear-gradient(135deg,#0d47a1 0%,#42a5f5 50%,#80d8ff 100%);
 ">
   <div style="background:#fff;border-radius:20px;padding:48px 40px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);max-width:360px;width:90%">
     <div style="font-size:36px;margin-bottom:8px">🗳️</div>
-    <div style="font-size:20px;font-weight:800;color:#1e1b4b;margin-bottom:4px">MOIDA</div>
+    <div style="font-size:20px;font-weight:800;color:#1a237e;margin-bottom:4px">MOIDA</div>
     <div style="font-size:13px;color:#6b7280;margin-bottom:32px">의원 전용 페이지</div>
     <button onclick="window.doGoogleLogin()" style="
       display:flex;align-items:center;justify-content:center;gap:10px;
@@ -1178,9 +1186,9 @@ window.showInAppNotice = function(title, body) {
         <!-- 자동계산 결과 표시 -->
         <div id="jumin-auto" style="display:none;margin:4px 0 8px 76px;padding:8px 10px;background:#f0f4ff;border-radius:8px;border:1px solid #c7d2fe">
           <div style="display:flex;gap:12px;font-size:12px">
-            <span style="color:#666">성별</span><b id="auto-gender" style="color:#4f46e5">-</b>
-            <span style="color:#666;margin-left:8px">나이</span><b id="auto-age" style="color:#4f46e5">-</b>세
-            <span style="color:#666;margin-left:8px">연령대</span><b id="auto-agegroup" style="color:#4f46e5">-</b>
+            <span style="color:#666">성별</span><b id="auto-gender" style="color:#2196F3">-</b>
+            <span style="color:#666;margin-left:8px">나이</span><b id="auto-age" style="color:#2196F3">-</b>세
+            <span style="color:#666;margin-left:8px">연령대</span><b id="auto-agegroup" style="color:#2196F3">-</b>
           </div>
           <div style="font-size:10px;color:#888;margin-top:4px">주민번호로 자동 계산됩니다</div>
         </div>
@@ -1201,10 +1209,10 @@ window.showInAppNotice = function(title, body) {
               style="background:#f8f9fa;color:#444;cursor:pointer;flex:1;min-width:0"
               onclick="openAddrSearch()">
             <button onclick="openAddrSearch()" style="
-              flex-shrink:0;padding:0 10px;border:1px solid #4f46e5;border-radius:7px;
-              background:#4f46e5;color:#fff;font-size:11px;font-weight:700;cursor:pointer;
+              flex-shrink:0;padding:0 10px;border:1px solid #2196F3;border-radius:7px;
+              background:#2196F3;color:#fff;font-size:11px;font-weight:700;cursor:pointer;
               white-space:nowrap;transition:background .12s;
-            " onmouseover="this.style.background='#4338ca'" onmouseout="this.style.background='#4f46e5'">🔍 검색</button>
+            " onmouseover="this.style.background='#1976D2'" onmouseout="this.style.background='#2196F3'">🔍 검색</button>
           </div>
         </div>
 
@@ -1294,7 +1302,7 @@ window.showInAppNotice = function(title, body) {
     <div style="font-size:36px;margin-bottom:12px">🔄</div>
     <div style="font-size:16px;font-weight:700;color:#1a1a2e;margin-bottom:8px">점수 재계산</div>
     <p id="recalc-msg" style="font-size:13px;color:#555;line-height:1.6;margin-bottom:8px"></p>
-    <div id="recalc-progress" style="display:none;font-size:12px;color:#4f46e5;font-weight:600;margin-bottom:16px;padding:8px;background:#f0f4ff;border-radius:8px"></div>
+    <div id="recalc-progress" style="display:none;font-size:12px;color:#2196F3;font-weight:600;margin-bottom:16px;padding:8px;background:#f0f4ff;border-radius:8px"></div>
     <div id="recalc-btns" style="display:flex;gap:10px;justify-content:center;margin-top:16px">
       <button onclick="closeRecalcOv()" style="
         padding:10px 24px;border:2px solid #e5e7eb;border-radius:10px;
@@ -1419,7 +1427,7 @@ window.showInAppNotice = function(title, body) {
         <button class="tb-btn" onclick="backToNoticeList()">← 목록으로</button>
       </div>
       <div class="notice-form">
-        <div style="font-size:16px;font-weight:700;color:#1e1b4b;margin-bottom:16px" id="notice-form-label">새 공지 작성</div>
+        <div style="font-size:16px;font-weight:700;color:#1a237e;margin-bottom:16px" id="notice-form-label">새 공지 작성</div>
         <input type="text" id="notice-title" placeholder="제목을 입력하세요">
         <textarea id="notice-body" placeholder="내용을 입력하세요"></textarea>
         <div class="notice-form-btns">
@@ -1495,7 +1503,7 @@ window.showInAppNotice = function(title, body) {
     <div style="margin-bottom:10px">
       <label class="modal-label">색상</label>
       <div style="display:flex;gap:8px" id="sched-colors">
-        <label style="cursor:pointer"><input type="radio" name="sched-color" value="#4f46e5" checked style="display:none"><span class="color-dot" style="background:#4f46e5"></span></label>
+        <label style="cursor:pointer"><input type="radio" name="sched-color" value="#2196F3" checked style="display:none"><span class="color-dot" style="background:#2196F3"></span></label>
         <label style="cursor:pointer"><input type="radio" name="sched-color" value="#16a34a" style="display:none"><span class="color-dot" style="background:#16a34a"></span></label>
         <label style="cursor:pointer"><input type="radio" name="sched-color" value="#dc2626" style="display:none"><span class="color-dot" style="background:#dc2626"></span></label>
         <label style="cursor:pointer"><input type="radio" name="sched-color" value="#f59e0b" style="display:none"><span class="color-dot" style="background:#f59e0b"></span></label>
@@ -2640,7 +2648,7 @@ async function loadDashboardPage() {
         var dayNames = ['일','월','화','수','목','금','토'];
         var timeStr = s.timeStart ? s.timeStart + (s.timeEnd ? ' ~ ' + s.timeEnd : '') : '종일';
         return '<div class="dash-sched-item">'
-          + '<div class="dash-sched-date-box" style="background:' + (s.color||'#4f46e5') + '">'
+          + '<div class="dash-sched-date-box" style="background:' + (s.color||'#2196F3') + '">'
           + '<div class="month">' + (dt.getMonth()+1) + '월</div>'
           + '<div class="day">' + dt.getDate() + '</div>'
           + '</div>'
@@ -2694,7 +2702,7 @@ function renderCal() {
     var dateStr = calYear + '-' + String(calMonth+1).padStart(2,'0') + '-' + String(i).padStart(2,'0');
     var events = getEventsForDate(dateStr);
     var evHtml = events.map(function(e) {
-      return '<div class="cal-event" style="background:' + (e.color||'#4f46e5') + '" onclick="event.stopPropagation();openScheduleDetail(\'' + e.id + '\')">' + escapeHtml(e.title) + '</div>';
+      return '<div class="cal-event" style="background:' + (e.color||'#2196F3') + '" onclick="event.stopPropagation();openScheduleDetail(\'' + e.id + '\')">' + escapeHtml(e.title) + '</div>';
     }).join('');
     cells += '<div class="cal-cell' + (isToday ? ' today' : '') + '" onclick="onCalCellClick(\'' + dateStr + '\')">'
       + '<div class="cal-day">' + i + '</div>' + evHtml + '</div>';
@@ -2735,7 +2743,7 @@ function renderScheduleList() {
     if (s.timeStart) timeDisplay = s.timeStart + (s.timeEnd ? ' ~ ' + s.timeEnd : '');
     var locationDisplay = s.location ? ' · 📍 ' + escapeHtml(s.location) : '';
     return '<div class="sched-item" onclick="openScheduleDetail(\'' + s.id + '\')">'
-      + '<div class="sched-dot" style="background:' + (s.color||'#4f46e5') + '"></div>'
+      + '<div class="sched-dot" style="background:' + (s.color||'#2196F3') + '"></div>'
       + '<div class="sched-info">'
       + '<div class="sched-title">' + escapeHtml(s.title) + '</div>'
       + '<div class="sched-meta">' + dateDisplay + (timeDisplay ? ' · ' + timeDisplay : '') + locationDisplay + '</div>'
@@ -2771,7 +2779,7 @@ function onCalCellClick(dateStr) {
   document.getElementById('sched-location').value = '';
   document.getElementById('sched-memo').value = '';
   document.getElementById('sched-del-btn').style.display = 'none';
-  document.querySelector('input[name="sched-color"][value="#4f46e5"]').checked = true;
+  document.querySelector('input[name="sched-color"][value="#2196F3"]').checked = true;
   document.getElementById('schedule-modal').classList.add('show');
 }
 
@@ -2800,7 +2808,7 @@ function openScheduleDetail(id) {
   document.getElementById('sched-location').value = s.location || '';
   document.getElementById('sched-memo').value = s.memo || '';
   document.getElementById('sched-del-btn').style.display = '';
-  var colorRadio = document.querySelector('input[name="sched-color"][value="' + (s.color||'#4f46e5') + '"]');
+  var colorRadio = document.querySelector('input[name="sched-color"][value="' + (s.color||'#2196F3') + '"]');
   if (colorRadio) colorRadio.checked = true;
   document.getElementById('schedule-modal').classList.add('show');
 }
@@ -2813,7 +2821,7 @@ async function saveSchedule() {
   if (!title || !startDate) { alert('제목과 시작일을 입력하세요.'); return; }
   var editId = document.getElementById('sched-edit-id').value;
   var id = editId || 'sched_' + Date.now();
-  var color = '#4f46e5';
+  var color = '#2196F3';
   var checked = document.querySelector('input[name="sched-color"]:checked');
   if (checked) color = checked.value;
   var data = {
