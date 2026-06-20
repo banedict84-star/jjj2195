@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>웹자보 만들기 | MOIDA</title>
+
+<!-- 글꼴: 본문 Noto Sans KR, 헤드라인 Black Han Sans -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+
+<!-- 화면을 이미지로 변환 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<style>
+  :root {
+    --main: #152484;     /* 기본 메인 색 (민주당 파랑 계열) */
+    --accent: #00a0e9;   /* 포인트 색 */
+    --bg: #f4f5f7;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    color: #1a1a1a;
+    line-height: 1.5;
+  }
+  header.top {
+    background: #fff;
+    border-bottom: 1px solid #e6e8ec;
+    padding: 16px 24px;
+  }
+  header.top h1 { font-size: 20px; font-weight: 900; }
+  header.top p { font-size: 13px; color: #6b7280; margin-top: 2px; }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 24px;
+    max-width: 1200px;
+    margin: 24px auto;
+    padding: 0 24px;
+    align-items: start;
+  }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+
+  /* ===== 컨트롤 패널 ===== */
+  .panel {
+    background: #fff;
+    border: 1px solid #e6e8ec;
+    border-radius: 16px;
+    padding: 20px;
+  }
+  .panel h2 { font-size: 14px; font-weight: 700; margin-bottom: 12px; color: #111827; }
+  .panel section { margin-bottom: 22px; }
+  label.field { display: block; font-size: 12px; color: #6b7280; margin: 12px 0 4px; font-weight: 500; }
+  input[type=text], textarea, select {
+    width: 100%;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 14px;
+    font-family: inherit;
+    background: #fff;
+  }
+  textarea { resize: vertical; min-height: 90px; }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent); }
+
+  /* 템플릿 선택 */
+  .templates { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .templates label {
+    cursor: pointer;
+    border: 2px solid #e6e8ec;
+    border-radius: 10px;
+    padding: 8px 4px;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 500;
+    color: #4b5563;
+    transition: .15s;
+  }
+  .templates input { display: none; }
+  .templates input:checked + .tcard { color: var(--main); }
+  .templates label:has(input:checked) { border-color: var(--main); background: #f0f4ff; }
+  .tprev { font-size: 22px; display: block; margin-bottom: 4px; }
+
+  /* 색상 프리셋 */
+  .swatches { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .swatch {
+    width: 30px; height: 30px; border-radius: 50%;
+    border: 2px solid #fff; box-shadow: 0 0 0 1px #d1d5db; cursor: pointer;
+  }
+  .swatch.sel { box-shadow: 0 0 0 2px var(--main); }
+  .colorrow { display: flex; gap: 12px; }
+  .colorrow > div { flex: 1; }
+  input[type=color] { width: 100%; height: 38px; border: 1px solid #d1d5db; border-radius: 10px; padding: 2px; cursor: pointer; background: #fff; }
+
+  /* 사진 업로드 */
+  .drop {
+    border: 2px dashed #cbd5e1; border-radius: 12px; padding: 18px;
+    text-align: center; color: #6b7280; font-size: 13px; cursor: pointer;
+  }
+  .drop:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* 버튼 */
+  .btn {
+    width: 100%; border: none; border-radius: 10px; padding: 12px;
+    font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit;
+    transition: .15s; margin-top: 8px;
+  }
+  .btn-ai { background: #111827; color: #fff; }
+  .btn-ai:hover { background: #000; }
+  .btn-ai:disabled { background: #9ca3af; cursor: wait; }
+  .btn-dl { background: var(--main); color: #fff; }
+  .btn-dl:hover { filter: brightness(1.08); }
+  .hint { font-size: 11px; color: #9ca3af; margin-top: 6px; }
+
+  /* ===== 미리보기 ===== */
+  .stage {
+    position: sticky; top: 24px;
+    display: flex; flex-direction: column; align-items: center; gap: 14px;
+  }
+  .poster-scale { transform-origin: top center; }
+
+  /* 자보 본체 (실제 출력 크기) */
+  #poster {
+    position: relative;
+    overflow: hidden;
+    background: #fff;
+    color: #fff;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+  #poster .ph-img {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+  }
+  #poster .nophoto {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    background: #e5e7eb; color: #9ca3af; font-size: 28px;
+  }
+  .headline { font-family: 'Black Han Sans', sans-serif; line-height: 1.08; letter-spacing: -1px; }
+
+  .toolbar { display: flex; gap: 8px; }
+  .toolbar .btn { margin-top: 0; }
+  .sizetag { font-size: 12px; color: #6b7280; }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <h1>🪧 웹자보 만들기</h1>
+  <p>사진과 내용을 넣으면 자동으로 홍보 자보 이미지가 만들어집니다.</p>
+</header>
+
+<div class="layout">
+  <!-- ================= 컨트롤 ================= -->
+  <div class="panel">
+    <section>
+      <h2>1. 템플릿</h2>
+      <div class="templates" id="templates">
+        <label><input type="radio" name="tpl" value="sns" checked><span class="tcard"><span class="tprev">📱</span>세로 SNS형</span></label>
+        <label><input type="radio" name="tpl" value="banner"><span class="tcard"><span class="tprev">🖼️</span>가로 배너형</span></label>
+        <label><input type="radio" name="tpl" value="hero"><span class="tcard"><span class="tprev">👤</span>인물 강조형</span></label>
+      </div>
+    </section>
+
+    <section>
+      <h2>2. 색상</h2>
+      <div class="swatches" id="swatches"></div>
+      <div class="colorrow">
+        <div><label class="field">메인 색</label><input type="color" id="mainColor" value="#152484"></div>
+        <div><label class="field">포인트 색</label><input type="color" id="accentColor" value="#00a0e9"></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>3. 사진</h2>
+      <div class="drop" id="drop">클릭하거나 사진을 끌어다 놓으세요</div>
+      <input type="file" id="photo" accept="image/*" hidden>
+    </section>
+
+    <section>
+      <h2>4. 내용</h2>
+      <label class="field">이름</label>
+      <input type="text" id="name" placeholder="예: 홍길동">
+      <label class="field">직함</label>
+      <input type="text" id="position" placeholder="예: ○○시 시의원">
+      <label class="field">큰 제목 (슬로건)</label>
+      <input type="text" id="headline" placeholder="예: 함께 만드는 변화">
+      <label class="field">작은 제목</label>
+      <input type="text" id="subheadline" placeholder="예: 시민의 목소리를 듣겠습니다">
+      <label class="field">핵심 문구 (줄바꿈으로 구분, 최대 3개)</label>
+      <textarea id="points" placeholder="청년 일자리 확대&#10;안전한 보행환경 조성&#10;소상공인 지원 강화"></textarea>
+      <label class="field">마무리 문구</label>
+      <input type="text" id="closing" placeholder="예: 늘 곁에서 함께하겠습니다">
+    </section>
+
+    <section>
+      <h2>5. AI 문구 자동 생성 (선택)</h2>
+      <label class="field">전달받은 내용 (활동·공약·소식 등)</label>
+      <textarea id="aiInput" placeholder="예: 지난 한 달간 동네 어르신들을 만나 경로당 난방비 지원을 약속했고, 통학로 신호등 설치를 추진 중입니다."></textarea>
+      <button class="btn btn-ai" id="aiBtn">✨ AI로 자보 문구 만들기</button>
+      <p class="hint" id="aiHint">내용을 적고 누르면 위 4번 항목이 자동으로 채워집니다.</p>
+    </section>
+  </div>
+
+  <!-- ================= 미리보기 ================= -->
+  <div class="stage">
+    <div class="sizetag" id="sizetag"></div>
+    <div class="poster-scale" id="scale">
+      <div id="poster"></div>
+    </div>
+    <div class="toolbar">
+      <button class="btn btn-dl" id="dlBtn">⬇️ 이미지 다운로드 (PNG)</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== 설정 =====
+// 배포한 Cloud Function 주소 (AI 문구 생성용)
+const AI_ENDPOINT = "https://asia-northeast3-jjj2195-1bd15.cloudfunctions.net/generatePosterCopy";
+
+// 색상 프리셋
+const PRESETS = [
+  { name: "민주당", main: "#152484", accent: "#00a0e9" },
+  { name: "국민의힘", main: "#e61e2b", accent: "#c9151f" },
+  { name: "진보당", main: "#d6001c", accent: "#ff6b00" },
+  { name: "차분한 남색", main: "#1f3a5f", accent: "#3b82f6" },
+  { name: "숲 초록", main: "#1b5e20", accent: "#43a047" },
+  { name: "먹색", main: "#222222", accent: "#c9a227" },
+];
+
+// 템플릿별 출력 크기 (px)
+const SIZES = {
+  sns:    { w: 1080, h: 1350 },
+  banner: { w: 1200, h: 630 },
+  hero:   { w: 1080, h: 1350 },
+};
+
+const state = {
+  tpl: "sns",
+  main: "#152484",
+  accent: "#00a0e9",
+  photo: null, // data URL
+};
+
+// ===== 입력 헬퍼 =====
+const $ = (id) => document.getElementById(id);
+const val = (id) => $(id).value.trim();
+
+// 색상 프리셋 버튼 생성
+const swatchWrap = $("swatches");
+PRESETS.forEach((p, i) => {
+  const el = document.createElement("div");
+  el.className = "swatch";
+  el.style.background = `linear-gradient(135deg, ${p.main} 60%, ${p.accent} 60%)`;
+  el.title = p.name;
+  el.onclick = () => {
+    state.main = p.main; state.accent = p.accent;
+    $("mainColor").value = p.main; $("accentColor").value = p.accent;
+    document.querySelectorAll(".swatch").forEach(s => s.classList.remove("sel"));
+    el.classList.add("sel");
+    render();
+  };
+  if (i === 0) el.classList.add("sel");
+  swatchWrap.appendChild(el);
+});
+
+// 색상 직접 선택
+$("mainColor").oninput = (e) => { state.main = e.target.value; render(); };
+$("accentColor").oninput = (e) => { state.accent = e.target.value; render(); };
+
+// 템플릿 선택
+document.querySelectorAll('input[name=tpl]').forEach(r => {
+  r.onchange = (e) => { state.tpl = e.target.value; render(); };
+});
+
+// 텍스트 입력 → 실시간 반영
+["name","position","headline","subheadline","points","closing"].forEach(id => {
+  $(id).addEventListener("input", render);
+});
+
+// 사진 업로드
+const drop = $("drop"), photoInput = $("photo");
+drop.onclick = () => photoInput.click();
+photoInput.onchange = (e) => loadPhoto(e.target.files[0]);
+drop.ondragover = (e) => { e.preventDefault(); drop.style.borderColor = state.accent; };
+drop.ondragleave = () => { drop.style.borderColor = ""; };
+drop.ondrop = (e) => { e.preventDefault(); drop.style.borderColor = ""; loadPhoto(e.dataTransfer.files[0]); };
+function loadPhoto(file) {
+  if (!file || !file.type.startsWith("image/")) return;
+  const reader = new FileReader();
+  reader.onload = () => { state.photo = reader.result; drop.textContent = "✓ 사진이 등록되었습니다 (다시 클릭하면 변경)"; render(); };
+  reader.readAsDataURL(file);
+}
+
+// ===== 자보 렌더링 =====
+function esc(s){ return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function nl2(s){ return esc(s).replace(/\n/g,"<br>"); }
+
+function getData() {
+  const points = val("points").split("\n").map(s=>s.trim()).filter(Boolean).slice(0,3);
+  return {
+    name: val("name"), position: val("position"),
+    headline: val("headline") || "여기에 슬로건",
+    subheadline: val("subheadline"),
+    points, closing: val("closing"),
+  };
+}
+
+function photoHTML() {
+  return state.photo
+    ? `<img class="ph-img" src="${state.photo}" crossorigin="anonymous">`
+    : `<div class="nophoto">사진을 넣어주세요</div>`;
+}
+
+function render() {
+  const { w, h } = SIZES[state.tpl];
+  const poster = $("poster");
+  poster.style.width = w + "px";
+  poster.style.height = h + "px";
+  document.documentElement.style.setProperty("--main", state.main);
+  document.documentElement.style.setProperty("--accent", state.accent);
+  $("sizetag").textContent = `${w} × ${h}px`;
+
+  const d = getData();
+  const pointsHTML = d.points.length
+    ? `<ul style="list-style:none;display:flex;flex-direction:column;gap:14px;margin-top:18px;">${
+        d.points.map(p=>`<li style="display:flex;align-items:center;gap:12px;font-size:30px;font-weight:700;">
+          <span style="flex:0 0 auto;width:34px;height:34px;border-radius:50%;background:var(--accent);display:inline-flex;align-items:center;justify-content:center;font-size:20px;">✓</span>
+          <span>${esc(p)}</span></li>`).join("")
+      }</ul>` : "";
+
+  if (state.tpl === "sns") {
+    poster.innerHTML = `
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;">
+        <div style="height:54%;background:#e5e7eb;">${photoHTML()}</div>
+        <div style="flex:1;background:var(--main);padding:54px 56px;display:flex;flex-direction:column;justify-content:center;">
+          ${d.position?`<div style="font-size:30px;font-weight:700;color:var(--accent);margin-bottom:8px;">${esc(d.position)}</div>`:""}
+          ${d.name?`<div style="font-size:40px;font-weight:900;margin-bottom:18px;">${esc(d.name)}</div>`:""}
+          <div class="headline" style="font-size:84px;">${nl2(d.headline)}</div>
+          ${d.subheadline?`<div style="font-size:34px;font-weight:500;margin-top:14px;opacity:.92;">${esc(d.subheadline)}</div>`:""}
+          ${pointsHTML}
+          ${d.closing?`<div style="margin-top:30px;font-size:30px;font-weight:700;border-top:2px solid rgba(255,255,255,.3);padding-top:20px;">${esc(d.closing)}</div>`:""}
+        </div>
+      </div>`;
+  } else if (state.tpl === "banner") {
+    poster.innerHTML = `
+      <div style="position:absolute;inset:0;display:flex;">
+        <div style="flex:1.15;background:var(--main);padding:60px 64px;display:flex;flex-direction:column;justify-content:center;">
+          ${d.position?`<div style="font-size:26px;font-weight:700;color:var(--accent);margin-bottom:6px;">${esc(d.position)}</div>`:""}
+          ${d.name?`<div style="font-size:36px;font-weight:900;margin-bottom:16px;">${esc(d.name)}</div>`:""}
+          <div class="headline" style="font-size:72px;">${nl2(d.headline)}</div>
+          ${d.subheadline?`<div style="font-size:28px;font-weight:500;margin-top:12px;opacity:.92;">${esc(d.subheadline)}</div>`:""}
+          ${d.closing?`<div style="margin-top:22px;font-size:24px;font-weight:700;color:var(--accent);">${esc(d.closing)}</div>`:""}
+        </div>
+        <div style="flex:1;background:#e5e7eb;">${photoHTML()}</div>
+      </div>`;
+  } else { // hero
+    poster.innerHTML = `
+      <div style="position:absolute;inset:0;background:#374151;">${photoHTML()}</div>
+      <div style="position:absolute;inset:0;background:linear-gradient(to top, var(--main) 8%, rgba(21,36,132,.85) 32%, rgba(0,0,0,.15) 60%, rgba(0,0,0,.35) 100%);"></div>
+      <div style="position:absolute;left:0;right:0;bottom:0;padding:60px 56px;">
+        ${d.position?`<div style="font-size:30px;font-weight:700;color:var(--accent);margin-bottom:6px;">${esc(d.position)}</div>`:""}
+        ${d.name?`<div style="font-size:44px;font-weight:900;margin-bottom:18px;">${esc(d.name)}</div>`:""}
+        <div class="headline" style="font-size:92px;text-shadow:0 2px 12px rgba(0,0,0,.3);">${nl2(d.headline)}</div>
+        ${d.subheadline?`<div style="font-size:34px;font-weight:500;margin-top:14px;">${esc(d.subheadline)}</div>`:""}
+        ${pointsHTML}
+        ${d.closing?`<div style="margin-top:28px;font-size:30px;font-weight:700;">${esc(d.closing)}</div>`:""}
+      </div>`;
+  }
+  fitPreview();
+}
+
+// 미리보기 크기를 화면에 맞게 축소
+function fitPreview() {
+  const { w } = SIZES[state.tpl];
+  const stageW = Math.min($("scale").parentElement.clientWidth, 640);
+  const scale = Math.min(1, stageW / w);
+  $("scale").style.transform = `scale(${scale})`;
+  // 축소된 만큼 빈 공간이 생기지 않도록 높이 보정
+  const { h } = SIZES[state.tpl];
+  $("scale").style.height = (h * scale) + "px";
+}
+window.addEventListener("resize", fitPreview);
+
+// ===== AI 문구 생성 =====
+$("aiBtn").onclick = async () => {
+  const content = val("aiInput");
+  if (!content) { $("aiHint").textContent = "먼저 내용을 적어주세요."; return; }
+  const btn = $("aiBtn"); btn.disabled = true; btn.textContent = "✨ 생성 중...";
+  $("aiHint").textContent = "AI가 문구를 만들고 있습니다...";
+  try {
+    const res = await fetch(AI_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: val("name"), position: val("position"), content }),
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || "생성 실패");
+    const c = data.copy;
+    $("headline").value = c.headline || "";
+    $("subheadline").value = c.subheadline || "";
+    $("points").value = (c.points || []).join("\n");
+    $("closing").value = c.closing || "";
+    render();
+    $("aiHint").textContent = "✓ 문구가 채워졌습니다. 자유롭게 수정하세요.";
+  } catch (e) {
+    $("aiHint").textContent = "오류: " + e.message + " (Cloud Function 배포와 API 키 설정을 확인하세요)";
+  } finally {
+    btn.disabled = false; btn.textContent = "✨ AI로 자보 문구 만들기";
+  }
+};
+
+// ===== 다운로드 =====
+$("dlBtn").onclick = async () => {
+  const btn = $("dlBtn"); const old = btn.textContent;
+  btn.textContent = "이미지 만드는 중...";
+  try {
+    await document.fonts.ready;
+    const canvas = await html2canvas($("poster"), {
+      width: SIZES[state.tpl].w,
+      height: SIZES[state.tpl].h,
+      scale: 1,
+      useCORS: true,
+      backgroundColor: null,
+    });
+    const link = document.createElement("a");
+    const tag = (val("name") || "웹자보").replace(/\s+/g, "");
+    link.download = `${tag}_${state.tpl}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  } catch (e) {
+    alert("이미지 생성 실패: " + e.message);
+  } finally {
+    btn.textContent = old;
+  }
+};
+
+// 첫 렌더
+document.fonts.ready.then(render);
+render();
+</script>
+</body>
+</html>
