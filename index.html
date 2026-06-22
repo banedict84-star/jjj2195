@@ -1738,18 +1738,19 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
   function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
   /* ── 테이블 렌더링 ── */
-  function render(){
-    /* 전체 data 기준 중복 전화번호 찾기 */
+  /* 전체 data 기준 중복 전화번호 맵 */
+  function buildPhoneCnt(){
     var phoneCnt={};
     for(var i=0;i<data.length;i++){
       var ph=(data[i].phone||'').trim();
       if(ph) phoneCnt[ph]=(phoneCnt[ph]||0)+1;
     }
-    var rows=[];
-    for(var i=0;i<filtered.length;i++){
-      var r=filtered[i];
-      rows.push('<tr class="'+(r._id===selId?'sel':'')+'" onclick="W.pick('+r._id+')">'
-        +'<td style="text-align:center;color:#94a3b8;font-size:11px">'+(i+1)+'</td>'
+    return phoneCnt;
+  }
+  /* 한 행(<tr>) HTML 생성 — render와 단일행 갱신이 공유 */
+  function rowHtml(r, idx, phoneCnt){
+      return '<tr data-id="'+r._id+'" class="'+(r._id===selId?'sel':'')+'" onclick="W.pick('+r._id+')">'
+        +'<td style="text-align:center;color:#94a3b8;font-size:11px">'+(idx+1)+'</td>'
         +'<td style="font-weight:800;color:#1d4ed8">'+esc(r.score)+'</td>'
         +'<td style="font-weight:600">'+esc(r.name)+'</td>'
         +'<td style="color:#0d47a1'+(phoneCnt[r.phone]>1?';background:#fff176':'')+'">' + esc(r.phone)+'</td>'
@@ -1769,9 +1770,24 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
         +'<td style="width:68px;font-size:11px;color:#666">'+esc(r.text_reply)+'</td>'
         +'<td style="width:52px">'+esc(r.family_cnt)+'</td>'
         +'<td style="color:#5a7080;text-align:left;min-width:220px">'+esc(r.address)+'</td>'
-        +'</tr>');
+        +'</tr>';
+  }
+  function render(){
+    var phoneCnt=buildPhoneCnt();
+    var rows=[];
+    for(var i=0;i<filtered.length;i++){
+      rows.push(rowHtml(filtered[i], i, phoneCnt));
     }
     document.getElementById('tb').innerHTML=rows.join('');
+  }
+  /* 수정한 한 명만 다시 그리기 (2000행 전체 재렌더 방지) */
+  function updateRow(r){
+    var fi=-1;
+    for(var i=0;i<filtered.length;i++){ if(filtered[i]._id===r._id){ filtered[i]=r; fi=i; break; } }
+    if(fi===-1){ go(); return; }            // 필터 결과에 없으면 전체 갱신
+    var tr=document.querySelector('#tb tr[data-id="'+r._id+'"]');
+    if(!tr){ go(); return; }                // DOM에 없으면 전체 갱신
+    tr.outerHTML=rowHtml(r, fi, buildPhoneCnt());
   }
   function calcStats(arr){
     var n1=0,n2=0,n3=0,n4=0,n5=0,n6=0;
@@ -2176,7 +2192,13 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
     document.getElementById('pt').textContent=r.name;
     document.getElementById('pb').textContent=(r.dong?' · '+r.dong:'')+(r.age_group?' · '+r.age_group:'');
     document.getElementById('si').textContent='선택: '+r.name+(r.dong?' ('+r.dong+')':'');
-    selId=r._id; go();
+    selId=r._id;
+    if(addAsNew){
+      go();                       // 신규는 필터/정렬 위치가 바뀌므로 전체 렌더
+    } else {
+      updateRow(r);               // 수정은 해당 행만 갱신 (빠름)
+      calcStats(filtered);        // 통계는 가벼우니 갱신
+    }
   }
 
   /* ── 삭제 ── */
