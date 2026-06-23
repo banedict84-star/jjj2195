@@ -348,7 +348,7 @@
 </div>
 
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
-  const members = [
+  const baseMembers = [
     { no:1,  score:92, name:"김민재", phone:"010-2211-3344", rrn:"850302-1******", dong:"성포동", type:"기존당원", typeK:"old", org:"성포번영회", vote:"투표완료", voteK:"vote", age:39, ageb:"30대", sex:"남", rec:"이상훈", sub:"—" },
     { no:2,  score:88, name:"이서연", phone:"010-7788-1020", rrn:"910715-2******", dong:"일동", type:"신규당원", typeK:"new", org:"—", vote:"투표완료", voteK:"vote", age:34, ageb:"30대", sex:"여", rec:"박정희", sub:"김도현" },
     { no:3,  score:75, name:"박준호", phone:"010-3344-9090", rrn:"780119-1******", dong:"와동", type:"권리당원", typeK:"old", org:"와동상가번영회", vote:"미확인", voteK:"err", age:46, ageb:"40대", sex:"남", rec:"—", sub:"—" },
@@ -361,12 +361,49 @@
     { no:10, score:55, name:"류승범", phone:"010-3131-5252", rrn:"760923-1******", dong:"일동", type:"기존당원", typeK:"old", org:"—", vote:"미확인", voteK:"err", age:48, ageb:"40대", sex:"남", rec:"정우성", sub:"—" },
     { no:11, score:71, name:"배수지", phone:"010-8080-9191", rrn:"940225-2******", dong:"성포동", type:"신규당원", typeK:"new", org:"문화센터", vote:"투표완료", voteK:"vote", age:31, ageb:"30대", sex:"여", rec:"문소리", sub:"—" },
   ];
+
+  /* ── 대량 데이터 시뮬레이션: 기본 11명 + 자동 생성으로 총 2000명 구성.
+        실제 운영에서는 이 블록을 서버(파이어스토어) 데이터 로드로 교체하세요. ── */
+  const TOTAL = 2000;
+  const _sn=["김","이","박","최","정","강","조","윤","장","임","한","오","서","신","권","황","안","송","류","문","배","백","허","남","심"];
+  const _gn=["민재","서연","준호","은정","우성","지민","세훈","하늘","소리","승범","수지","도현","예린","건우","채원","현우","지우","서준","하윤","주원","지호","수아","시우","유진","나윤"];
+  const _dong=["성포동","일동","와동","이동","본오동","부곡동","사동"];
+  const _type=[["권리당원","old"],["기존당원","old"],["신규당원","new"],["탈당","out"]];
+  const _vote=[["투표완료","vote"],["미확인","err"],["불참","out"]];
+  const _org=["성포번영회","청년회","부녀회","체육회","학부모회","문화센터","상가번영회","—","—"];
+  const members = baseMembers.slice();
+  for(let i=members.length;i<TOTAL;i++){
+    const t=_type[i%_type.length], v=_vote[i%_vote.length], age=22+(i*7)%55;
+    members.push({
+      no:i+1, score:40+(i*13)%60,
+      name:_sn[i%_sn.length]+_gn[(i*3)%_gn.length],
+      phone:"010-"+String(2000+(i*37)%7999)+"-"+String(1000+(i*53)%8999),
+      rrn:(age>=40?"7":"9")+"0"+String(100+i%900)+"-"+(i%2?"2":"1")+"******",
+      dong:_dong[i%_dong.length], type:t[0], typeK:t[1],
+      org:_org[i%_org.length], vote:v[0], voteK:v[1],
+      age, ageb:(Math.floor(age/10)*10)+"대",
+      sex:i%2?"여":"남", rec:"—", sub:"—"
+    });
+  }
+  members.forEach((m,idx)=>{ m.no=idx+1; });   // no = 인덱스+1 보장 (O(1) 조회용)
+
   const avaColors = ["#3b82f6","#10b981","#f59e0b","#8b5cf6","#ec4899","#06b6d4","#ef4444","#6366f1","#14b8a6","#f97316","#a855f7"];
   const scoreCls = s => s>=85?"sc-hi":s>=65?"sc-mid":"sc-lo";
 
   const tbody = document.getElementById("tbody");
-  tbody.innerHTML = members.map((m,i)=>`
-    <tr data-i="${i}">
+  const dtAva=document.getElementById("dtAva"), dtName=document.getElementById("dtName"), dtSub=document.getElementById("dtSub");
+  const tfLeft=document.querySelector(".tf-left");
+  const pagerEl=document.querySelector(".pager");
+  const searchInput=document.querySelector(".search input");
+  const countPill=document.querySelector(".count-pill");
+
+  const PAGE_SIZE = 50;          // 한 페이지 50명만 그려 DOM을 가볍게 유지 (2000행 통째 렌더 방지)
+  let filtered = members;
+  let page = 1;
+  let selectedNo = null;
+
+  function rowHtml(m){
+    return `<tr data-no="${m.no}" class="${m.no===selectedNo?'sel':''}">
       <td class="muted-cell">${m.no}</td>
       <td><span class="score ${scoreCls(m.score)}">${m.score}</span></td>
       <td class="nm-cell">${m.name}</td>
@@ -385,22 +422,74 @@
         <span class="mini-ico" title="카톡"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
         <span class="mini-ico" title="문자"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H7l-3 3z"/></svg></span>
       </span></td>
-    </tr>`).join("");
+    </tr>`;
+  }
 
-  const dtAva=document.getElementById("dtAva"), dtName=document.getElementById("dtName"), dtSub=document.getElementById("dtSub");
-  tbody.querySelectorAll("tr").forEach(tr=>{
-    tr.addEventListener("click",()=>{
-      tbody.querySelectorAll("tr").forEach(t=>t.classList.remove("sel"));
-      tr.classList.add("sel");
-      const m = members[+tr.dataset.i];
-      dtAva.textContent = m.name[0];
-      dtAva.style.background = `linear-gradient(140deg, ${avaColors[+tr.dataset.i]}, #8b5cf6)`;
-      dtName.textContent = m.name;
-      dtSub.textContent = `${m.dong} · ${m.type} · ${m.sex} ${m.age}세`;
-      document.querySelector('.field input').value = m.name;
-      document.querySelectorAll('.field input')[1].value = m.phone;
-    });
+  const totalPages = ()=> Math.max(1, Math.ceil(filtered.length/PAGE_SIZE));
+
+  function renderTable(){
+    if(page>totalPages()) page=totalPages();
+    const start=(page-1)*PAGE_SIZE;
+    const rows=filtered.slice(start, start+PAGE_SIZE);
+    tbody.innerHTML = rows.map(rowHtml).join("");
+    if(tfLeft) tfLeft.innerHTML = `조회 <b>${filtered.length.toLocaleString()}</b>명 · 당원을 클릭하면 상세정보가 표시됩니다`;
+    renderPager();
+  }
+
+  function renderPager(){
+    if(!pagerEl) return;
+    const tp=totalPages(), win=2;
+    let html=`<div class="pg" data-go="prev">‹</div>`;
+    let s=Math.max(1,page-win), e=Math.min(tp,page+win);
+    if(s>1){ html+=`<div class="pg" data-go="1">1</div>`; if(s>2) html+=`<div class="pg" style="border:none;cursor:default">…</div>`; }
+    for(let p=s;p<=e;p++) html+=`<div class="pg${p===page?' active':''}" data-go="${p}">${p}</div>`;
+    if(e<tp){ if(e<tp-1) html+=`<div class="pg" style="border:none;cursor:default">…</div>`; html+=`<div class="pg" data-go="${tp}">${tp}</div>`; }
+    html+=`<div class="pg" data-go="next">›</div>`;
+    pagerEl.innerHTML=html;
+  }
+
+  if(pagerEl) pagerEl.addEventListener("click", e=>{
+    const b=e.target.closest(".pg"); if(!b||!b.dataset.go) return;
+    const go=b.dataset.go;
+    if(go==="prev") page=Math.max(1,page-1);
+    else if(go==="next") page=Math.min(totalPages(),page+1);
+    else page=+go;
+    renderTable();
   });
+
+  // 행 클릭: 이벤트 위임(리스너 1개) — 2000행이어도 즉시 반응
+  tbody.addEventListener("click", e=>{
+    const tr=e.target.closest("tr"); if(!tr) return;
+    const prev=tbody.querySelector("tr.sel"); if(prev) prev.classList.remove("sel");
+    tr.classList.add("sel");
+    const no=+tr.dataset.no; selectedNo=no;
+    const m=members[no-1];        // no = 인덱스+1 이라 O(1)
+    if(!m) return;
+    dtAva.textContent=m.name[0];
+    dtAva.style.background=`linear-gradient(140deg, ${avaColors[(no-1)%avaColors.length]}, #8b5cf6)`;
+    dtName.textContent=m.name;
+    dtSub.textContent=`${m.dong} · ${m.type} · ${m.sex} ${m.age}세`;
+    const fields=document.querySelectorAll('.field input');
+    if(fields[0]) fields[0].value=m.name;
+    if(fields[1]) fields[1].value=m.phone;
+  });
+
+  // 검색: 입력이 멈춘 뒤 한 번만(디바운스) 필터 → 타이핑 렉 제거
+  if(searchInput){
+    let tmr;
+    searchInput.addEventListener("input", ()=>{
+      clearTimeout(tmr);
+      tmr=setTimeout(()=>{
+        const q=searchInput.value.trim().toLowerCase();
+        filtered = q ? members.filter(m=>(m.name+m.phone+m.rec+m.dong).toLowerCase().includes(q)) : members;
+        page=1; renderTable();
+      }, 180);
+    });
+  }
+
+  if(countPill && countPill.lastChild) countPill.lastChild.textContent=`총 ${members.length.toLocaleString()}명`;
+
+  renderTable();
 
   document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{
     document.querySelectorAll('.chip').forEach(x=>x.classList.remove('active')); c.classList.add('active');
