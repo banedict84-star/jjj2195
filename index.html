@@ -832,6 +832,15 @@ textarea.form-input{min-height:85px;resize:vertical;line-height:1.5}
 
 /* ─── CSV 모달 넓이 ─── */
 #ovCSV .dialog{width:360px}
+
+/* ─── 카톡/문자 게이지바 ─── */
+.gauge{display:inline-flex;gap:3px;align-items:center}
+.gseg{width:9px;height:15px;border-radius:3px;background:#e5e7eb;cursor:pointer;transition:background .1s,transform .1s}
+.gseg:hover{transform:scaleY(1.12)}
+.g-org .gseg:hover{background:#fcd9a3}.g-grn .gseg:hover{background:#bbf0cb}.g-blu .gseg:hover{background:#bcd6fb}
+.g-org .gseg.on{background:#f59e0b}
+.g-grn .gseg.on{background:#22c55e}
+.g-blu .gseg.on{background:#3b82f6}
 </style>
 </head>
 <body>
@@ -1747,6 +1756,41 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
     }
     return phoneCnt;
   }
+  /* 카톡관리·카톡답장·문자답장 게이지(3단계) — 값↔레벨 매핑 */
+  var GAUGE = {
+    kakao_mgmt:  ['추가안됨','관리안함','관리중'],
+    kakao_reply: ['없음','보통','내용좋음'],
+    text_reply:  ['없음','보통','좋음']
+  };
+  function gLevel(field, val){ var a=GAUGE[field]; if(!a) return 0; var i=a.indexOf(val); return i<0?0:i+1; }
+  function gValue(field, lvl){ var a=GAUGE[field]; return (a&&lvl>=1&&lvl<=a.length)?a[lvl-1]:''; }
+  function gaugeHtml(field, id, val){
+    var lvl=gLevel(field, val);
+    var cls = field==='kakao_mgmt' ? 'g-org' : (field==='kakao_reply' ? 'g-grn' : 'g-blu');
+    var s='';
+    for(var k=1;k<=3;k++){
+      s+='<i class="gseg'+(lvl>=k?' on':'')+'" onclick="W.setGauge(event,\''+field+'\','+id+','+k+')"></i>';
+    }
+    var label=(lvl>0?GAUGE[field][lvl-1]:'미설정');
+    return '<td><span class="gauge '+cls+'" title="'+label+'">'+s+'</span></td>';
+  }
+  /* 게이지 칸 클릭: 클릭한 행만 즉시 반영 + 서버(파이어스토어) 저장 */
+  function setGauge(ev, field, id, lvl){
+    if(ev) ev.stopPropagation();           // 행 선택(pick)으로 번지지 않게
+    var m=findById(id); if(!m) return;
+    var cur=gLevel(field, m[field]);
+    var nl=(cur===lvl)?lvl-1:lvl;           // 같은 칸 다시 누르면 한 단계 내림(해제)
+    m[field]=gValue(field, nl);
+    m.score=calcScore(m);
+    updateRow(m);                           // 2000행 중 그 한 줄만 다시 그림
+    if(selId===id){                         // 상세패널이 이 사람 보고 있으면 동기화
+      var sc=document.getElementById('fsc'); if(sc) sc.value=m.score;
+      var map={kakao_mgmt:'fkk',kakao_reply:'fkr',text_reply:'ftr'};
+      var el=document.getElementById(map[field]); if(el) el.value=m[field];
+    }
+    persist(m);                             // localStorage + Firestore 단건 저장
+  }
+
   /* 한 행(<tr>) HTML 생성 — render와 단일행 갱신이 공유 */
   function rowHtml(r, idx, phoneCnt){
       return '<tr data-id="'+r._id+'" class="'+(r._id===selId?'sel':'')+'" onclick="W.pick('+r._id+')">'
@@ -1765,9 +1809,9 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
         +'<td style="width:68px">'+esc(r.recommender)+'</td>'
         +'<td style="width:68px">'+esc(r.sub_recommender)+'</td>'
         +'<td style="width:68px">'+esc(r.third_recommender)+'</td>'
-        +'<td style="width:68px;font-size:11px;color:#666">'+esc(r.kakao_mgmt)+'</td>'
-        +'<td style="width:68px;font-size:11px;color:#888">'+esc(r.kakao_reply||'')+'</td>'
-        +'<td style="width:68px;font-size:11px;color:#666">'+esc(r.text_reply)+'</td>'
+        +gaugeHtml('kakao_mgmt', r._id, r.kakao_mgmt)
+        +gaugeHtml('kakao_reply', r._id, r.kakao_reply)
+        +gaugeHtml('text_reply', r._id, r.text_reply)
         +'<td style="width:52px">'+esc(r.family_cnt)+'</td>'
         +'<td style="color:#5a7080;text-align:left;min-width:220px">'+esc(r.address)+'</td>'
         +'</tr>';
@@ -2531,7 +2575,7 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
   }
 
   /* ── 전역 노출 ── */
-  window.W={pick:pick};
+  window.W={pick:pick,setGauge:setGauge};
   window.go=go; window.toggleMF=toggleMF; window.mfChange=mfChange; window.resetFilters=resetFilters;window.srt=srt;window.pick=pick;window.newRec=newRec;
   window.cancelEdit=cancelEdit;window.saveRec=saveRec;window.askDel=askDel;
   window.doDel=doDel;window.closeOv=closeOv;window.closeDupOv=closeDupOv;window.forceAdd=forceAdd;window.doCSV=doCSV;
