@@ -1788,7 +1788,23 @@ var INIT=[{"score":"43","gwondang":"1","ilban":"","honam":"1","sangrok":"1","ipd
       var map={kakao_mgmt:'fkk',kakao_reply:'fkr',text_reply:'ftr'};
       var el=document.getElementById(map[field]); if(el) el.value=m[field];
     }
-    persist(m);                             // localStorage + Firestore 단건 저장
+    saveGaugeDeferred(m);                   // 저장은 클릭 경로에서 분리 (화면은 위에서 이미 갱신됨)
+  }
+  /* 게이지 저장: Firestore 단건은 바로(비동기), 무거운 localStorage 직렬화는 디바운스 */
+  var _gaugeSaveTimer=null;
+  function saveGaugeDeferred(m){
+    if(typeof window.saveOneToFirestore==='function'){
+      var ind=document.getElementById('sync-indicator');
+      if(ind) ind.textContent='🔄 서버 저장 중...';
+      window.saveOneToFirestore(m).then(function(){
+        if(ind) ind.textContent='✅ 서버 저장 완료';
+        setTimeout(function(){ if(ind) ind.textContent='✅ 서버 연결됨'; },1500);
+      });
+    }
+    clearTimeout(_gaugeSaveTimer);
+    _gaugeSaveTimer=setTimeout(function(){    // 연속 클릭이 멈춘 뒤 한 번만 전체 직렬화
+      try{ localStorage.setItem(SKEY, JSON.stringify(data)); }catch(e){}
+    }, 700);
   }
 
   /* 한 행(<tr>) HTML 생성 — render와 단일행 갱신이 공유 */
