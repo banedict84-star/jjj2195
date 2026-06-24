@@ -215,7 +215,8 @@ exports.testKakao = onRequest(
         { headers: { "Content-Type": "application/x-www-form-urlencoded" }, timeout: 8000 }
       );
       const at = tok.data.access_token;
-      await axios.post(
+      const scopes = tok.data.scope || "(none)";
+      const send = await axios.post(
         "https://kapi.kakao.com/v2/api/talk/memo/default/send",
         new URLSearchParams({
           template_object: JSON.stringify({
@@ -232,7 +233,7 @@ exports.testKakao = onRequest(
           timeout: 8000,
         }
       );
-      res.json({ ok: true, lens, message: "memo sent" });
+      res.json({ ok: true, lens, scopes, sendStatus: send.status, sendData: send.data });
     } catch (e) {
       res.json({
         ok: false,
