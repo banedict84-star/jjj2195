@@ -12,6 +12,10 @@ on:
         description: "(선택) 카카오 인증코드 - 입력 시 카카오 시크릿 등록"
         required: false
         default: ""
+      run_briefing:
+        description: "(선택) true 입력 시 아침 브리핑 즉시 1회 발송 테스트"
+        required: false
+        default: ""
 
 jobs:
   deploy:
@@ -67,3 +71,11 @@ jobs:
 
       - name: Deploy functions
         run: firebase deploy --only functions:kakaoSkill,functions:googleAuthStart,functions:googleAuthCallback,functions:morningBriefing --project jjj2195-1bd15 --non-interactive --force
+
+      - name: Test run morning briefing (optional)
+        if: ${{ github.event.inputs.run_briefing == 'true' }}
+        run: |
+          gcloud auth activate-service-account --key-file="$GOOGLE_APPLICATION_CREDENTIALS"
+          gcloud scheduler jobs run firebase-schedule-morningBriefing-asia-northeast3 \
+            --location=asia-northeast3 --project=jjj2195-1bd15 \
+          || gcloud scheduler jobs list --location=asia-northeast3 --project=jjj2195-1bd15
