@@ -23,7 +23,7 @@ jobs:
 
       - name: Install functions dependencies
         working-directory: functions
-        run: npm ci
+        run: npm install
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
