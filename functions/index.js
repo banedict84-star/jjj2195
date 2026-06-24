@@ -7,6 +7,9 @@ const cheerio = require("cheerio");
 admin.initializeApp();
 const db = admin.firestore();
 
+// 카카오톡 개인비서 → 구글 캘린더 일정 등록 웹훅
+exports.kakaoSkill = require("./kakaoCalendar").kakaoSkill;
+
 const BASE_URL = "https://theminjoo.kr";
 const LIST_URL = BASE_URL + "/main/sub/news/list.php?brd=1";
 
