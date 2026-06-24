@@ -2,6 +2,13 @@ const { onRequest } = require("firebase-functions/v2/https");
 const { defineSecret } = require("firebase-functions/params");
 const Anthropic = require("@anthropic-ai/sdk");
 const { google } = require("googleapis");
+const admin = require("firebase-admin");
+
+if (!admin.apps.length) admin.initializeApp();
+
+// 연동 시작 함수의 베이스 URL (멀티유저: 사용자별 캘린더 연동)
+const AUTH_BASE =
+  "https://asia-northeast3-jjj2195-1bd15.cloudfunctions.net";
 
 // ── 시크릿(환경변수) 정의 ──────────────────────────────────────────────
 // 배포 전에 아래 명령으로 값을 등록해야 합니다.
@@ -46,6 +53,30 @@ function kakaoText(text, quickReplies) {
   const qr = quickReplies === undefined ? QUICK_REPLIES : quickReplies;
   if (qr && qr.length) template.quickReplies = qr;
   return { version: "2.0", template };
+}
+
+// 링크 버튼이 달린 카드 (캘린더 연동 안내용)
+function kakaoLinkCard(text, label, url) {
+  return {
+    version: "2.0",
+    template: {
+      outputs: [
+        {
+          textCard: {
+            text,
+            buttons: [{ action: "webLink", label, webLinkUrl: url }],
+          },
+        },
+      ],
+    },
+  };
+}
+
+// 카카오 사용자 id로 저장된 구글 토큰 조회 (멀티유저)
+async function getUserToken(uid) {
+  if (!uid) return null;
+  const snap = await admin.firestore().collection("userTokens").doc(uid).get();
+  return snap.exists ? snap.data() : null;
 }
 
 // 현재 한국 시각을 사람이 읽는 문자열로 (모델이 "내일/다음주" 같은 표현을 해석할 기준)
@@ -541,6 +572,26 @@ exports.kakaoSkill = onRequest(
         );
       }
 
+      // 멀티유저: 카카오 사용자별로 본인 구글 캘린더 연동 토큰을 사용
+      const uid =
+        req.body &&
+        req.body.userRequest &&
+        req.body.userRequest.user &&
+        req.body.userRequest.user.id
+          ? String(req.body.userRequest.user.id)
+          : "";
+      const userToken = await getUserToken(uid);
+      if (!userToken || !userToken.refreshToken) {
+        const linkUrl = `${AUTH_BASE}/googleAuthStart?uid=${encodeURIComponent(uid)}`;
+        return res.json(
+          kakaoLinkCard(
+            "먼저 내 구글 캘린더를 연동해주세요. 🔗\n아래 버튼을 눌러 1회만 연동하면, 이후엔 본인 캘린더에 일정이 등록돼요.",
+            "내 캘린더 연동하기",
+            linkUrl
+          )
+        );
+      }
+
       // 1) 파싱 (AI 우선, 실패 시 규칙 기반 자동 폴백)
       const apiKey = optionalSecret(ANTHROPIC_API_KEY);
       const parsed = await parse(utterance, apiKey, {
@@ -554,8 +605,8 @@ exports.kakaoSkill = onRequest(
       const creds = {
         clientId: GOOGLE_CLIENT_ID.value(),
         clientSecret: GOOGLE_CLIENT_SECRET.value(),
-        refreshToken: GOOGLE_REFRESH_TOKEN.value(),
-        calendarId: GOOGLE_CALENDAR_ID.value(),
+        refreshToken: userToken.refreshToken,
+        calendarId: userToken.calendarId || "primary",
       };
 
       // 조회: 날짜 없으면 오늘 기준 (is_schedule 체크 전에 처리)

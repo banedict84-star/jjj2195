@@ -10,6 +10,10 @@ const db = admin.firestore();
 // 카카오톡 개인비서 → 구글 캘린더 일정 등록 웹훅
 exports.kakaoSkill = require("./kakaoCalendar").kakaoSkill;
 
+// 멀티유저: 사용자별 구글 캘린더 연동(OAuth)
+exports.googleAuthStart = require("./googleAuth").googleAuthStart;
+exports.googleAuthCallback = require("./googleAuth").googleAuthCallback;
+
 // 능동형 알림: 아침 브리핑 + 일정 30분 전 리마인더 (카카오 나에게 보내기)
 exports.morningBriefing = require("./kakaoNotify").morningBriefing;
 exports.eventReminder = require("./kakaoNotify").eventReminder;

@@ -33,5 +33,5 @@ jobs:
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
 
-      - name: Deploy kakaoSkill function
-        run: firebase deploy --only functions:kakaoSkill --project jjj2195-1bd15 --non-interactive --force
+      - name: Deploy functions
+        run: firebase deploy --only functions:kakaoSkill,functions:googleAuthStart,functions:googleAuthCallback --project jjj2195-1bd15 --non-interactive --force
