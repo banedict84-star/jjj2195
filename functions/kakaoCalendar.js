@@ -179,6 +179,18 @@ function isDeleteIntent(text) {
   return /삭제|취소|지워|지우|없애|제거|빼\s*줘|빼주/.test(text);
 }
 
+// 의도 판별: 삭제 > 조회 > 등록
+function detectIntent(text) {
+  if (isDeleteIntent(text)) return "delete";
+  const hasCreateVerb = /등록|추가|저장|예약|입력|생성|잡아|넣어|세팅/.test(text);
+  const hasListMarker =
+    /보여|알려|뭐\s*있|뭐있|무슨\s*일정|일정\s*은|일정\s*있|일정\s*뭐|일정\s*목록|일정\s*리스트|스케줄\s*은|확인|조회|뭐가\s*있|있나|일정\?|일정은\?/.test(
+      text
+    );
+  if (hasListMarker && !hasCreateVerb) return "list";
+  return "create";
+}
+
 function parseScheduleRuleBased(utterance) {
   const text = utterance.trim();
   const base = kstDate();
@@ -281,7 +293,7 @@ function parseScheduleRuleBased(utterance) {
   return {
     // 날짜나 시간 단서가 하나도 없으면 일정이 아님(인사/잡담 등)
     is_schedule: matchedDate || startTime !== null,
-    intent: isDeleteIntent(text) ? "delete" : "create",
+    intent: detectIntent(text),
     title,
     date: ymd(date),
     start_time: startTime,
@@ -443,6 +455,41 @@ function deleteText(parsed, deletedTitles) {
   return `🗑️ ${deletedTitles.length}건 삭제했어요!\n\n${listStr}\n🕒 ${parsed.date} (${weekday})`;
 }
 
+// ── 2-c) 일정 조회 ─────────────────────────────────────────────────────
+async function listEvents(parsed, creds) {
+  const calendar = buildCalendarClient(creds);
+  const tz = "+09:00"; // KST
+  const res = await calendar.events.list({
+    calendarId: creds.calendarId || "primary",
+    timeMin: `${parsed.date}T00:00:00${tz}`,
+    timeMax: `${parsed.date}T23:59:59${tz}`,
+    singleEvents: true,
+    orderBy: "startTime",
+    maxResults: 50,
+  });
+  return res.data.items || [];
+}
+
+function listText(parsed, items) {
+  const weekday = new Date(parsed.date + "T00:00:00").toLocaleDateString(
+    "ko-KR",
+    { weekday: "short" }
+  );
+  const header = `📅 ${parsed.date} (${weekday}) 일정`;
+  if (!items.length) return `${header}\n\n등록된 일정이 없어요. 😌`;
+  const lines = items.map((ev) => {
+    let time;
+    if (ev.start && ev.start.date) {
+      time = "종일";
+    } else {
+      const m = ((ev.start && ev.start.dateTime) || "").match(/T(\d{2}):(\d{2})/);
+      time = m ? `${m[1]}:${m[2]}` : "";
+    }
+    return `🕒 ${time}  ${ev.summary || "(제목 없음)"}`;
+  });
+  return `${header} (${items.length}건)\n\n${lines.join("\n")}`;
+}
+
 // ── 3) 카카오 i 오픈빌더 스킬 웹훅 ──────────────────────────────────────
 exports.kakaoSkill = onRequest(
   {
@@ -484,8 +531,21 @@ exports.kakaoSkill = onRequest(
         model: optionalSecret(ANTHROPIC_MODEL),
       });
 
-      // 삭제 의도(AI 경로엔 intent가 없을 수 있어 보강)
-      const intent = parsed.intent || (isDeleteIntent(utterance) ? "delete" : "create");
+      // 의도 판별 (AI 경로엔 intent가 없을 수 있어 보강)
+      const intent = parsed.intent || detectIntent(utterance);
+
+      const creds = {
+        clientId: GOOGLE_CLIENT_ID.value(),
+        clientSecret: GOOGLE_CLIENT_SECRET.value(),
+        refreshToken: GOOGLE_REFRESH_TOKEN.value(),
+        calendarId: GOOGLE_CALENDAR_ID.value(),
+      };
+
+      // 조회: 날짜 없으면 오늘 기준 (is_schedule 체크 전에 처리)
+      if (intent === "list") {
+        const items = await listEvents(parsed, creds);
+        return res.json(kakaoText(listText(parsed, items)));
+      }
 
       if (!parsed.is_schedule) {
         return res.json(
@@ -496,13 +556,6 @@ exports.kakaoSkill = onRequest(
           )
         );
       }
-
-      const creds = {
-        clientId: GOOGLE_CLIENT_ID.value(),
-        clientSecret: GOOGLE_CLIENT_SECRET.value(),
-        refreshToken: GOOGLE_REFRESH_TOKEN.value(),
-        calendarId: GOOGLE_CALENDAR_ID.value(),
-      };
 
       // 2) 삭제 또는 등록
       if (intent === "delete") {
