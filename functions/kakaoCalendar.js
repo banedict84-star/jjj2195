@@ -34,13 +34,18 @@ function optionalSecret(secret) {
 }
 
 // ── 카카오 응답 헬퍼 ───────────────────────────────────────────────────
-function kakaoText(text) {
-  return {
-    version: "2.0",
-    template: {
-      outputs: [{ simpleText: { text } }],
-    },
-  };
+// 답장 아래에 뜨는 바로가기 버튼 (탭하면 해당 문구가 자동 전송됨)
+const QUICK_REPLIES = [
+  { label: "📅 오늘 일정", action: "message", messageText: "오늘 일정은?" },
+  { label: "📅 내일 일정", action: "message", messageText: "내일 일정은?" },
+  { label: "📅 모레 일정", action: "message", messageText: "모레 일정은?" },
+];
+
+function kakaoText(text, quickReplies) {
+  const template = { outputs: [{ simpleText: { text } }] };
+  const qr = quickReplies === undefined ? QUICK_REPLIES : quickReplies;
+  if (qr && qr.length) template.quickReplies = qr;
+  return { version: "2.0", template };
 }
 
 // 현재 한국 시각을 사람이 읽는 문자열로 (모델이 "내일/다음주" 같은 표현을 해석할 기준)
