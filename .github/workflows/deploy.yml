@@ -20,6 +20,10 @@ on:
         description: "(선택) true 입력 시 브리핑 트리거 후 함수 로그 출력"
         required: false
         default: ""
+      debug_kakao:
+        description: "(선택) true 입력 시 카카오 refresh 직접 호출해 에러 확인"
+        required: false
+        default: ""
 
 jobs:
   deploy:
@@ -72,6 +76,19 @@ jobs:
           firebase functions:secrets:set KAKAO_REFRESH_TOKEN --data-file /tmp/k3 --project jjj2195-1bd15
           rm -f /tmp/k1 /tmp/k2 /tmp/k3
           echo "✅ 카카오 시크릿 3개 등록 완료"
+
+      - name: Debug Kakao refresh (optional)
+        if: ${{ github.event.inputs.debug_kakao == 'true' }}
+        run: |
+          gcloud auth activate-service-account --key-file="$GOOGLE_APPLICATION_CREDENTIALS"
+          RT=$(gcloud secrets versions access latest --secret=KAKAO_REFRESH_TOKEN --project=jjj2195-1bd15)
+          RK=$(gcloud secrets versions access latest --secret=KAKAO_REST_API_KEY --project=jjj2195-1bd15)
+          CS=$(gcloud secrets versions access latest --secret=KAKAO_CLIENT_SECRET --project=jjj2195-1bd15)
+          echo "lengths -> RT:${#RT} RK:${#RK} CS:${#CS}"
+          echo "=== refresh WITH client_secret ==="
+          curl -s -X POST https://kauth.kakao.com/oauth/token -d grant_type=refresh_token -d "client_id=$RK" -d "client_secret=$CS" -d "refresh_token=$RT" | python3 -c "import sys,json;d=json.load(sys.stdin);print({k:('<hidden>' if 'token' in k else v) for k,v in d.items()})" || true
+          echo "=== refresh WITHOUT client_secret ==="
+          curl -s -X POST https://kauth.kakao.com/oauth/token -d grant_type=refresh_token -d "client_id=$RK" -d "refresh_token=$RT" | python3 -c "import sys,json;d=json.load(sys.stdin);print({k:('<hidden>' if 'token' in k else v) for k,v in d.items()})" || true
 
       - name: Deploy functions
         run: firebase deploy --only functions:kakaoSkill,functions:googleAuthStart,functions:googleAuthCallback,functions:morningBriefing --project jjj2195-1bd15 --non-interactive --force
