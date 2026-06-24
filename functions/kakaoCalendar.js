@@ -101,7 +101,8 @@ const EVENT_SCHEMA = {
 };
 
 async function parseSchedule(utterance, apiKey, opts = {}) {
-  const clientOpts = { apiKey };
+  // 카카오 5초 제한에 맞춰 빠르게 실패하도록 타임아웃/재시도 최소화
+  const clientOpts = { apiKey, timeout: 2500, maxRetries: 0 };
   if (opts.baseURL) clientOpts.baseURL = opts.baseURL;
   const client = new Anthropic(clientOpts);
   const today = nowInKST();
@@ -261,9 +262,10 @@ function parseScheduleRuleBased(utterance) {
   };
 }
 
-// AI 우선, 실패하면 규칙 기반으로 자동 폴백
+// 규칙 기반을 우선 사용(빠름 → 카카오 5초 제한에 안전).
+// AI 파싱은 opts.useAI 가 켜졌을 때만 시도하고, 실패하면 즉시 규칙 기반으로 폴백.
 async function parse(utterance, apiKey, opts) {
-  if (apiKey) {
+  if (apiKey && opts && opts.useAI) {
     try {
       return await parseSchedule(utterance, apiKey, opts);
     } catch (e) {
@@ -348,7 +350,11 @@ function confirmText(parsed, eventData) {
 exports.kakaoSkill = onRequest(
   {
     region: "asia-northeast3",
-    timeoutSeconds: 30,
+    timeoutSeconds: 15,
+    // 카카오는 5초 안에 응답을 받아야 함. 인스턴스 1개를 항상 켜둬서 cold start로
+    // 응답이 늦어 답장이 안 뜨는 문제를 방지(소액 비용 발생, 0으로 바꾸면 무료).
+    minInstances: 1,
+    memory: "256MiB",
     secrets: [
       ANTHROPIC_API_KEY,
       ANTHROPIC_BASE_URL,
