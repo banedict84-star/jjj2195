@@ -10,6 +10,10 @@ const db = admin.firestore();
 // 카카오톡 개인비서 → 구글 캘린더 일정 등록 웹훅
 exports.kakaoSkill = require("./kakaoCalendar").kakaoSkill;
 
+// 능동형 알림: 아침 브리핑 + 일정 30분 전 리마인더 (카카오 나에게 보내기)
+exports.morningBriefing = require("./kakaoNotify").morningBriefing;
+exports.eventReminder = require("./kakaoNotify").eventReminder;
+
 const BASE_URL = "https://theminjoo.kr";
 const LIST_URL = BASE_URL + "/main/sub/news/list.php?brd=1";
 

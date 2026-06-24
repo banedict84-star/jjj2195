@@ -329,6 +329,28 @@ function buildCalendarClient(creds) {
   return google.calendar({ version: "v3", auth: oauth2 });
 }
 
+// 특정 날짜(YYYY-MM-DD)의 일정을 시간순으로 가져온다 (알림/조회 공용)
+async function getEventsForDate(dateStr, creds) {
+  const calendar = buildCalendarClient(creds);
+  const tz = "+09:00"; // KST
+  const res = await calendar.events.list({
+    calendarId: creds.calendarId || "primary",
+    timeMin: `${dateStr}T00:00:00${tz}`,
+    timeMax: `${dateStr}T23:59:59${tz}`,
+    singleEvents: true,
+    orderBy: "startTime",
+    maxResults: 50,
+  });
+  return res.data.items || [];
+}
+
+// 이벤트 시작 시각을 "HH:MM" 또는 "종일"로
+function eventTimeLabel(ev) {
+  if (ev.start && ev.start.date) return "종일";
+  const m = ((ev.start && ev.start.dateTime) || "").match(/T(\d{2}):(\d{2})/);
+  return m ? `${m[1]}:${m[2]}` : "";
+}
+
 async function createEvent(parsed, creds) {
   const calendar = buildCalendarClient(creds);
 
@@ -462,17 +484,7 @@ function deleteText(parsed, deletedTitles) {
 
 // ── 2-c) 일정 조회 ─────────────────────────────────────────────────────
 async function listEvents(parsed, creds) {
-  const calendar = buildCalendarClient(creds);
-  const tz = "+09:00"; // KST
-  const res = await calendar.events.list({
-    calendarId: creds.calendarId || "primary",
-    timeMin: `${parsed.date}T00:00:00${tz}`,
-    timeMax: `${parsed.date}T23:59:59${tz}`,
-    singleEvents: true,
-    orderBy: "startTime",
-    maxResults: 50,
-  });
-  return res.data.items || [];
+  return getEventsForDate(parsed.date, creds);
 }
 
 function listText(parsed, items) {
@@ -580,3 +592,7 @@ exports.kakaoSkill = onRequest(
     }
   }
 );
+
+// 알림 모듈에서 재사용할 헬퍼 내보내기
+module.exports.getEventsForDate = getEventsForDate;
+module.exports.eventTimeLabel = eventTimeLabel;
