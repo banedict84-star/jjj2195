@@ -16,6 +16,10 @@ on:
         description: "(선택) true 입력 시 아침 브리핑 즉시 1회 발송 테스트"
         required: false
         default: ""
+      show_logs:
+        description: "(선택) true 입력 시 브리핑 트리거 후 함수 로그 출력"
+        required: false
+        default: ""
 
 jobs:
   deploy:
@@ -79,3 +83,13 @@ jobs:
           gcloud scheduler jobs run firebase-schedule-morningBriefing-asia-northeast3 \
             --location=asia-northeast3 --project=jjj2195-1bd15 \
           || gcloud scheduler jobs list --location=asia-northeast3 --project=jjj2195-1bd15
+
+      - name: Debug briefing (trigger + read logs)
+        if: ${{ github.event.inputs.show_logs == 'true' }}
+        run: |
+          gcloud auth activate-service-account --key-file="$GOOGLE_APPLICATION_CREDENTIALS"
+          gcloud scheduler jobs run firebase-schedule-morningBriefing-asia-northeast3 --location=asia-northeast3 --project=jjj2195-1bd15 || true
+          echo "=== waiting 30s for logs ==="
+          sleep 30
+          echo "=== morningBriefing logs ==="
+          gcloud logging read 'resource.labels.service_name="morningbriefing"' --project=jjj2195-1bd15 --limit=40 --freshness=1h --format="value(timestamp,severity,textPayload,jsonPayload.message)" || true

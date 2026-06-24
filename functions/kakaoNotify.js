@@ -126,8 +126,14 @@ exports.morningBriefing = onSchedule(
         .join("\n");
       text = `${head}\n\n오늘 일정 ${items.length}건\n\n${lines}`;
     }
-    await sendKakaoMemo(text);
-    console.log("morningBriefing sent:", items.length, "events");
+    try {
+      await sendKakaoMemo(text);
+      console.log("morningBriefing sent:", items.length, "events");
+    } catch (e) {
+      const detail = e.response ? JSON.stringify(e.response.data) : e.message;
+      console.error("morningBriefing kakao send FAILED:", detail);
+      throw e;
+    }
   }
 );
 
