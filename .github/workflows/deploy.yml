@@ -66,4 +66,4 @@ jobs:
           echo "✅ 카카오 시크릿 3개 등록 완료"
 
       - name: Deploy functions
-        run: firebase deploy --only functions:kakaoSkill,functions:googleAuthStart,functions:googleAuthCallback --project jjj2195-1bd15 --non-interactive --force
+        run: firebase deploy --only functions:kakaoSkill,functions:googleAuthStart,functions:googleAuthCallback,functions:morningBriefing --project jjj2195-1bd15 --non-interactive --force

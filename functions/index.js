@@ -14,9 +14,9 @@ exports.kakaoSkill = require("./kakaoCalendar").kakaoSkill;
 exports.googleAuthStart = require("./googleAuth").googleAuthStart;
 exports.googleAuthCallback = require("./googleAuth").googleAuthCallback;
 
-// 능동형 알림: 아침 브리핑 + 일정 30분 전 리마인더 (카카오 나에게 보내기)
-// ⚠️ KAKAO_REST_API_KEY / KAKAO_REFRESH_TOKEN 시크릿 등록 후 아래 주석 해제하면 배포됨
-// exports.morningBriefing = require("./kakaoNotify").morningBriefing;
+// 능동형 알림: 아침 브리핑 (카카오 나에게 보내기) — 매일 07:00
+exports.morningBriefing = require("./kakaoNotify").morningBriefing;
+// 30분 전 리마인더는 보류 (원하면 주석 해제)
 // exports.eventReminder = require("./kakaoNotify").eventReminder;
 
 const BASE_URL = "https://theminjoo.kr";
