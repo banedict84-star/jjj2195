@@ -91,7 +91,13 @@ jobs:
           curl -s -X POST https://kauth.kakao.com/oauth/token -d grant_type=refresh_token -d "client_id=$RK" -d "refresh_token=$RT" | python3 -c "import sys,json;d=json.load(sys.stdin);print({k:('<hidden>' if 'token' in k else v) for k,v in d.items()})" || true
 
       - name: Deploy functions
-        run: firebase deploy --only functions:kakaoSkill,functions:googleAuthStart,functions:googleAuthCallback,functions:morningBriefing --project jjj2195-1bd15 --non-interactive --force
+        run: firebase deploy --only functions:kakaoSkill,functions:googleAuthStart,functions:googleAuthCallback,functions:morningBriefing,functions:testKakao --project jjj2195-1bd15 --non-interactive --force
+
+      - name: Curl testKakao (synchronous result)
+        if: ${{ github.event.inputs.show_logs == 'true' }}
+        run: |
+          echo "=== testKakao response ==="
+          curl -s https://asia-northeast3-jjj2195-1bd15.cloudfunctions.net/testKakao ; echo ""
 
       - name: Test run morning briefing (optional)
         if: ${{ github.event.inputs.run_briefing == 'true' }}

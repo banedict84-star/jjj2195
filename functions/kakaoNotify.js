@@ -1,4 +1,5 @@
 const { onSchedule } = require("firebase-functions/v2/scheduler");
+const { onRequest } = require("firebase-functions/v2/https");
 const { defineSecret } = require("firebase-functions/params");
 const admin = require("firebase-admin");
 const axios = require("axios");
@@ -187,6 +188,60 @@ exports.eventReminder = onSchedule(
       await sendKakaoMemo(text, ev.htmlLink);
       await ref.set({ sentAt: Date.now(), date: today, summary: ev.summary || "" });
       console.log("reminder sent:", ev.summary, mins, "min");
+    }
+  }
+);
+
+// ── 동기 테스트: 토큰 갱신 + 메모 발송 결과를 즉시 JSON으로 반환 ──────────
+exports.testKakao = onRequest(
+  {
+    region: "asia-northeast3",
+    secrets: [KAKAO_REST_API_KEY, KAKAO_REFRESH_TOKEN, KAKAO_CLIENT_SECRET],
+  },
+  async (req, res) => {
+    const rk = (KAKAO_REST_API_KEY.value() || "").trim();
+    const rt = (KAKAO_REFRESH_TOKEN.value() || "").trim();
+    const cs = (KAKAO_CLIENT_SECRET.value() || "").trim();
+    const lens = { rk: rk.length, rt: rt.length, cs: cs.length };
+    try {
+      const tok = await axios.post(
+        "https://kauth.kakao.com/oauth/token",
+        new URLSearchParams({
+          grant_type: "refresh_token",
+          client_id: rk,
+          refresh_token: rt,
+          client_secret: cs,
+        }),
+        { headers: { "Content-Type": "application/x-www-form-urlencoded" }, timeout: 8000 }
+      );
+      const at = tok.data.access_token;
+      await axios.post(
+        "https://kapi.kakao.com/v2/api/talk/memo/default/send",
+        new URLSearchParams({
+          template_object: JSON.stringify({
+            object_type: "text",
+            text: "✅ 모이다 테스트 메시지입니다. 이게 보이면 아침 브리핑도 작동해요!",
+            link: { web_url: CAL_LINK, mobile_web_url: CAL_LINK },
+          }),
+        }),
+        {
+          headers: {
+            Authorization: `Bearer ${at}`,
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          timeout: 8000,
+        }
+      );
+      res.json({ ok: true, lens, message: "memo sent" });
+    } catch (e) {
+      res.json({
+        ok: false,
+        lens,
+        step: e.config && e.config.url,
+        status: e.response && e.response.status,
+        data: e.response && e.response.data,
+        msg: e.message,
+      });
     }
   }
 );

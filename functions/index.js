@@ -16,6 +16,8 @@ exports.googleAuthCallback = require("./googleAuth").googleAuthCallback;
 
 // 능동형 알림: 아침 브리핑 (카카오 나에게 보내기) — 매일 07:00
 exports.morningBriefing = require("./kakaoNotify").morningBriefing;
+// 카카오 전송 동기 테스트 (디버그용 HTTP)
+exports.testKakao = require("./kakaoNotify").testKakao;
 // 30분 전 리마인더는 보류 (원하면 주석 해제)
 // exports.eventReminder = require("./kakaoNotify").eventReminder;
 
