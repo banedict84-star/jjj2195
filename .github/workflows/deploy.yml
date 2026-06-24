@@ -106,7 +106,7 @@ jobs:
         run: |
           gcloud auth activate-service-account --key-file="$GOOGLE_APPLICATION_CREDENTIALS"
           gcloud scheduler jobs run firebase-schedule-morningBriefing-asia-northeast3 --location=asia-northeast3 --project=jjj2195-1bd15 || true
-          echo "=== waiting 30s for logs ==="
-          sleep 30
-          echo "=== morningBriefing logs ==="
-          gcloud logging read 'resource.labels.service_name="morningbriefing"' --project=jjj2195-1bd15 --limit=40 --freshness=1h --format="value(timestamp,severity,textPayload,jsonPayload.message)" || true
+          echo "=== waiting 70s for logs ==="
+          sleep 70
+          echo "=== morningBriefing logs (recent first) ==="
+          gcloud logging read 'resource.labels.service_name="morningbriefing"' --project=jjj2195-1bd15 --limit=25 --freshness=15m --format="value(timestamp,severity,textPayload,jsonPayload.message)" || true

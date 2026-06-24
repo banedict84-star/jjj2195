@@ -53,16 +53,23 @@ function weekdayKo(dateStr) {
 
 // ── 카카오 "나에게 보내기" ──────────────────────────────────────────────
 async function getKakaoAccessToken() {
+  const rk = (KAKAO_REST_API_KEY.value() || "").trim();
+  const rt = (KAKAO_REFRESH_TOKEN.value() || "").trim();
   const body = {
     grant_type: "refresh_token",
-    client_id: KAKAO_REST_API_KEY.value(),
-    refresh_token: KAKAO_REFRESH_TOKEN.value(),
+    client_id: rk,
+    refresh_token: rt,
   };
   // 클라이언트 시크릿 활성화(ON) 시 함께 보내야 함
+  let csLen = 0;
   try {
-    const cs = KAKAO_CLIENT_SECRET.value();
-    if (cs && cs.length) body.client_secret = cs;
+    const cs = (KAKAO_CLIENT_SECRET.value() || "").trim();
+    if (cs && cs.length) {
+      body.client_secret = cs;
+      csLen = cs.length;
+    }
   } catch (_) {}
+  console.log(`kakao refresh params -> RK:${rk.length} RT:${rt.length} CS:${csLen}`);
   const res = await axios.post(
     "https://kauth.kakao.com/oauth/token",
     new URLSearchParams(body),
