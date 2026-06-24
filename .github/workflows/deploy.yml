@@ -1,13 +1,17 @@
 name: Deploy MOIDA Calendar Bot
 
-# functions 코드가 바뀌어 푸시되면 자동으로 Firebase에 배포합니다.
 on:
   push:
     branches: [claude/lucid-galileo-r4ymtf]
     paths:
       - "functions/**"
       - ".github/workflows/deploy.yml"
-  workflow_dispatch: {} # GitHub Actions 탭에서 수동 실행도 가능
+  workflow_dispatch:
+    inputs:
+      kakao_code:
+        description: "(선택) 카카오 인증코드 - 입력 시 카카오 시크릿 등록"
+        required: false
+        default: ""
 
 jobs:
   deploy:
@@ -32,6 +36,34 @@ jobs:
 
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
+
+      - name: Setup Kakao secrets (optional)
+        if: ${{ github.event.inputs.kakao_code != '' }}
+        env:
+          KCODE: ${{ github.event.inputs.kakao_code }}
+          REST_KEY: ${{ secrets.KAKAO_REST_API_KEY }}
+          CLIENT_SECRET: ${{ secrets.KAKAO_CLIENT_SECRET }}
+        run: |
+          RESP=$(curl -s -X POST "https://kauth.kakao.com/oauth/token" \
+            -d "grant_type=authorization_code" \
+            -d "client_id=$REST_KEY" \
+            -d "client_secret=$CLIENT_SECRET" \
+            -d "redirect_uri=https://localhost:3000" \
+            -d "code=$KCODE")
+          RT=$(echo "$RESP" | jq -r '.refresh_token // empty')
+          if [ -z "$RT" ]; then
+            echo "::error::refresh_token 발급 실패. 응답: $RESP"
+            exit 1
+          fi
+          echo "::add-mask::$RT"
+          printf '%s' "$REST_KEY" > /tmp/k1
+          printf '%s' "$CLIENT_SECRET" > /tmp/k2
+          printf '%s' "$RT" > /tmp/k3
+          firebase functions:secrets:set KAKAO_REST_API_KEY --data-file /tmp/k1 --project jjj2195-1bd15
+          firebase functions:secrets:set KAKAO_CLIENT_SECRET --data-file /tmp/k2 --project jjj2195-1bd15
+          firebase functions:secrets:set KAKAO_REFRESH_TOKEN --data-file /tmp/k3 --project jjj2195-1bd15
+          rm -f /tmp/k1 /tmp/k2 /tmp/k3
+          echo "✅ 카카오 시크릿 3개 등록 완료"
 
       - name: Deploy functions
         run: firebase deploy --only functions:kakaoSkill,functions:googleAuthStart,functions:googleAuthCallback --project jjj2195-1bd15 --non-interactive --force
