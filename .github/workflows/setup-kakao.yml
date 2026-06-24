@@ -1,0 +1,56 @@
+name: Setup Kakao Secrets
+
+# 카카오 인증코드를 refresh_token으로 교환하고 Firebase 시크릿 3개를 등록한다.
+# 비밀값(REST API 키/클라이언트 시크릿)은 GitHub 시크릿에서 읽는다(저장소에 평문 없음).
+# Actions 탭 → 이 워크플로우 → Run workflow → code 입력해 실행.
+on:
+  workflow_dispatch:
+    inputs:
+      code:
+        description: "Kakao authorization code (localhost:3000/?code= 뒤의 값)"
+        required: true
+
+jobs:
+  setup-kakao:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Authenticate to Google Cloud
+        run: |
+          echo "${{ secrets.GCP_SA_KEY }}" | base64 -d > "$HOME/gcp-sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcp-sa.json" >> "$GITHUB_ENV"
+
+      - name: Exchange code & set Kakao secrets
+        env:
+          KCODE: ${{ github.event.inputs.code }}
+          REST_KEY: ${{ secrets.KAKAO_REST_API_KEY }}
+          CLIENT_SECRET: ${{ secrets.KAKAO_CLIENT_SECRET }}
+        run: |
+          RESP=$(curl -s -X POST "https://kauth.kakao.com/oauth/token" \
+            -d "grant_type=authorization_code" \
+            -d "client_id=$REST_KEY" \
+            -d "client_secret=$CLIENT_SECRET" \
+            -d "redirect_uri=https://localhost:3000" \
+            -d "code=$KCODE")
+          RT=$(echo "$RESP" | jq -r '.refresh_token // empty')
+          if [ -z "$RT" ]; then
+            echo "::error::refresh_token 발급 실패. 응답: $RESP"
+            exit 1
+          fi
+          echo "::add-mask::$RT"
+          printf '%s' "$REST_KEY" > /tmp/k1
+          printf '%s' "$CLIENT_SECRET" > /tmp/k2
+          printf '%s' "$RT" > /tmp/k3
+          firebase functions:secrets:set KAKAO_REST_API_KEY --data-file /tmp/k1 --project jjj2195-1bd15
+          firebase functions:secrets:set KAKAO_CLIENT_SECRET --data-file /tmp/k2 --project jjj2195-1bd15
+          firebase functions:secrets:set KAKAO_REFRESH_TOKEN --data-file /tmp/k3 --project jjj2195-1bd15
+          rm -f /tmp/k1 /tmp/k2 /tmp/k3
+          echo "✅ 카카오 시크릿 3개 등록 완료"
