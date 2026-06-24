@@ -51,12 +51,27 @@ cd functions && npm install
 
 ---
 
-## 2. Claude API 키 발급
+## 2. 일정 파싱 방식 (선택)
 
-1. https://console.anthropic.com → **API Keys** → 키 생성
-2. 키 복사 → `ANTHROPIC_API_KEY`
+일정 텍스트("내일 3시 회의")를 날짜/시각으로 바꾸는 방법은 2가지이며, **둘 다 자동 지원**됩니다.
+키가 없으면 자동으로 무료 규칙 기반 파서로 폴백합니다.
 
-> 파싱에 `claude-haiku-4-5`(빠르고 저렴)를 사용합니다.
+### (A) 무료 — 규칙 기반 (키 불필요)
+아무 시크릿도 등록 안 하면 됩니다. 아래 형식을 인식합니다.
+```
+내일 15시 팀회의 / 모레 오후 2시 병원 / 6/25 14:00 강남 미팅
+다음주 월요일 10시 보고 / 오늘 저녁 7시 약속 / 6월 30일 휴가
+```
+
+### (B) AI 파싱 — 자유로운 문장도 인식
+- **공식 Anthropic**: https://console.anthropic.com → API Keys → 키(`sk-ant-...`) 발급
+  - `ANTHROPIC_API_KEY` 만 등록 (base URL 불필요)
+- **MyAPI 등 호환 프록시**: 토큰(`myapi-...`)과 base URL 사용
+  - `ANTHROPIC_API_KEY` = 프록시 토큰
+  - `ANTHROPIC_BASE_URL` = `https://api.myapi.world`
+  - (프록시가 특정 모델만 지원하면) `ANTHROPIC_MODEL` = 예) `claude-haiku-4-5`
+
+> 기본 모델은 `claude-haiku-4-5`(빠르고 저렴). 프록시에서 모델 오류가 나면 `ANTHROPIC_MODEL`로 변경.
 
 ---
 
@@ -65,8 +80,12 @@ cd functions && npm install
 ```bash
 cd functions
 
-# 시크릿 등록 (입력 프롬프트에 값 붙여넣기)
-firebase functions:secrets:set ANTHROPIC_API_KEY
+# (B) AI 파싱 쓸 때만 — 키/프록시 등록. (A) 무료 규칙 기반이면 이 3줄은 건너뜀
+firebase functions:secrets:set ANTHROPIC_API_KEY     # sk-ant-... 또는 myapi-...
+firebase functions:secrets:set ANTHROPIC_BASE_URL    # MyAPI일 때: https://api.myapi.world
+firebase functions:secrets:set ANTHROPIC_MODEL       # (선택) 예: claude-haiku-4-5
+
+# 구글 캘린더 (공통, 필수)
 firebase functions:secrets:set GOOGLE_CLIENT_ID
 firebase functions:secrets:set GOOGLE_CLIENT_SECRET
 firebase functions:secrets:set GOOGLE_REFRESH_TOKEN

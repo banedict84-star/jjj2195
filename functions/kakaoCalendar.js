@@ -11,12 +11,27 @@ const { google } = require("googleapis");
 //   firebase functions:secrets:set GOOGLE_REFRESH_TOKEN
 //   firebase functions:secrets:set GOOGLE_CALENDAR_ID   (선택, 기본 primary)
 const ANTHROPIC_API_KEY = defineSecret("ANTHROPIC_API_KEY");
+// 공식 Anthropic이 아니라 MyAPI 같은 호환 프록시를 쓸 때 base URL을 지정.
+// 예) https://api.myapi.world  (미설정 시 공식 api.anthropic.com 사용)
+const ANTHROPIC_BASE_URL = defineSecret("ANTHROPIC_BASE_URL");
+// 파싱에 쓸 모델 id (미설정 시 claude-haiku-4-5). 프록시가 특정 모델만 지원하면 여기서 변경.
+const ANTHROPIC_MODEL = defineSecret("ANTHROPIC_MODEL");
 const GOOGLE_CLIENT_ID = defineSecret("GOOGLE_CLIENT_ID");
 const GOOGLE_CLIENT_SECRET = defineSecret("GOOGLE_CLIENT_SECRET");
 const GOOGLE_REFRESH_TOKEN = defineSecret("GOOGLE_REFRESH_TOKEN");
 const GOOGLE_CALENDAR_ID = defineSecret("GOOGLE_CALENDAR_ID");
 
 const TIMEZONE = "Asia/Seoul";
+
+// 등록 안 된 시크릿의 .value()는 빈 문자열/예외가 날 수 있어 안전하게 읽는다.
+function optionalSecret(secret) {
+  try {
+    const v = secret.value();
+    return v && v.length ? v : undefined;
+  } catch (_) {
+    return undefined;
+  }
+}
 
 // ── 카카오 응답 헬퍼 ───────────────────────────────────────────────────
 function kakaoText(text) {
@@ -85,12 +100,14 @@ const EVENT_SCHEMA = {
   additionalProperties: false,
 };
 
-async function parseSchedule(utterance, apiKey) {
-  const client = new Anthropic({ apiKey });
+async function parseSchedule(utterance, apiKey, opts = {}) {
+  const clientOpts = { apiKey };
+  if (opts.baseURL) clientOpts.baseURL = opts.baseURL;
+  const client = new Anthropic(clientOpts);
   const today = nowInKST();
 
   const response = await client.messages.create({
-    model: "claude-haiku-4-5",
+    model: opts.model || "claude-haiku-4-5",
     max_tokens: 1024,
     system:
       `너는 카카오톡 메시지에서 일정 정보를 추출하는 비서다.\n` +
@@ -105,6 +122,155 @@ async function parseSchedule(utterance, apiKey) {
 
   const textBlock = response.content.find((b) => b.type === "text");
   return JSON.parse(textBlock.text);
+}
+
+// ── 1-b) 규칙 기반 파서 (무료 백업: API 키 없거나 호출 실패 시) ───────────
+const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
+
+function ymd(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+// 한국 시각 기준 '지금' Date 객체
+function kstDate() {
+  const s = new Date().toLocaleString("en-US", { timeZone: TIMEZONE });
+  return new Date(s);
+}
+
+function parseScheduleRuleBased(utterance) {
+  const text = utterance.trim();
+  const base = kstDate();
+  base.setHours(0, 0, 0, 0);
+  let date = new Date(base);
+  let matchedDate = false;
+
+  // 상대 날짜
+  if (/오늘/.test(text)) {
+    matchedDate = true;
+  } else if (/모레/.test(text)) {
+    date.setDate(date.getDate() + 2);
+    matchedDate = true;
+  } else if (/내일|낼/.test(text)) {
+    date.setDate(date.getDate() + 1);
+    matchedDate = true;
+  }
+
+  // "다음주 월요일" / "이번주 금요일" / "월요일"
+  const wdMatch = text.match(/(다음\s*주|담주|이번\s*주)?\s*([일월화수목금토])요일/);
+  if (wdMatch) {
+    const targetWd = WEEKDAYS.indexOf(wdMatch[2]); // 일=0
+    const qualifier = wdMatch[1] || "";
+    const nextWeek = /다음\s*주|담주/.test(qualifier);
+    const thisWeek = /이번\s*주/.test(qualifier);
+    const d = new Date(base);
+    if (nextWeek || thisWeek) {
+      // 월요일 시작 주 기준으로 해당 요일 계산
+      const dow = d.getDay(); // 0=일..6=토
+      const mondayOffset = dow === 0 ? -6 : 1 - dow;
+      const monday = new Date(d);
+      monday.setDate(d.getDate() + mondayOffset);
+      const targetPos = targetWd === 0 ? 6 : targetWd - 1; // 월=0..일=6
+      monday.setDate(monday.getDate() + targetPos + (nextWeek ? 7 : 0));
+      date = monday;
+    } else {
+      // 수식어 없는 "금요일" = 다가오는 가장 가까운 그 요일
+      const diff = (targetWd - d.getDay() + 7) % 7;
+      d.setDate(d.getDate() + diff);
+      date = d;
+    }
+    matchedDate = true;
+  }
+
+  // 절대 날짜 "6/25", "6월 25일", "2026-06-25"
+  let m = text.match(/(\d{4})[.\-/](\d{1,2})[.\-/](\d{1,2})/);
+  if (m) {
+    date = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+    matchedDate = true;
+  } else {
+    m = text.match(/(\d{1,2})\s*[월./\-]\s*(\d{1,2})\s*일?/);
+    if (m) {
+      const mon = Number(m[1]) - 1;
+      const day = Number(m[2]);
+      const y = base.getFullYear();
+      let cand = new Date(y, mon, day);
+      // 이미 지난 날짜면 내년으로
+      if (cand < base) cand = new Date(y + 1, mon, day);
+      date = cand;
+      matchedDate = true;
+    }
+  }
+
+  // 시간 파싱: "오후 3시", "15시", "14:30", "저녁 7시"
+  let startTime = null;
+  let allDay = false;
+  let hour = null;
+  let minute = 0;
+
+  let t = text.match(/(\d{1,2})\s*:\s*(\d{2})/);
+  if (t) {
+    hour = Number(t[1]);
+    minute = Number(t[2]);
+  } else {
+    t = text.match(/(\d{1,2})\s*시\s*(?:(\d{1,2})\s*분|반)?/);
+    if (t) {
+      hour = Number(t[1]);
+      if (/반/.test(t[0])) minute = 30;
+      else if (t[2]) minute = Number(t[2]);
+    }
+  }
+
+  if (hour !== null) {
+    const isPM = /오후|저녁|밤|점심/.test(text);
+    const isAM = /오전|아침|새벽/.test(text);
+    if (isPM && hour < 12) hour += 12;
+    if (isAM && hour === 12) hour = 0;
+    // 오전/오후 표기 없고 1~7시면 통상 오후로 추정(아침 일정은 보통 명시)
+    if (!isPM && !isAM && hour >= 1 && hour <= 7) hour += 12;
+    startTime = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+  } else {
+    // 시간 표현이 전혀 없으면 종일 일정으로
+    allDay = true;
+  }
+
+  // 제목: 날짜/시간 관련 토큰을 제거한 나머지
+  let title = text
+    .replace(/(\d{4})[.\-/](\d{1,2})[.\-/](\d{1,2})/g, " ")
+    .replace(/(\d{1,2})\s*[월]\s*(\d{1,2})\s*일?/g, " ")
+    .replace(/(\d{1,2})\s*[/.\-]\s*(\d{1,2})/g, " ")
+    .replace(/(\d{1,2})\s*:\s*(\d{2})/g, " ")
+    .replace(/(\d{1,2})\s*시\s*(\d{1,2})?\s*분?/g, " ")
+    .replace(/(다음\s*주|담주|이번\s*주)?\s*[일월화수목금토]요일/g, " ")
+    .replace(/오늘|내일|낼|모레|오전|오후|저녁|밤|새벽|아침|점심|반/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!title) title = "일정";
+
+  return {
+    // 날짜나 시간 단서가 하나도 없으면 일정이 아님(인사/잡담 등)
+    is_schedule: matchedDate || startTime !== null,
+    title,
+    date: ymd(date),
+    start_time: startTime,
+    end_time: null,
+    all_day: allDay,
+    location: null,
+    description: null,
+  };
+}
+
+// AI 우선, 실패하면 규칙 기반으로 자동 폴백
+async function parse(utterance, apiKey, opts) {
+  if (apiKey) {
+    try {
+      return await parseSchedule(utterance, apiKey, opts);
+    } catch (e) {
+      console.warn("AI 파싱 실패 → 규칙 기반 폴백:", e.message);
+    }
+  }
+  return parseScheduleRuleBased(utterance);
 }
 
 // ── 2) 구글 캘린더에 일정 등록 ──────────────────────────────────────────
@@ -185,6 +351,8 @@ exports.kakaoSkill = onRequest(
     timeoutSeconds: 30,
     secrets: [
       ANTHROPIC_API_KEY,
+      ANTHROPIC_BASE_URL,
+      ANTHROPIC_MODEL,
       GOOGLE_CLIENT_ID,
       GOOGLE_CLIENT_SECRET,
       GOOGLE_REFRESH_TOKEN,
@@ -206,8 +374,12 @@ exports.kakaoSkill = onRequest(
         );
       }
 
-      // 1) 파싱
-      const parsed = await parseSchedule(utterance, ANTHROPIC_API_KEY.value());
+      // 1) 파싱 (AI 우선, 실패 시 규칙 기반 자동 폴백)
+      const apiKey = optionalSecret(ANTHROPIC_API_KEY);
+      const parsed = await parse(utterance, apiKey, {
+        baseURL: optionalSecret(ANTHROPIC_BASE_URL),
+        model: optionalSecret(ANTHROPIC_MODEL),
+      });
 
       if (!parsed.is_schedule) {
         return res.json(
