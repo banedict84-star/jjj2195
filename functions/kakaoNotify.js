@@ -16,6 +16,7 @@ const GOOGLE_CALENDAR_ID = defineSecret("GOOGLE_CALENDAR_ID");
 // 카카오 "나에게 보내기"용 시크릿
 const KAKAO_REST_API_KEY = defineSecret("KAKAO_REST_API_KEY");
 const KAKAO_REFRESH_TOKEN = defineSecret("KAKAO_REFRESH_TOKEN");
+const KAKAO_CLIENT_SECRET = defineSecret("KAKAO_CLIENT_SECRET");
 
 const CAL_LINK = "https://calendar.google.com/calendar";
 
@@ -52,13 +53,19 @@ function weekdayKo(dateStr) {
 
 // ── 카카오 "나에게 보내기" ──────────────────────────────────────────────
 async function getKakaoAccessToken() {
+  const body = {
+    grant_type: "refresh_token",
+    client_id: KAKAO_REST_API_KEY.value(),
+    refresh_token: KAKAO_REFRESH_TOKEN.value(),
+  };
+  // 클라이언트 시크릿 활성화(ON) 시 함께 보내야 함
+  try {
+    const cs = KAKAO_CLIENT_SECRET.value();
+    if (cs && cs.length) body.client_secret = cs;
+  } catch (_) {}
   const res = await axios.post(
     "https://kauth.kakao.com/oauth/token",
-    new URLSearchParams({
-      grant_type: "refresh_token",
-      client_id: KAKAO_REST_API_KEY.value(),
-      refresh_token: KAKAO_REFRESH_TOKEN.value(),
-    }),
+    new URLSearchParams(body),
     { headers: { "Content-Type": "application/x-www-form-urlencoded" }, timeout: 8000 }
   );
   return res.data.access_token;
@@ -102,6 +109,7 @@ exports.morningBriefing = onSchedule(
       GOOGLE_CALENDAR_ID,
       KAKAO_REST_API_KEY,
       KAKAO_REFRESH_TOKEN,
+      KAKAO_CLIENT_SECRET,
     ],
   },
   async () => {
@@ -137,6 +145,7 @@ exports.eventReminder = onSchedule(
       GOOGLE_CALENDAR_ID,
       KAKAO_REST_API_KEY,
       KAKAO_REFRESH_TOKEN,
+      KAKAO_CLIENT_SECRET,
     ],
   },
   async () => {
