@@ -3,6 +3,7 @@ const { defineSecret } = require("firebase-functions/params");
 const Anthropic = require("@anthropic-ai/sdk");
 const { google } = require("googleapis");
 const admin = require("firebase-admin");
+const axios = require("axios");
 
 if (!admin.apps.length) admin.initializeApp();
 
@@ -77,6 +78,30 @@ async function getUserToken(uid) {
   if (!uid) return null;
   const snap = await admin.firestore().collection("userTokens").doc(uid).get();
   return snap.exists ? snap.data() : null;
+}
+
+// "연동 해제" 의도
+function isUnlinkIntent(text) {
+  return /연동\s*해제|연동\s*끊|연결\s*끊|연결\s*해제|로그아웃|언링크/.test(text);
+}
+
+// 사용자 연동 해제: 구글 권한 철회(best-effort) + 저장 토큰 삭제
+async function unlinkUser(uid, refreshToken) {
+  if (refreshToken) {
+    try {
+      await axios.post(
+        "https://oauth2.googleapis.com/revoke",
+        new URLSearchParams({ token: refreshToken }),
+        {
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          timeout: 5000,
+        }
+      );
+    } catch (_) {
+      /* 이미 철회됐거나 실패해도 무시하고 저장본만 삭제 */
+    }
+  }
+  await admin.firestore().collection("userTokens").doc(uid).delete();
 }
 
 // 현재 한국 시각을 사람이 읽는 문자열로 (모델이 "내일/다음주" 같은 표현을 해석할 기준)
@@ -581,6 +606,17 @@ exports.kakaoSkill = onRequest(
           ? String(req.body.userRequest.user.id)
           : "";
       const userToken = await getUserToken(uid);
+
+      // 연동 해제 명령
+      if (isUnlinkIntent(utterance)) {
+        if (userToken) await unlinkUser(uid, userToken.refreshToken);
+        return res.json(
+          kakaoText(
+            "🔌 캘린더 연동을 해제했어요.\n다시 사용하려면 아무 메시지나 보내서 연동하면 됩니다."
+          )
+        );
+      }
+
       if (!userToken || !userToken.refreshToken) {
         const linkUrl = `${AUTH_BASE}/googleAuthStart?uid=${encodeURIComponent(uid)}`;
         return res.json(
@@ -635,6 +671,33 @@ exports.kakaoSkill = onRequest(
       return res.json(kakaoText(confirmText(parsed, eventData)));
     } catch (e) {
       console.error("kakaoSkill error:", e);
+      // 토큰 만료/철회 → 저장본 삭제하고 재연동 안내
+      const isInvalidGrant =
+        (e && /invalid_grant/.test(e.message || "")) ||
+        (e &&
+          e.response &&
+          e.response.data &&
+          e.response.data.error === "invalid_grant");
+      if (isInvalidGrant) {
+        const uid2 =
+          (req.body &&
+            req.body.userRequest &&
+            req.body.userRequest.user &&
+            req.body.userRequest.user.id &&
+            String(req.body.userRequest.user.id)) ||
+          "";
+        try {
+          await admin.firestore().collection("userTokens").doc(uid2).delete();
+        } catch (_) {}
+        const linkUrl = `${AUTH_BASE}/googleAuthStart?uid=${encodeURIComponent(uid2)}`;
+        return res.json(
+          kakaoLinkCard(
+            "연동이 만료됐거나 해제됐어요. 다시 연동해주세요. 🔗",
+            "내 캘린더 다시 연동하기",
+            linkUrl
+          )
+        );
+      }
       return res.json(
         kakaoText(
           "처리 중 문제가 생겼어요 😢\n잠시 후 다시 시도하거나 표현을 바꿔서 입력해 주세요."
