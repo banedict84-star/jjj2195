@@ -15,6 +15,8 @@ export type Category = (typeof CATEGORIES)[number];
 /** 사용자 → 서버 요청 */
 export const SecretaryRequestSchema = z.object({
   input: z.string().min(1, "요청 내용을 입력하세요.").max(4000),
+  // 현재 저장된 데이터 스냅샷(클라이언트가 전달) — AI 가 실제 데이터로 답하게 함
+  context: z.string().max(12000).optional(),
 });
 export type SecretaryRequest = z.infer<typeof SecretaryRequestSchema>;
 

@@ -36,7 +36,8 @@ export async function POST(req: NextRequest) {
     const userKey = req.headers.get("x-openai-key") || undefined;
     const { result, tokens, model } = await runSecretary(
       parsed.data.input,
-      userKey
+      userKey,
+      parsed.data.context
     );
 
     // 3) 로깅 (Supabase 설정 시) — 실패해도 응답에 영향 없음

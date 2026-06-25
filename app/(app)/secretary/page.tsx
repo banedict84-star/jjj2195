@@ -6,6 +6,7 @@ import type { SecretaryResult } from "@/lib/validators/secretary";
 import { useDB } from "@/lib/store/useDB";
 import { localAnalyze } from "@/lib/secretary/localAnalyze";
 import { aiHeaders } from "@/lib/openai/userKey";
+import { buildContext } from "@/lib/secretary/context";
 
 const EXAMPLES = [
   "오늘 들어온 교통 민원들 정리하고 처리 방향 알려줘",
@@ -36,7 +37,7 @@ export default function SecretaryPage() {
       const res = await fetch("/api/secretary", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...aiHeaders() },
-        body: JSON.stringify({ input: trimmed }),
+        body: JSON.stringify({ input: trimmed, context: buildContext(db) }),
       });
       const json = await res.json();
       if (!res.ok) {

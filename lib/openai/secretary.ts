@@ -21,7 +21,8 @@ const SYSTEM_PROMPT = `당신은 '장윤정 AI 비서실장'입니다. 의원실
 3) recommendation(추천행동): 실무자가 취할 구체적 행동 권고
 4) nextTodos(다음 할 일): 바로 실행 가능한 체크리스트 항목들(짧은 문장 배열)
 
-정치적으로 중립적이고 사실에 근거하며, 의원실 실무에 바로 쓸 수 있게 실용적으로 작성하세요.`;
+정치적으로 중립적이고 사실에 근거하며, 의원실 실무에 바로 쓸 수 있게 실용적으로 작성하세요.
+'현재 의원실 데이터'가 함께 제공되면 반드시 그 데이터를 근거로 구체적으로 답하세요(예: 등록된 인물·민원·일정을 실제 이름과 함께 제시). 데이터에 없는 내용은 추측하지 말고 "등록된 정보가 없습니다"라고 답하세요.`;
 
 /** OpenAI structured output 스키마 (4단 포맷 강제) */
 const RESPONSE_FORMAT = {
@@ -64,7 +65,8 @@ export class SecretaryError extends Error {
  */
 export async function runSecretary(
   input: string,
-  apiKey?: string
+  apiKey?: string,
+  context?: string
 ): Promise<{ result: SecretaryResult; tokens: number; model: string }> {
   const client = getOpenAI(apiKey);
   if (!client) {
@@ -74,13 +76,21 @@ export async function runSecretary(
     );
   }
 
+  const messages: { role: "system" | "user"; content: string }[] = [
+    { role: "system", content: SYSTEM_PROMPT },
+  ];
+  if (context && context.trim()) {
+    messages.push({
+      role: "system",
+      content: `현재 의원실 데이터:\n${context}`,
+    });
+  }
+  messages.push({ role: "user", content: input });
+
   const completion = await client.chat.completions.create({
     model: OPENAI_MODEL,
     temperature: 0.4,
-    messages: [
-      { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: input },
-    ],
+    messages,
     response_format: RESPONSE_FORMAT,
   });
 
