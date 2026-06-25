@@ -37,7 +37,8 @@ export async function POST(req: NextRequest) {
     const { result, tokens, model } = await runSecretary(
       parsed.data.input,
       userKey,
-      parsed.data.context
+      parsed.data.context,
+      parsed.data.now
     );
 
     // 3) 로깅 (Supabase 설정 시) — 실패해도 응답에 영향 없음

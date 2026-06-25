@@ -4,21 +4,68 @@ import { useState } from "react";
 import ResultCard from "@/components/secretary/ResultCard";
 import type { SecretaryResult } from "@/lib/validators/secretary";
 import { useDB } from "@/lib/store/useDB";
+import { insert, newId, nowISO } from "@/lib/store/db";
 import { localAnalyze } from "@/lib/secretary/localAnalyze";
 import { aiHeaders } from "@/lib/openai/userKey";
 import { buildContext } from "@/lib/secretary/context";
+import type { SecretaryAction } from "@/lib/validators/secretary";
 
 const EXAMPLES = [
+  "내일 오후 2시 행신동 주민간담회 일정 잡아줘",
+  "공무원 누구 등록되어 있어?",
   "오늘 들어온 교통 민원들 정리하고 처리 방향 알려줘",
-  "다음 주 청년정책 간담회 보도자료 초안 잡아줘",
   "최근 우리 지역 부정 뉴스 모니터링하고 대응안 제안해줘",
-  "이번 달 의정활동 일정 점검하고 누락된 거 있는지 봐줘",
 ];
 
 interface HistoryItem {
   input: string;
   result: SecretaryResult;
   offline?: boolean;
+  done?: string; // 실제 수행한 동작 안내 (예: "일정에 등록했습니다")
+}
+
+/** AI 가 지시한 동작을 실제 데이터에 반영하고 안내 문구를 반환 */
+function runAction(action?: SecretaryAction): string | undefined {
+  if (!action || action.kind === "none") return undefined;
+  if (action.kind === "create_event") {
+    insert("events", {
+      id: newId(),
+      title: action.title || "새 일정",
+      type: "행사",
+      location: action.location || "",
+      startAt: action.datetime || "",
+      description: action.detail || "",
+      status: "예정",
+      attendees: [],
+      report: "",
+      createdAt: nowISO(),
+    });
+    const when = action.datetime
+      ? new Date(action.datetime).toLocaleString("ko-KR", {
+          month: "numeric",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : "";
+    return `📅 일정에 등록했습니다: ${action.title}${when ? ` (${when})` : ""}`;
+  }
+  if (action.kind === "create_minwon") {
+    insert("minwon", {
+      id: newId(),
+      title: action.title || "새 민원",
+      content: action.detail || "",
+      personName: "",
+      category: "기타",
+      status: "접수",
+      priority: "보통",
+      assignee: "",
+      dueDate: "",
+      createdAt: nowISO(),
+    });
+    return `📮 민원으로 등록했습니다: ${action.title}`;
+  }
+  return undefined;
 }
 
 export default function SecretaryPage() {
@@ -37,7 +84,11 @@ export default function SecretaryPage() {
       const res = await fetch("/api/secretary", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...aiHeaders() },
-        body: JSON.stringify({ input: trimmed, context: buildContext(db) }),
+        body: JSON.stringify({
+          input: trimmed,
+          context: buildContext(db),
+          now: new Date().toString(),
+        }),
       });
       const json = await res.json();
       if (!res.ok) {
@@ -47,7 +98,9 @@ export default function SecretaryPage() {
         setInput("");
         return;
       }
-      setHistory((h) => [{ input: trimmed, result: json.data }, ...h]);
+      const result: SecretaryResult = json.data;
+      const done = runAction(result.action);
+      setHistory((h) => [{ input: trimmed, result, done }, ...h]);
       setInput("");
     } catch {
       const result = localAnalyze(trimmed, db);
@@ -62,8 +115,8 @@ export default function SecretaryPage() {
     <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
       <h1 className="mb-1 text-2xl font-bold">AI 비서실장</h1>
       <p className="mb-6 text-sm text-slate-500">
-        업무 요청을 자연어로 입력하면 6개 업무로 분류해 핵심요약·상황분석·추천행동·다음할일로
-        정리해 드립니다.
+        업무 요청을 자연어로 입력하면 분석해 드리고,{" "}
+        <b className="text-slate-600">“일정/민원 등록해줘”</b> 라고 하면 실제로 등록까지 해드립니다.
       </p>
 
       <form
@@ -139,6 +192,11 @@ export default function SecretaryPage() {
                 </span>
               )}
             </div>
+            {item.done && (
+              <div className="mb-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700">
+                ✅ {item.done}
+              </div>
+            )}
             <ResultCard result={item.result} />
           </div>
         ))}
