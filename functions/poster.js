@@ -381,7 +381,12 @@ async function hostViaStorage(buffer, id, ext, contentType) {
       const bucket = name ? admin.storage().bucket(name) : admin.storage().bucket();
       const file = bucket.file(`posters/${id}.${ext}`);
       await file.save(buffer, {
-        metadata: { contentType, cacheControl: "public, max-age=31536000" },
+        metadata: {
+          contentType,
+          cacheControl: "public, max-age=31536000",
+          // 링크를 직접 열면 인라인 표시 대신 파일로 저장(다운로드)되게
+          contentDisposition: `attachment; filename="moida_poster.${ext}"`,
+        },
         resumable: false,
         validation: false,
       });
@@ -470,7 +475,7 @@ async function sendPosterToMe(result) {
       content: {
         title: `🎨 ${title}`,
         description:
-          "모이다가 만든 행사 웹자보입니다. 탭하면 원본 이미지를 볼 수 있어요.",
+          "모이다가 만든 행사 웹자보입니다. 아래 버튼을 누르면 이미지 파일이 저장돼요.",
         image_url: result.imageUrl,
         image_width: 880,
         image_height: 1245,
@@ -478,19 +483,20 @@ async function sendPosterToMe(result) {
       },
       buttons: [
         {
-          title: "자보 이미지 열기",
+          title: "📥 자보 다운로드",
           link: { web_url: result.imageUrl, mobile_web_url: result.imageUrl },
         },
       ],
     },
     at
   );
+  // 전체 문구 + 원본 링크(외부 브라우저로 열어 저장 가능)
   await kakaoMemoSend(
     {
       object_type: "text",
-      text: result.message,
+      text: `${result.message}\n\n🖼️ 자보 원본 링크\n${result.imageUrl}`,
       link: { web_url: result.imageUrl, mobile_web_url: result.imageUrl },
-      button_title: "자보 이미지 열기",
+      button_title: "📥 자보 다운로드",
     },
     at
   );
