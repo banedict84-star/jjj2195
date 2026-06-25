@@ -156,12 +156,12 @@ jobs:
       - name: Test AI design (optional)
         if: ${{ github.event.inputs.test_design == 'true' }}
         run: |
-          echo "=== OpenAI 키/호출 점검 ==="
-          curl -s "https://asia-northeast3-jjj2195-1bd15.cloudfunctions.net/testPoster?format=oai" --max-time 40 ; echo ""
+          BRIEF="업사이클링 행사 오늘 4시 참석함"
+          BASE="https://asia-northeast3-jjj2195-1bd15.cloudfunctions.net/testPoster"
           echo "=== testPoster json (designedBy) ==="
-          curl -s "https://asia-northeast3-jjj2195-1bd15.cloudfunctions.net/testPoster?format=json" --max-time 110 ; echo ""
+          curl -s -G "$BASE" --data-urlencode "format=json" --data-urlencode "brief=$BRIEF" --max-time 110 ; echo ""
           echo "=== BEGIN AI SVG ==="
-          curl -s "https://asia-northeast3-jjj2195-1bd15.cloudfunctions.net/testPoster?format=svg" --max-time 110
+          curl -s -G "$BASE" --data-urlencode "format=svg" --data-urlencode "brief=$BRIEF" --max-time 110
           echo ""
           echo "=== END AI SVG ==="
 
