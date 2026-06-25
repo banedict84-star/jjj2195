@@ -37,6 +37,16 @@ const POSTER_REGION = "안산";
 const NAVY = "#0B1F44";
 const NAVY2 = "#16315F";
 const GOLD = "#C9A24B";
+// 밝은 카드뉴스(하늘색+파랑) 톤
+const BR_BLUE = "#1A4FB4";
+const BR_NAVY = "#0B2A5B";
+const BR_SKY = "#D7E7FA";
+const BR_INK = "#27374E";
+const BR_GREEN = "#7FC241";
+const POSTER_BLOG = "blog.naver.com/with_yunjung";
+const POSTER_INSTA = "@jangyunjung_official";
+const POSTER_SLOGAN1 = "지속가능한 미래, 작은 실천이";
+const POSTER_SLOGAN2 = "큰 변화를 만듭니다";
 
 function optionalSecret(secret) {
   try {
@@ -374,92 +384,85 @@ async function fetchImageDataUri(url) {
 }
 
 // ── 3) SVG 자보 → PNG ──────────────────────────────────────────────────
-// 남색+골드 카드뉴스 템플릿 (장윤정 경기도의원 스타일)
-// bgDataUri 가 있으면 AI 생성 배경(글자 없음) 위에 글자·사진을 얹는다(하이브리드).
-function buildSvg(f, photoDataUri, bgDataUri) {
+// 밝은 하늘색+파랑 카드뉴스 템플릿 (장윤정 경기도의원 스타일)
+function buildSvg(f, photoDataUri, _bgDataUri) {
   const W = 1080;
   const H = 1350;
-  const pad = 70;
-  const innerW = W - pad * 2;
+  const pad = 72;
+  const iw = W - pad * 2;
 
-  // 제목 (ExtraBold, 최대 2줄)
-  const tSize = 74;
-  const titleLines = wrapLines(f.title || "행사 안내", tSize, innerW, 2);
-  const ty = 180;
+  // 대형 파란 헤드라인 (ExtraBold, 최대 2줄)
+  const tSize = 88;
+  const titleLines = wrapLines(f.title || "행사 안내", tSize, iw, 2);
+  const ty = 240;
   const titleEls = titleLines
     .map(
       (ln, i) =>
-        `<text x="${pad}" y="${ty + i * 90}" font-family="NanumGothic ExtraBold" font-size="${tSize}" fill="#FFFFFF">${escapeXml(ln)}</text>`
+        `<text x="${pad}" y="${ty + i * 102}" font-family="NanumGothic ExtraBold" font-size="${tSize}" fill="${BR_BLUE}">${escapeXml(ln)}</text>`
     )
     .join("");
-  const hb = ty + (titleLines.length - 1) * 90;
+  const hb = ty + (titleLines.length - 1) * 102;
 
-  // 사진 프레임 (골드 테두리)
+  // 사진 (흰 테두리 + 그림자)
   const px = pad;
-  const pw = innerW;
-  const ph = 470;
-  const py = hb + 60;
+  const pw = iw;
+  const ph = 400;
+  const py = hb + 58;
   const photoEl = photoDataUri
     ? `<image x="${px}" y="${py}" width="${pw}" height="${ph}" href="${photoDataUri}" preserveAspectRatio="xMidYMid slice" clip-path="url(#pc)"/>`
-    : `<rect x="${px}" y="${py}" width="${pw}" height="${ph}" rx="24" fill="#22365C"/>` +
+    : `<rect x="${px}" y="${py}" width="${pw}" height="${ph}" rx="26" fill="#CDDDF0"/>` +
       `<text x="${W / 2}" y="${py + ph / 2}" text-anchor="middle" font-family="NanumGothic" font-size="30" fill="#7E92B5">행사 사진</text>`;
 
-  // 정보 패널 (일시/장소 + 본문)
-  const ipy = py + ph + 46;
-  let iy = ipy + 74;
-  const infoEls = [];
-  function row(label, value) {
-    if (!value) return;
-    infoEls.push(
-      `<rect x="${pad}" y="${iy - 30}" width="10" height="40" rx="3" fill="${GOLD}"/>` +
-        `<text x="${pad + 30}" y="${iy}" font-family="NanumGothic Bold" font-size="34" fill="${GOLD}">${escapeXml(label)}</text>` +
-        `<text x="${pad + 170}" y="${iy}" font-family="NanumGothic" font-size="34" fill="#FFFFFF">${escapeXml(value)}</text>`
-    );
-    iy += 64;
-  }
-  row("일시", f.datetime);
-  row("장소", f.location);
-  const bodyLines = wrapLines(f.body || "", 30, innerW, 3);
+  // 일시/장소 한 줄 (있을 때만)
+  const infoY = py + ph + 62;
+  let infoEl = "";
+  let cx = pad;
+  const parts = [];
+  if (f.datetime) parts.push({ l: "일시", v: f.datetime });
+  if (f.location) parts.push({ l: "장소", v: f.location });
+  parts.forEach((p) => {
+    infoEl +=
+      `<text x="${cx}" y="${infoY}" font-family="NanumGothic ExtraBold" font-size="30" fill="${BR_BLUE}">${escapeXml(p.l)}</text>` +
+      `<text x="${cx + 76}" y="${infoY}" font-family="NanumGothic Bold" font-size="30" fill="${BR_NAVY}">${escapeXml(p.v)}</text>`;
+    cx += 76 + textWidth(p.v, 30) + 60;
+  });
+
+  // 본문 카드 (흰 카드 + 그림자)
+  const by = parts.length ? infoY + 30 : py + ph + 34;
+  const bodyLines = wrapLines(f.body || "", 32, iw - 80, 3);
+  const cardH = 62 + bodyLines.length * 48 + 26;
   const bodyEls = bodyLines
     .map(
       (ln, i) =>
-        `<text x="${pad}" y="${iy + 22 + i * 44}" font-family="NanumGothic" font-size="30" fill="#D8E0EE">${escapeXml(ln)}</text>`
+        `<text x="${pad + 40}" y="${by + 78 + i * 48}" font-family="NanumGothic Bold" font-size="32" fill="${BR_INK}">${escapeXml(ln)}</text>`
     )
     .join("");
-  const panelH = iy + 22 + bodyLines.length * 44 + 18 - ipy;
-
-  // 배경: AI 생성 배경이 있으면 풀블리드 + 가독성용 남색 스크림, 없으면 그라데이션+스와시
-  const bgEl = bgDataUri
-    ? `<image x="0" y="0" width="${W}" height="${H}" href="${bgDataUri}" preserveAspectRatio="xMidYMid slice"/>` +
-      `<rect width="${W}" height="${H}" fill="${NAVY}" opacity="0.40"/>` +
-      `<rect width="${W}" height="430" fill="${NAVY}" opacity="0.30"/>`
-    : `<rect width="${W}" height="${H}" fill="url(#bg)"/>` +
-      `<path d="M0,360 L1080,150 L1080,360 L0,540 Z" fill="${NAVY2}" opacity="0.5"/>` +
-      `<path d="M0,372 L1080,162" stroke="${GOLD}" stroke-width="3" opacity="0.8"/>`;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${NAVY}"/><stop offset="1" stop-color="#0E2750"/></linearGradient>
-    <clipPath id="pc"><rect x="${px}" y="${py}" width="${pw}" height="${ph}" rx="24"/></clipPath>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="0.75" stop-color="#EAF2FC"/><stop offset="1" stop-color="${BR_SKY}"/></linearGradient>
+    <clipPath id="pc"><rect x="${px}" y="${py}" width="${pw}" height="${ph}" rx="26"/></clipPath>
+    <filter id="sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="6" stdDeviation="12" flood-color="#6f8bb5" flood-opacity="0.3"/></filter>
   </defs>
-  ${bgEl}
-  <rect x="${pad}" y="50" width="220" height="56" rx="28" fill="${GOLD}"/>
-  <text x="${pad + 110}" y="88" text-anchor="middle" font-family="NanumGothic ExtraBold" font-size="30" fill="${NAVY}">${escapeXml(POSTER_PARTY)}</text>
-  <text x="${W - pad}" y="90" text-anchor="end" font-family="NanumGothic Bold" font-size="32" fill="${GOLD}">${escapeXml(POSTER_REGION)}</text>
+  <rect width="${W}" height="${H}" fill="url(#bg)"/>
+  <ellipse cx="170" cy="${H - 90}" rx="300" ry="110" fill="#FFFFFF" opacity="0.55"/>
+  <ellipse cx="880" cy="${H - 50}" rx="330" ry="120" fill="#FFFFFF" opacity="0.5"/>
+  <rect x="${W - 292}" y="46" width="220" height="76" rx="14" fill="${BR_NAVY}"/>
+  <text x="${W - 182}" y="82" text-anchor="middle" font-family="NanumGothic" font-size="19" fill="#9FC0FF">더불어</text>
+  <text x="${W - 182}" y="110" text-anchor="middle" font-family="NanumGothic ExtraBold" font-size="32" fill="#FFFFFF">민주당</text>
+  <text x="${pad}" y="98" font-family="NanumGothic Bold" font-size="29" fill="${BR_NAVY}">${escapeXml(POSTER_SLOGAN1)}</text>
+  <text x="${pad}" y="138" font-family="NanumGothic ExtraBold" font-size="32" fill="${BR_BLUE}">${escapeXml(POSTER_SLOGAN2)}</text>
   ${titleEls}
-  <rect x="${pad + 2}" y="${hb + 24}" width="120" height="8" rx="4" fill="${GOLD}"/>
-  <rect x="${px - 5}" y="${py - 5}" width="${pw + 10}" height="${ph + 10}" rx="28" fill="none" stroke="${GOLD}" stroke-width="5"/>
+  <rect x="${pad + 4}" y="${hb + 32}" width="150" height="10" rx="5" fill="${BR_GREEN}"/>
+  <g filter="url(#sh)"><rect x="${px}" y="${py}" width="${pw}" height="${ph}" rx="26" fill="#FFFFFF"/></g>
   ${photoEl}
-  <rect x="${pad - 12}" y="${ipy}" width="${innerW + 24}" height="${panelH}" rx="22" fill="${NAVY2}" opacity="0.55"/>
-  ${infoEls.join("")}
+  ${infoEl}
+  <g filter="url(#sh)"><rect x="${pad}" y="${by}" width="${iw}" height="${cardH}" rx="22" fill="#FFFFFF"/></g>
   ${bodyEls}
-  <rect x="0" y="${H - 120}" width="${W}" height="120" fill="#08182F"/>
-  <rect x="0" y="${H - 120}" width="${W}" height="5" fill="${GOLD}"/>
-  <circle cx="${pad + 30}" cy="${H - 60}" r="32" fill="none" stroke="${GOLD}" stroke-width="3"/>
-  <text x="${pad + 30}" y="${H - 50}" text-anchor="middle" font-family="NanumGothic Bold" font-size="26" fill="${GOLD}">의회</text>
-  <text x="${pad + 90}" y="${H - 68}" font-family="NanumGothic" font-size="26" fill="#AEBBD0">${escapeXml(POSTER_ROLE)}</text>
-  <text x="${pad + 90}" y="${H - 30}" font-family="NanumGothic ExtraBold" font-size="44" fill="#FFFFFF">${escapeXml(POSTER_NAME)}</text>
-  <text x="${W - pad}" y="${H - 50}" text-anchor="end" font-family="NanumGothic Bold" font-size="28" fill="${GOLD}">${escapeXml(POSTER_PARTY)} · ${escapeXml(POSTER_REGION)}</text>
+  <text x="${pad}" y="${H - 150}" font-family="NanumGothic Bold" font-size="29" fill="${BR_NAVY}">경기도의회 ${escapeXml(POSTER_PARTY)} · 도의원</text>
+  <text x="${pad}" y="${H - 80}" font-family="NanumGothic ExtraBold" font-size="72" fill="${BR_NAVY}">${escapeXml(POSTER_NAME)}</text>
+  <rect x="0" y="${H - 46}" width="${W}" height="46" fill="${BR_NAVY}"/>
+  <text x="${W / 2}" y="${H - 15}" text-anchor="middle" font-family="NanumGothic" font-size="22" fill="#CFE0FF">${escapeXml(POSTER_BLOG)}   ·   instagram ${escapeXml(POSTER_INSTA)}</text>
 </svg>`;
 }
 
