@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import ResultCard from "@/components/secretary/ResultCard";
 import type { SecretaryResult } from "@/lib/validators/secretary";
 
@@ -49,14 +48,11 @@ export default function SecretaryPage() {
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
-      <header className="mb-6 flex items-center justify-between">
-        <div>
-          <Link href="/" className="text-xs text-slate-400 hover:text-slate-600">
-            ← 장윤정 AI 비서실
-          </Link>
-          <h1 className="mt-1 text-2xl font-bold">AI 비서실장</h1>
-        </div>
-      </header>
+      <h1 className="mb-1 text-2xl font-bold">AI 비서실장</h1>
+      <p className="mb-6 text-sm text-slate-500">
+        업무 요청을 자연어로 입력하면 6개 업무로 분류해 핵심요약·상황분석·추천행동·다음할일로
+        정리해 드립니다.
+      </p>
 
       <form
         onSubmit={(e) => {
@@ -75,7 +71,7 @@ export default function SecretaryPage() {
             }
           }}
           rows={3}
-          placeholder="의원실 업무 요청을 자연어로 입력하세요. (예: 오늘 민원 정리해줘)"
+          placeholder="예: 오늘 민원 정리해줘"
           className="w-full resize-none rounded-lg border border-slate-200 p-3 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand"
         />
         <div className="mt-3 flex items-center justify-between">
