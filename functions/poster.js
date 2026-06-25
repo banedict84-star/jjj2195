@@ -818,6 +818,28 @@ exports.testPoster = onRequest(
         "행사명: 청년 일자리 정책 간담회\n일시: 2026년 7월 3일(목) 오후 2시\n장소: 국회의원회관 제2세미나실\n내용: 지역 청년들과 함께 일자리 정책의 현장 목소리를 듣고 개선 방안을 논의하는 간담회를 개최합니다. 청년 창업·취업 지원 확대 방안을 중점적으로 다룹니다.";
       const imageUrl = req.query.image || "";
 
+      // 디버그: OpenAI 키/호출 점검
+      if (req.query.format === "oai") {
+        const key = optionalSecret(OPENAI_API_KEY);
+        if (!key) return res.json({ ok: false, reason: "OPENAI_API_KEY 시크릿 없음" });
+        try {
+          const txt = await openaiChat(
+            "You are a test bot.",
+            "Reply with exactly: OK",
+            { apiKey: key, model: "gpt-4o-mini", maxTokens: 10, timeout: 20000 }
+          );
+          return res.json({ ok: true, keyLen: key.length, reply: txt });
+        } catch (e) {
+          return res.json({
+            ok: false,
+            keyLen: key.length,
+            status: e.response && e.response.status,
+            data: e.response && e.response.data,
+            msg: e.message,
+          });
+        }
+      }
+
       // 디버그: AI가 생성한 원본 SVG를 그대로 반환(로컬에서 렌더해 확인용)
       if (req.query.format === "svg") {
         const fields = parseBriefFields(String(brief));
