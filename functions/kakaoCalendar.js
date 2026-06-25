@@ -73,6 +73,16 @@ function kakaoLinkCard(text, label, url) {
   };
 }
 
+// 이미지 + 텍스트 응답 (웹자보 결과를 봇방에 표시; 이미지 꾹 눌러 저장 가능)
+function kakaoImage(imageUrl, altText, text, quickReplies) {
+  const outputs = [{ simpleImage: { imageUrl, altText: altText || "이미지" } }];
+  if (text) outputs.push({ simpleText: { text } });
+  const template = { outputs };
+  const qr = quickReplies === undefined ? QUICK_REPLIES : quickReplies;
+  if (qr && qr.length) template.quickReplies = qr;
+  return { version: "2.0", template };
+}
+
 // 카카오 사용자 id로 저장된 구글 토큰 조회 (멀티유저)
 async function getUserToken(uid) {
   if (!uid) return null;
@@ -90,6 +100,13 @@ const POSTER_WORKER_URL = `${AUTH_BASE}/posterWorker`;
 
 function isPosterIntent(text) {
   return /웹\s*자보|행사\s*자보|자보\s*요청|자보\s*만들|포스터|홍보\s*(이미지|자보|물)/.test(
+    text
+  );
+}
+
+// "자보 결과 받기" — 콜백 없이 봇방에서 결과를 가져오는 폴링 의도
+function isPosterResultIntent(text) {
+  return /자보\s*결과|결과\s*받기|자보\s*받기|자보\s*확인|자보\s*나왔|자보\s*완성|자보\s*보기/.test(
     text
   );
 }
@@ -732,6 +749,34 @@ exports.kakaoSkill = onRequest(
       // ── 웹자보 생성 흐름 (구글 캘린더 연동 불필요) ──────────────────
       const posterSession = await getPosterSession(uid);
 
+      // (0) 자보 결과 받기 (콜백 없이 봇방에서 폴링)
+      if (isPosterResultIntent(utterance)) {
+        const ref = admin.firestore().collection("posterResults").doc(uid);
+        const snap = await ref.get();
+        if (snap.exists) {
+          const d = snap.data();
+          await ref.delete();
+          return res.json(
+            kakaoImage(d.imageUrl, d.title, `🎨 ${d.title}\n\n${d.message}`, [
+              { label: "🎨 자보 또 만들기", action: "message", messageText: "웹자보 요청" },
+              { label: "📅 오늘 일정", action: "message", messageText: "오늘 일정은?" },
+            ])
+          );
+        }
+        return res.json(
+          kakaoText(
+            "아직 자보를 만드는 중이에요 ⏳\n10초쯤 뒤에 아래 [📥 자보 결과 받기]를 다시 눌러주세요.\n(한참 기다려도 안 나오면 '웹자보 요청'으로 다시 시작해주세요)",
+            [
+              {
+                label: "📥 자보 결과 받기",
+                action: "message",
+                messageText: "자보 결과 받기",
+              },
+            ]
+          )
+        );
+      }
+
       // (1) 웹자보 시작
       if (isPosterIntent(utterance)) {
         await setPosterSession(uid, { step: "await_photo" });
@@ -789,11 +834,11 @@ exports.kakaoSkill = onRequest(
               req.body.userRequest &&
               req.body.userRequest.callbackUrl) ||
             "";
-          // 워커를 깨우고(완료까지 대기하지 않음) 즉시 콜백 대기 응답
+          // 워커를 깨우고(완료까지 대기하지 않음) 즉시 응답
           try {
             await axios.post(
               POSTER_WORKER_URL,
-              { callbackUrl, imageUrl: posterSession.imageUrl, brief },
+              { callbackUrl, uid, imageUrl: posterSession.imageUrl, brief },
               { timeout: 1500 }
             );
           } catch (_) {
@@ -808,9 +853,17 @@ exports.kakaoSkill = onRequest(
               data: { text: "자보 만드는 중이에요… ⏳ (최대 1분)" },
             });
           }
+          // 콜백 미사용: 봇방에서 '결과 받기' 버튼으로 받기 (약 30초 뒤)
           return res.json(
             kakaoText(
-              "🎨 자보를 만들고 있어요! ⏳\n약 30초 뒤, 완성된 자보 이미지와 홍보 문구를\n카카오톡 '나와의 채팅'으로 보내드릴게요.\n(이 채널 대화창이 아니라 '나에게 보내기'로 도착합니다)"
+              "🎨 자보를 만들고 있어요! ⏳\n약 30초 뒤 아래 [📥 자보 결과 받기] 버튼을 눌러주세요.\n그러면 이 봇방에 자보가 바로 떠요. (이미지를 꾹 눌러 저장 가능)",
+              [
+                {
+                  label: "📥 자보 결과 받기",
+                  action: "message",
+                  messageText: "자보 결과 받기",
+                },
+              ]
             )
           );
         }

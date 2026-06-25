@@ -557,8 +557,24 @@ exports.posterWorker = onRequest(
         !!callbackUrl
       );
 
-      // 콜백이 켜져 있으면 채널 대화로 바로 회신(저장도 채팅에서 꾹 눌러 가능).
-      // 콜백이 없으면 "나에게 보내기"로 폴백 전송.
+      // 봇방 '결과 받기' 폴링용 결과 저장 (콜백 없이도 채널에서 받기 가능)
+      const uid = body.uid ? String(body.uid) : "";
+      if (uid) {
+        try {
+          await admin.firestore().collection("posterResults").doc(uid).set({
+            imageUrl: result.imageUrl,
+            message: result.message,
+            title: result.fields.title || "행사 웹자보",
+            createdAt: Date.now(),
+          });
+          console.log("posterResults 저장 완료:", uid);
+        } catch (e) {
+          console.warn("posterResults 저장 실패:", e.message);
+        }
+      }
+
+      // 콜백이 있으면 채널로 즉시 회신. 없으면 봇방은 '결과 받기' 버튼으로 받고,
+      // 나에게 보내기는 백업으로 함께 발송.
       if (callbackUrl) {
         try {
           await axios.post(callbackUrl, skillResponse, {
@@ -570,15 +586,12 @@ exports.posterWorker = onRequest(
           console.warn("콜백 전송 실패 → 나에게 보내기로 폴백:", e.message);
           try {
             await sendPosterToMe(result);
-            console.log("posterWorker 나에게 보내기 폴백 전송 완료");
-          } catch (e2) {
-            console.error("나에게 보내기 폴백도 실패:", e2.message);
-          }
+          } catch (_) {}
         }
       } else {
         try {
           await sendPosterToMe(result);
-          console.log("posterWorker 나에게 보내기 전송 완료");
+          console.log("posterWorker 나에게 보내기 백업 전송 완료");
         } catch (e) {
           const detail = e.response ? JSON.stringify(e.response.data) : e.message;
           console.error("나에게 보내기 전송 실패:", detail);
