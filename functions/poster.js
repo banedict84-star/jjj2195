@@ -689,9 +689,9 @@ async function buildPoster(input, secrets) {
   } catch (_) {}
   const aiOpts = { ...(secrets || {}), rawBrief: input.brief, today };
 
-  // 하이브리드 배경: GPT 이미지로 글자 없는 고급 배경 생성(기본 ON, bgDesign===false면 OFF)
+  // 디자인은 코드 템플릿(블루톤)으로. 이미지 생성 AI 배경은 기본 OFF(bgDesign===true일 때만).
   const wantBg =
-    secrets && secrets.openaiKey && secrets.bgDesign !== false && !secrets.freeDesign;
+    secrets && secrets.openaiKey && secrets.bgDesign === true && !secrets.freeDesign;
   const bgPromise = wantBg
     ? generateDalleImage(dallePrompt(fields, "bg"), { openaiKey: secrets.openaiKey })
         .then((buf) => (buf ? `data:image/png;base64,${buf.toString("base64")}` : null))
