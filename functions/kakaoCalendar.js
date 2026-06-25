@@ -46,7 +46,7 @@ function optionalSecret(secret) {
 const QUICK_REPLIES = [
   { label: "📅 오늘 일정", action: "message", messageText: "오늘 일정은?" },
   { label: "📅 내일 일정", action: "message", messageText: "내일 일정은?" },
-  { label: "📅 모레 일정", action: "message", messageText: "모레 일정은?" },
+  { label: "🎨 웹자보 요청", action: "message", messageText: "웹자보 요청" },
 ];
 
 function kakaoText(text, quickReplies) {
@@ -83,6 +83,118 @@ async function getUserToken(uid) {
 // "연동 해제" 의도
 function isUnlinkIntent(text) {
   return /연동\s*해제|연동\s*끊|연결\s*끊|연결\s*해제|로그아웃|언링크/.test(text);
+}
+
+// ── 웹자보(행사 홍보 이미지) 생성 흐름 ─────────────────────────────────
+const POSTER_WORKER_URL = `${AUTH_BASE}/posterWorker`;
+
+function isPosterIntent(text) {
+  return /웹\s*자보|행사\s*자보|자보\s*요청|자보\s*만들|포스터|홍보\s*(이미지|자보|물)/.test(
+    text
+  );
+}
+
+function isCancelIntent(text) {
+  return /^(취소|그만|메뉴|처음|중단|닫기)$/.test(text.trim());
+}
+
+function isMenuIntent(text) {
+  return /^(메뉴|도움말|시작|시작하기|help|모이다|안녕|안녕하세요|하이)$/i.test(
+    text.trim()
+  );
+}
+
+function menuReply() {
+  return kakaoText(
+    "안녕하세요! 의원실 비서 모이다예요 🤖\n무엇을 도와드릴까요?\n\n" +
+      "· 일정 등록 → 그냥 일정을 말로 보내세요 (예: 내일 오후 3시 회의)\n" +
+      "· 웹자보 → 아래 [🎨 웹자보 요청]\n" +
+      "· 일정 확인 → [📅 오늘 일정]",
+    [
+      { label: "🎨 웹자보 요청", action: "message", messageText: "웹자보 요청" },
+      { label: "📅 오늘 일정", action: "message", messageText: "오늘 일정은?" },
+      { label: "📅 내일 일정", action: "message", messageText: "내일 일정은?" },
+    ]
+  );
+}
+
+// 대화 상태(웹자보 단계) 저장 — Firestore posterSessions/{uid}
+const POSTER_SESSION_TTL = 30 * 60 * 1000; // 30분
+
+async function getPosterSession(uid) {
+  if (!uid) return null;
+  const ref = admin.firestore().collection("posterSessions").doc(uid);
+  const snap = await ref.get();
+  if (!snap.exists) return null;
+  const d = snap.data();
+  if (d.updatedAt && Date.now() - d.updatedAt > POSTER_SESSION_TTL) {
+    await ref.delete();
+    return null;
+  }
+  return d;
+}
+
+async function setPosterSession(uid, data) {
+  if (!uid) return;
+  await admin
+    .firestore()
+    .collection("posterSessions")
+    .doc(uid)
+    .set({ ...data, updatedAt: Date.now() }, { merge: true });
+}
+
+async function clearPosterSession(uid) {
+  if (!uid) return;
+  await admin.firestore().collection("posterSessions").doc(uid).delete();
+}
+
+// 카카오 스킬 페이로드 어디에 박혀 있든 사진 URL을 찾아낸다.
+// ("이미지 보안 전송" 플러그인/첨부 등 전달 형식이 다양해 깊이 탐색)
+function extractImageUrl(body) {
+  const urls = [];
+  const visit = (v) => {
+    if (v == null) return;
+    if (typeof v === "string") {
+      const s = v.trim();
+      if (s.startsWith("{") || s.startsWith("[")) {
+        try {
+          visit(JSON.parse(s));
+          return;
+        } catch (_) {
+          /* 평범한 문자열로 처리 */
+        }
+      }
+      const m = s.match(/https?:\/\/[^\s"'\\)]+/g);
+      if (m) urls.push(...m);
+      return;
+    }
+    if (Array.isArray(v)) {
+      v.forEach(visit);
+      return;
+    }
+    if (typeof v === "object") {
+      Object.values(v).forEach(visit);
+    }
+  };
+  visit(body);
+  if (!urls.length) return null;
+
+  const score = (u) => {
+    let s = 0;
+    if (/\.(jpe?g|png|gif|webp)(\?|$)/i.test(u)) s += 5;
+    if (/(kakaocdn|kage|dn-|talkm|photo|image|img|media|secure|attach)/i.test(u))
+      s += 3;
+    if (
+      /(callback|cloudfunctions|kauth|kapi|googleapis|oauth|calendar\.google|plus\.kakao)/i.test(
+        u
+      )
+    )
+      s -= 10;
+    return s;
+  };
+  urls.sort((a, b) => score(b) - score(a));
+  const best = urls[0];
+  return best && score(best) >= 0 ? best : null;
 }
 
 // 사용자 연동 해제: 구글 권한 철회(best-effort) + 저장 토큰 삭제
@@ -615,6 +727,98 @@ exports.kakaoSkill = onRequest(
             "🔌 캘린더 연동을 해제했어요.\n다시 사용하려면 아무 메시지나 보내서 연동하면 됩니다."
           )
         );
+      }
+
+      // ── 웹자보 생성 흐름 (구글 캘린더 연동 불필요) ──────────────────
+      const posterSession = await getPosterSession(uid);
+
+      // (1) 웹자보 시작
+      if (isPosterIntent(utterance)) {
+        await setPosterSession(uid, { step: "await_photo" });
+        return res.json(
+          kakaoText(
+            "🎨 행사 웹자보를 만들어 드릴게요!\n\n먼저 행사 사진을 1장 보내주세요 📷",
+            [{ label: "취소", action: "message", messageText: "취소" }]
+          )
+        );
+      }
+
+      // (2) 진행 중 세션 처리
+      if (posterSession) {
+        if (isCancelIntent(utterance)) {
+          await clearPosterSession(uid);
+          return res.json(menuReply());
+        }
+
+        if (posterSession.step === "await_photo") {
+          const imageUrl = extractImageUrl(req.body);
+          console.log(
+            "poster await_photo extracted:",
+            imageUrl,
+            "| body:",
+            JSON.stringify(req.body).slice(0, 1000)
+          );
+          if (imageUrl) {
+            await setPosterSession(uid, { step: "await_brief", imageUrl });
+            return res.json(
+              kakaoText(
+                "사진 받았어요! 📷\n\n이제 행사 요지를 적어주세요.\n행사명·일시·장소·내용을 자유롭게 적어주시면 됩니다.\n\n예) 청년 일자리 간담회 / 7월 3일(목) 오후 2시 / 국회의원회관 제2세미나실 / 청년 정책 현장 의견 청취",
+                [{ label: "취소", action: "message", messageText: "취소" }]
+              )
+            );
+          }
+          return res.json(
+            kakaoText(
+              "사진이 아직 안 보여요 😅\n행사 사진을 첨부해서 한 장 보내주세요 📷",
+              [{ label: "취소", action: "message", messageText: "취소" }]
+            )
+          );
+        }
+
+        if (posterSession.step === "await_brief") {
+          const brief = utterance;
+          if (!brief || brief.length < 3) {
+            return res.json(
+              kakaoText(
+                "행사 요지를 조금만 더 적어주세요 🙏\n(행사명·일시·장소·내용)"
+              )
+            );
+          }
+          const callbackUrl =
+            (req.body &&
+              req.body.userRequest &&
+              req.body.userRequest.callbackUrl) ||
+            "";
+          // 워커를 깨우고(완료까지 대기하지 않음) 즉시 콜백 대기 응답
+          try {
+            await axios.post(
+              POSTER_WORKER_URL,
+              { callbackUrl, imageUrl: posterSession.imageUrl, brief },
+              { timeout: 1500 }
+            );
+          } catch (_) {
+            /* 타임아웃은 정상: 워커는 백그라운드로 계속 실행됨 */
+          }
+          await clearPosterSession(uid);
+
+          if (callbackUrl) {
+            return res.json({
+              version: "2.0",
+              useCallback: true,
+              data: { text: "자보 만드는 중이에요… ⏳ (최대 1분)" },
+            });
+          }
+          return res.json(
+            kakaoText(
+              "자보 생성을 시작했어요! ⏳\n곧 결과를 보내드릴게요.\n(결과가 안 오면 오픈빌더 '콜백' 설정을 확인해 주세요)"
+            )
+          );
+        }
+      }
+
+      // 메뉴/인사
+      if (isMenuIntent(utterance)) {
+        return res.json(menuReply());
       }
 
       if (!userToken || !userToken.refreshToken) {

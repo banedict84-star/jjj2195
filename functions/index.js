@@ -21,6 +21,11 @@ exports.testKakao = require("./kakaoNotify").testKakao;
 // 30분 전 리마인더는 보류 (원하면 주석 해제)
 // exports.eventReminder = require("./kakaoNotify").eventReminder;
 
+// 행사 웹자보 자동 생성: 콜백 워커 + 폴백 이미지 서빙 + 디자인 미리보기
+exports.posterWorker = require("./poster").posterWorker;
+exports.posterImage = require("./poster").posterImage;
+exports.testPoster = require("./poster").testPoster;
+
 const BASE_URL = "https://theminjoo.kr";
 const LIST_URL = BASE_URL + "/main/sub/news/list.php?brd=1";
 
