@@ -557,26 +557,32 @@ exports.posterWorker = onRequest(
         !!callbackUrl
       );
 
-      // 콜백이 켜져 있으면 채널 대화로 바로 회신
+      // 콜백이 켜져 있으면 채널 대화로 바로 회신(저장도 채팅에서 꾹 눌러 가능).
+      // 콜백이 없으면 "나에게 보내기"로 폴백 전송.
       if (callbackUrl) {
         try {
           await axios.post(callbackUrl, skillResponse, {
             headers: { "Content-Type": "application/json" },
             timeout: 8000,
           });
-          console.log("posterWorker callback POSTED");
+          console.log("posterWorker callback POSTED (채널 회신)");
         } catch (e) {
-          console.warn("콜백 전송 실패:", e.message);
+          console.warn("콜백 전송 실패 → 나에게 보내기로 폴백:", e.message);
+          try {
+            await sendPosterToMe(result);
+            console.log("posterWorker 나에게 보내기 폴백 전송 완료");
+          } catch (e2) {
+            console.error("나에게 보내기 폴백도 실패:", e2.message);
+          }
         }
-      }
-
-      // 콜백 유무와 무관하게 "나에게 보내기"로도 전송 (현재 기본 전달 경로)
-      try {
-        await sendPosterToMe(result);
-        console.log("posterWorker 나에게 보내기 전송 완료");
-      } catch (e) {
-        const detail = e.response ? JSON.stringify(e.response.data) : e.message;
-        console.error("나에게 보내기 전송 실패:", detail);
+      } else {
+        try {
+          await sendPosterToMe(result);
+          console.log("posterWorker 나에게 보내기 전송 완료");
+        } catch (e) {
+          const detail = e.response ? JSON.stringify(e.response.data) : e.message;
+          console.error("나에게 보내기 전송 실패:", detail);
+        }
       }
 
       res.json({ ok: true, imageUrl: result.imageUrl });
