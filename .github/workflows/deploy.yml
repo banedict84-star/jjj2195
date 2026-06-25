@@ -108,6 +108,20 @@ jobs:
           rm -f /tmp/k1 /tmp/k2 /tmp/k3
           echo "✅ 카카오 시크릿 3개 등록 완료"
 
+      - name: Sync OpenAI key to Firebase secret
+        env:
+          OPENAI_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          if [ -n "$OPENAI_KEY" ]; then
+            echo "::add-mask::$OPENAI_KEY"
+            printf '%s' "$OPENAI_KEY" > /tmp/oai
+            firebase functions:secrets:set OPENAI_API_KEY --data-file /tmp/oai --project jjj2195-1bd15
+            rm -f /tmp/oai
+            echo "✅ OpenAI 시크릿 등록/갱신 완료"
+          else
+            echo "ℹ️ GitHub secret OPENAI_API_KEY 없음 — OpenAI 비활성(템플릿/MyAPI 사용)"
+          fi
+
       - name: Debug Kakao refresh (optional)
         if: ${{ github.event.inputs.debug_kakao == 'true' }}
         run: |
