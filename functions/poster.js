@@ -151,7 +151,8 @@ async function generateMessage(f, opts) {
   const apiKey = opts && opts.apiKey;
   if (apiKey) {
     try {
-      const clientOpts = { apiKey, timeout: 25000, maxRetries: 1 };
+      // 콜백 1분 제한 → MyAPI는 짧게만 시도하고 안 되면 즉시 템플릿
+      const clientOpts = { apiKey, timeout: 14000, maxRetries: 0 };
       if (opts.baseURL) clientOpts.baseURL = opts.baseURL;
       const client = new Anthropic(clientOpts);
       const resp = await client.messages.create({
