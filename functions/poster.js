@@ -7,6 +7,10 @@ const fs = require("fs");
 const path = require("path");
 const Anthropic = require("@anthropic-ai/sdk");
 const { Resvg } = require("@resvg/resvg-js");
+const sharp = require("sharp");
+
+// 정식 Storage 버킷(없으면 Firestore 폴백). create_bucket 워크플로우로 1회 생성.
+const STORAGE_BUCKET_NAME = "jjj2195-1bd15-moida";
 
 if (!admin.apps.length) admin.initializeApp();
 
@@ -147,7 +151,7 @@ async function generateMessage(f, opts) {
   const apiKey = opts && opts.apiKey;
   if (apiKey) {
     try {
-      const clientOpts = { apiKey, timeout: 12000, maxRetries: 1 };
+      const clientOpts = { apiKey, timeout: 25000, maxRetries: 1 };
       if (opts.baseURL) clientOpts.baseURL = opts.baseURL;
       const client = new Anthropic(clientOpts);
       const resp = await client.messages.create({
@@ -189,14 +193,25 @@ async function fetchImageDataUri(url) {
   try {
     const res = await axios.get(url, {
       responseType: "arraybuffer",
-      timeout: 12000,
-      maxContentLength: 12 * 1024 * 1024,
+      timeout: 15000,
+      maxContentLength: 20 * 1024 * 1024,
       headers: { "User-Agent": "Mozilla/5.0" },
     });
-    let mime = res.headers["content-type"] || "image/jpeg";
-    if (!/^image\//.test(mime)) mime = "image/jpeg";
-    const b64 = Buffer.from(res.data).toString("base64");
-    return `data:${mime};base64,${b64}`;
+    let buf = Buffer.from(res.data);
+    let mime = res.headers["content-type"] || "";
+    // 사진을 자보 사진틀 비율로 리사이즈 + JPEG 압축 (용량 대폭 축소)
+    try {
+      buf = await sharp(buf)
+        .rotate() // EXIF 회전 보정
+        .resize({ width: 1200, height: 820, fit: "cover", position: "centre" })
+        .jpeg({ quality: 82 })
+        .toBuffer();
+      mime = "image/jpeg";
+    } catch (e) {
+      console.warn("사진 압축 실패, 원본 임베드:", e.message);
+      if (!/^image\//.test(mime)) mime = "image/jpeg";
+    }
+    return `data:${mime};base64,${buf.toString("base64")}`;
   } catch (e) {
     console.warn("fetchImageDataUri 실패:", e.message);
     return null;
@@ -299,6 +314,18 @@ function renderPng(svg) {
   return r.render().asPng();
 }
 
+// SVG → JPEG(가벼움). 변환 실패 시 PNG로.
+async function renderImage(svg) {
+  const png = renderPng(svg);
+  try {
+    const jpg = await sharp(png).jpeg({ quality: 86 }).toBuffer();
+    return { buffer: jpg, contentType: "image/jpeg", ext: "jpg" };
+  } catch (e) {
+    console.warn("자보 JPEG 변환 실패, PNG 사용:", e.message);
+    return { buffer: png, contentType: "image/png", ext: "png" };
+  }
+}
+
 // ── 4) PNG 호스팅 (Storage 우선 → 실패 시 Firestore + posterImage 서빙) ──
 function projectId() {
   return (
@@ -308,9 +335,10 @@ function projectId() {
   );
 }
 
-async function hostViaStorage(buffer, id) {
+async function hostViaStorage(buffer, id, ext, contentType) {
   const candidates = [
-    undefined, // 기본 버킷(STORAGE_BUCKET 설정 시)
+    STORAGE_BUCKET_NAME,
+    undefined, // 기본 버킷(STORAGE_BUCKET 환경변수)
     `${projectId()}.firebasestorage.app`,
     `${projectId()}.appspot.com`,
   ];
@@ -318,14 +346,17 @@ async function hostViaStorage(buffer, id) {
   for (const name of candidates) {
     try {
       const bucket = name ? admin.storage().bucket(name) : admin.storage().bucket();
-      const file = bucket.file(`posters/${id}.png`);
+      const file = bucket.file(`posters/${id}.${ext}`);
       await file.save(buffer, {
-        metadata: { contentType: "image/png", cacheControl: "public, max-age=31536000" },
+        metadata: { contentType, cacheControl: "public, max-age=31536000" },
         resumable: false,
         validation: false,
       });
-      await file.makePublic();
-      return `https://storage.googleapis.com/${bucket.name}/posters/${id}.png`;
+      // 균일 액세스 버킷이면 makePublic이 막힘 → 버킷 IAM(allUsers)로 공개. 실패 무시.
+      try {
+        await file.makePublic();
+      } catch (_) {}
+      return `https://storage.googleapis.com/${bucket.name}/posters/${id}.${ext}`;
     } catch (e) {
       lastErr = e;
     }
@@ -333,10 +364,10 @@ async function hostViaStorage(buffer, id) {
   throw lastErr || new Error("storage host failed");
 }
 
-async function hostImage(buffer) {
+async function hostImage(buffer, ext, contentType) {
   const id = crypto.randomUUID();
   try {
-    return await hostViaStorage(buffer, id);
+    return await hostViaStorage(buffer, id, ext, contentType);
   } catch (e) {
     console.warn("Storage 호스팅 실패 → Firestore 폴백:", e.message);
     if (buffer.length > 950 * 1024) throw e; // Firestore 1MB 한계
@@ -344,7 +375,7 @@ async function hostImage(buffer) {
       .firestore()
       .collection("posterImages")
       .doc(id)
-      .set({ b64: buffer.toString("base64"), createdAt: Date.now() });
+      .set({ b64: buffer.toString("base64"), contentType, createdAt: Date.now() });
     return `${AUTH_BASE}/posterImage?id=${id}`;
   }
 }
@@ -362,8 +393,8 @@ async function buildPoster(input, secrets) {
     fetchImageDataUri(input.imageUrl),
   ]);
   const svg = buildSvg(fields, photoUri);
-  const png = renderPng(svg);
-  const imageUrl = await hostImage(png);
+  const { buffer, contentType, ext } = await renderImage(svg);
+  const imageUrl = await hostImage(buffer, ext, contentType);
   return { message, imageUrl, fields };
 }
 
@@ -461,8 +492,9 @@ exports.posterImage = onRequest({ region: "asia-northeast3" }, async (req, res) 
     if (!id) return res.status(400).send("id required");
     const snap = await admin.firestore().collection("posterImages").doc(id).get();
     if (!snap.exists) return res.status(404).send("not found");
-    const buf = Buffer.from(snap.data().b64, "base64");
-    res.set("Content-Type", "image/png");
+    const data = snap.data();
+    const buf = Buffer.from(data.b64, "base64");
+    res.set("Content-Type", data.contentType || "image/png");
     res.set("Cache-Control", "public, max-age=31536000");
     res.send(buf);
   } catch (e) {

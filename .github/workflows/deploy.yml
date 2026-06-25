@@ -32,6 +32,10 @@ on:
         description: "(선택) true 입력 시 kakaoSkill/posterWorker 최근 로그 출력"
         required: false
         default: ""
+      create_bucket:
+        description: "(선택) true 입력 시 웹자보용 Storage 버킷 생성+공개설정 (1회)"
+        required: false
+        default: ""
 
 jobs:
   deploy:
@@ -56,6 +60,17 @@ jobs:
 
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
+
+      - name: Create poster storage bucket (optional, one-time)
+        if: ${{ github.event.inputs.create_bucket == 'true' }}
+        run: |
+          gcloud auth activate-service-account --key-file="$GOOGLE_APPLICATION_CREDENTIALS"
+          gcloud storage buckets create gs://jjj2195-1bd15-moida \
+            --location=asia-northeast3 --project=jjj2195-1bd15 \
+            --uniform-bucket-level-access || echo "버킷이 이미 있거나 생성 생략"
+          gcloud storage buckets add-iam-policy-binding gs://jjj2195-1bd15-moida \
+            --member=allUsers --role=roles/storage.objectViewer --project=jjj2195-1bd15 || true
+          echo "✅ 버킷 준비 완료: gs://jjj2195-1bd15-moida"
 
       - name: Setup Kakao secrets (optional)
         if: ${{ github.event.inputs.kakao_code != '' }}
