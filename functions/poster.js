@@ -418,7 +418,65 @@ async function hostImage(buffer, ext, contentType) {
   }
 }
 
-// 자보 1건 생성: 문구 + PNG URL 반환
+// ── AI가 디자인을 직접 설계 (SVG 생성) ─────────────────────────────────
+// AI에게 행사 정보를 주고 자보 SVG를 스스로 디자인하게 한다.
+// 한글은 우리가 준 텍스트를 그대로 쓰게 하고, 사진은 __PHOTO__ 자리표시자로 둔다.
+// 실패/형식오류 시 null → 호출부에서 템플릿으로 폴백.
+async function generateSvgDesign(fields, opts) {
+  if (!opts || !opts.apiKey) return null;
+  try {
+    const clientOpts = { apiKey: opts.apiKey, timeout: 45000, maxRetries: 0 };
+    if (opts.baseURL) clientOpts.baseURL = opts.baseURL;
+    const client = new Anthropic(clientOpts);
+    const resp = await client.messages.create({
+      model: opts.model || "claude-haiku-4-5",
+      max_tokens: 4000,
+      temperature: 0.8,
+      system:
+        `너는 전문 그래픽 디자이너다. 국회의원실 행사 홍보용 '웹자보' 한 장을 SVG로 직접 디자인한다.\n` +
+        `[캔버스] width=1080 height=1350 세로형. 반드시 viewBox="0 0 1080 1350".\n` +
+        `[출력] 오직 유효한 SVG 코드만. 설명·마크다운·코드펜스 금지. <svg 로 시작해 </svg>로 끝낼 것.\n` +
+        `[폰트] 반드시 다음만 사용: font-family="NanumGothic"(본문), "NanumGothic Bold", "NanumGothic ExtraBold"(제목). 다른 폰트 금지.\n` +
+        `[사진] 행사 사진 자리에 <image href="__PHOTO__" ... preserveAspectRatio="xMidYMid slice"/> 를 정확히 1개 배치(크고 눈에 띄게, clipPath로 둥근 모서리 권장). href 값은 반드시 __PHOTO__ 문자열 그대로 둘 것(우리가 실제 사진으로 치환).\n` +
+        `[텍스트 규칙] 아래 제공한 한글을 '한 글자도 바꾸지 말고' 정확히 넣어라. 임의 번역·요약·창작 금지.\n` +
+        ` - 긴 텍스트는 박스를 넘지 않게 적절히 줄바꿈(여러 <text>로 나눠서). 화면 밖으로 나가면 안 됨.\n` +
+        ` - 제목은 크게, 일시·장소는 또렷하게, 내용은 2~4줄로.\n` +
+        `[디자인] 메인 색 #004EA2 활용(보조색 자유). 배경/도형/그라데이션/포인트 라인 등으로 세련되고 단정한 공보물 느낌. 빈 공간 균형 있게.\n` +
+        `[금지] 외부 리소스·스크립트·foreignObject·이모지 글자. 이미지는 __PHOTO__ 하나만.`,
+      messages: [
+        {
+          role: "user",
+          content:
+            `의원실: ${BRAND}\n` +
+            `행사명(제목): ${fields.title || ""}\n` +
+            `일시: ${fields.datetime || ""}\n` +
+            `장소: ${fields.location || ""}\n` +
+            `내용: ${fields.body || ""}\n\n` +
+            `위 정보로 웹자보 SVG를 디자인해줘. 텍스트는 그대로, 사진은 __PHOTO__ 자리표시자로.`,
+        },
+      ],
+    });
+    const block = (resp.content || []).find((b) => b.type === "text");
+    const raw = block && block.text ? block.text : "";
+    const m = raw.match(/<svg[\s\S]*<\/svg>/i);
+    if (!m) {
+      console.warn("AI 디자인: SVG 형식 아님 → 템플릿 폴백");
+      return null;
+    }
+    let svg = m[0];
+    const titleKey = (fields.title || "").slice(0, 4);
+    if (!svg.includes("__PHOTO__") || (titleKey && !svg.includes(titleKey))) {
+      console.warn("AI 디자인: 필수요소(__PHOTO__/제목) 누락 → 템플릿 폴백");
+      return null;
+    }
+    return svg;
+  } catch (e) {
+    console.warn("AI 디자인 생성 실패 → 템플릿 폴백:", e.message);
+    return null;
+  }
+}
+
+// 자보 1건 생성: 문구 + 이미지 URL 반환
 async function buildPoster(input, secrets) {
   const fields = parseBriefFields(input.brief);
   // 명시 필드가 들어오면 우선
@@ -426,14 +484,40 @@ async function buildPoster(input, secrets) {
   if (input.datetime) fields.datetime = input.datetime;
   if (input.location) fields.location = input.location;
 
-  const [message, photoUri] = await Promise.all([
+  const photoUri = await fetchImageDataUri(input.imageUrl);
+  const [message, aiSvg] = await Promise.all([
     generateMessage(fields, secrets),
-    fetchImageDataUri(input.imageUrl),
+    secrets && secrets.aiDesign === false
+      ? Promise.resolve(null)
+      : generateSvgDesign(fields, secrets),
   ]);
-  const svg = buildSvg(fields, photoUri);
-  const { buffer, contentType, ext } = await renderImage(svg);
+
+  let svg;
+  let designedBy;
+  if (aiSvg) {
+    const placeholder =
+      "data:image/svg+xml;base64," +
+      Buffer.from(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><rect width="10" height="10" fill="#E9EEF5"/></svg>'
+      ).toString("base64");
+    svg = aiSvg.split("__PHOTO__").join(photoUri || placeholder);
+    designedBy = "ai";
+  } else {
+    svg = buildSvg(fields, photoUri);
+    designedBy = "template";
+  }
+
+  let buffer, contentType, ext;
+  try {
+    ({ buffer, contentType, ext } = await renderImage(svg));
+  } catch (e) {
+    console.warn("렌더 실패, 템플릿으로 재시도:", e.message);
+    svg = buildSvg(fields, photoUri);
+    designedBy = "template";
+    ({ buffer, contentType, ext } = await renderImage(svg));
+  }
   const imageUrl = await hostImage(buffer, ext, contentType);
-  return { message, imageUrl, fields };
+  return { message, imageUrl, fields, designedBy };
 }
 
 // ── 4-b) 카카오 "나에게 보내기" (콜백 없이 결과 전송) ───────────────────
@@ -658,16 +742,35 @@ exports.testPoster = onRequest(
         req.query.brief ||
         "행사명: 청년 일자리 정책 간담회\n일시: 2026년 7월 3일(목) 오후 2시\n장소: 국회의원회관 제2세미나실\n내용: 지역 청년들과 함께 일자리 정책의 현장 목소리를 듣고 개선 방안을 논의하는 간담회를 개최합니다. 청년 창업·취업 지원 확대 방안을 중점적으로 다룹니다.";
       const imageUrl = req.query.image || "";
+
+      // 디버그: AI가 생성한 원본 SVG를 그대로 반환(로컬에서 렌더해 확인용)
+      if (req.query.format === "svg") {
+        const fields = parseBriefFields(String(brief));
+        const svg = await generateSvgDesign(fields, {
+          apiKey: optionalSecret(ANTHROPIC_API_KEY),
+          baseURL: optionalSecret(ANTHROPIC_BASE_URL),
+          model: optionalSecret(ANTHROPIC_MODEL),
+        });
+        res.set("Content-Type", "text/plain; charset=utf-8");
+        return res.send(svg || "(AI 디자인 생성 실패/널 — 템플릿으로 폴백됨)");
+      }
+
       const result = await buildPoster(
         { brief: String(brief), imageUrl: String(imageUrl) },
         {
           apiKey: optionalSecret(ANTHROPIC_API_KEY),
           baseURL: optionalSecret(ANTHROPIC_BASE_URL),
           model: optionalSecret(ANTHROPIC_MODEL),
+          aiDesign: req.query.ai !== "0",
         }
       );
       if (req.query.format === "json") {
-        return res.json({ ok: true, imageUrl: result.imageUrl, message: result.message });
+        return res.json({
+          ok: true,
+          designedBy: result.designedBy,
+          imageUrl: result.imageUrl,
+          message: result.message,
+        });
       }
       // 사람이 보기 좋게 미리보기 HTML
       res.set("Content-Type", "text/html; charset=utf-8");
