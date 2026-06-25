@@ -26,9 +26,17 @@ const KAKAO_REFRESH_TOKEN = defineSecret("KAKAO_REFRESH_TOKEN");
 const KAKAO_CLIENT_SECRET = defineSecret("KAKAO_CLIENT_SECRET");
 
 const AUTH_BASE = "https://asia-northeast3-jjj2195-1bd15.cloudfunctions.net";
-const BRAND = "장윤정 의원실";
+const BRAND = "경기도의원 장윤정";
 const COLOR_PRIMARY = "#004EA2"; // 민주당 블루
 const COLOR_ACCENT = "#0094D9";
+// 카드뉴스(남색+골드) 디자인용 브랜딩/색
+const POSTER_NAME = "장윤정";
+const POSTER_ROLE = "경기도의원";
+const POSTER_PARTY = "더불어민주당";
+const POSTER_REGION = "안산";
+const NAVY = "#0B1F44";
+const NAVY2 = "#16315F";
+const GOLD = "#C9A24B";
 
 function optionalSecret(secret) {
   try {
@@ -305,90 +313,84 @@ async function fetchImageDataUri(url) {
 }
 
 // ── 3) SVG 자보 → PNG ──────────────────────────────────────────────────
+// 남색+골드 카드뉴스 템플릿 (장윤정 경기도의원 스타일)
 function buildSvg(f, photoDataUri) {
-  const W = 880;
-  const H = 1245;
-  const pad = 60;
+  const W = 1080;
+  const H = 1350;
+  const pad = 70;
   const innerW = W - pad * 2;
 
-  // 사진 영역
-  const photoX = pad;
-  const photoY = 188;
-  const photoW = innerW;
-  const photoH = 470;
-
-  const photoEl = photoDataUri
-    ? `<image x="${photoX}" y="${photoY}" width="${photoW}" height="${photoH}" ` +
-      `href="${photoDataUri}" preserveAspectRatio="xMidYMid slice" clip-path="url(#photoClip)"/>`
-    : `<rect x="${photoX}" y="${photoY}" width="${photoW}" height="${photoH}" rx="18" fill="#E9EEF5"/>` +
-      `<text x="${W / 2}" y="${photoY + photoH / 2}" text-anchor="middle" ` +
-      `font-family="NanumGothic" font-size="26" fill="#9FB1C7">행사 사진</text>`;
-
   // 제목 (ExtraBold, 최대 2줄)
-  const titleSize = 50;
-  const titleLines = wrapLines(f.title || "행사 안내", titleSize, innerW, 2);
-  let ty = photoY + photoH + 78;
+  const tSize = 74;
+  const titleLines = wrapLines(f.title || "행사 안내", tSize, innerW, 2);
+  const ty = 180;
   const titleEls = titleLines
-    .map((ln, i) => {
-      const y = ty + i * (titleSize + 10);
-      return `<text x="${pad}" y="${y}" font-family="NanumGothic ExtraBold" font-size="${titleSize}" fill="#1A1A1A">${escapeXml(ln)}</text>`;
-    })
+    .map(
+      (ln, i) =>
+        `<text x="${pad}" y="${ty + i * 90}" font-family="NanumGothic ExtraBold" font-size="${tSize}" fill="#FFFFFF">${escapeXml(ln)}</text>`
+    )
     .join("");
-  let cursorY = ty + (titleLines.length - 1) * (titleSize + 10);
+  const hb = ty + (titleLines.length - 1) * 90;
 
-  // 강조선
-  cursorY += 28;
-  const ruleEl = `<rect x="${pad}" y="${cursorY}" width="84" height="6" rx="3" fill="${COLOR_ACCENT}"/>`;
-  cursorY += 40;
+  // 사진 프레임 (골드 테두리)
+  const px = pad;
+  const pw = innerW;
+  const ph = 470;
+  const py = hb + 60;
+  const photoEl = photoDataUri
+    ? `<image x="${px}" y="${py}" width="${pw}" height="${ph}" href="${photoDataUri}" preserveAspectRatio="xMidYMid slice" clip-path="url(#pc)"/>`
+    : `<rect x="${px}" y="${py}" width="${pw}" height="${ph}" rx="24" fill="#22365C"/>` +
+      `<text x="${W / 2}" y="${py + ph / 2}" text-anchor="middle" font-family="NanumGothic" font-size="30" fill="#7E92B5">행사 사진</text>`;
 
-  // 정보 행 (일시/장소) — 도형 아이콘 + 라벨
-  function infoRow(y, label, value) {
-    if (!value) return { el: "", next: y };
-    const valLines = wrapLines(value, 28, innerW - 150, 2);
-    const els = [
-      `<rect x="${pad}" y="${y - 22}" width="30" height="30" rx="8" fill="${COLOR_PRIMARY}"/>`,
-      `<text x="${pad + 46}" y="${y}" font-family="NanumGothic Bold" font-size="27" fill="#444">${escapeXml(label)}</text>`,
-    ];
-    valLines.forEach((ln, i) => {
-      els.push(
-        `<text x="${pad + 150}" y="${y + i * 38}" font-family="NanumGothic" font-size="27" fill="#222">${escapeXml(ln)}</text>`
-      );
-    });
-    return { el: els.join(""), next: y + valLines.length * 38 + 18 };
+  // 정보 패널 (일시/장소 + 본문)
+  const ipy = py + ph + 46;
+  let iy = ipy + 74;
+  const infoEls = [];
+  function row(label, value) {
+    if (!value) return;
+    infoEls.push(
+      `<rect x="${pad}" y="${iy - 30}" width="10" height="40" rx="3" fill="${GOLD}"/>` +
+        `<text x="${pad + 30}" y="${iy}" font-family="NanumGothic Bold" font-size="34" fill="${GOLD}">${escapeXml(label)}</text>` +
+        `<text x="${pad + 170}" y="${iy}" font-family="NanumGothic" font-size="34" fill="#FFFFFF">${escapeXml(value)}</text>`
+    );
+    iy += 64;
   }
-
-  let infoY = cursorY + 24;
-  const r1 = infoRow(infoY, "일시", f.datetime);
-  const r2 = infoRow(r1.next, "장소", f.location);
-  let bodyY = (f.datetime || f.location ? r2.next : infoY) + 14;
-
-  // 본문 요지
-  const bodyLines = wrapLines(f.body || "", 27, innerW, 5);
+  row("일시", f.datetime);
+  row("장소", f.location);
+  const bodyLines = wrapLines(f.body || "", 30, innerW, 3);
   const bodyEls = bodyLines
-    .map((ln, i) => {
-      const y = bodyY + 20 + i * 42;
-      return `<text x="${pad}" y="${y}" font-family="NanumGothic" font-size="27" fill="#333">${escapeXml(ln)}</text>`;
-    })
+    .map(
+      (ln, i) =>
+        `<text x="${pad}" y="${iy + 22 + i * 44}" font-family="NanumGothic" font-size="30" fill="#D8E0EE">${escapeXml(ln)}</text>`
+    )
     .join("");
+  const panelH = iy + 22 + bodyLines.length * 44 + 18 - ipy;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
   <defs>
-    <clipPath id="photoClip"><rect x="${photoX}" y="${photoY}" width="${photoW}" height="${photoH}" rx="18"/></clipPath>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${NAVY}"/><stop offset="1" stop-color="#0E2750"/></linearGradient>
+    <clipPath id="pc"><rect x="${px}" y="${py}" width="${pw}" height="${ph}" rx="24"/></clipPath>
   </defs>
-  <rect width="${W}" height="${H}" fill="#FFFFFF"/>
-  <rect x="0" y="0" width="${W}" height="120" fill="${COLOR_PRIMARY}"/>
-  <rect x="0" y="120" width="${W}" height="8" fill="${COLOR_ACCENT}"/>
-  <text x="${pad}" y="76" font-family="NanumGothic ExtraBold" font-size="40" fill="#FFFFFF">${escapeXml(BRAND)}</text>
-  <text x="${W - pad}" y="76" text-anchor="end" font-family="NanumGothic" font-size="24" fill="#CFE3F5">행사 안내</text>
-  ${photoEl}
+  <rect width="${W}" height="${H}" fill="url(#bg)"/>
+  <path d="M0,360 L1080,150 L1080,360 L0,540 Z" fill="${NAVY2}" opacity="0.5"/>
+  <path d="M0,372 L1080,162" stroke="${GOLD}" stroke-width="3" opacity="0.8"/>
+  <rect x="${pad}" y="50" width="220" height="56" rx="28" fill="${GOLD}"/>
+  <text x="${pad + 110}" y="88" text-anchor="middle" font-family="NanumGothic ExtraBold" font-size="30" fill="${NAVY}">${escapeXml(POSTER_PARTY)}</text>
+  <text x="${W - pad}" y="90" text-anchor="end" font-family="NanumGothic Bold" font-size="32" fill="${GOLD}">${escapeXml(POSTER_REGION)}</text>
   ${titleEls}
-  ${ruleEl}
-  ${r1.el}
-  ${r2.el}
+  <rect x="${pad + 2}" y="${hb + 24}" width="120" height="8" rx="4" fill="${GOLD}"/>
+  <rect x="${px - 5}" y="${py - 5}" width="${pw + 10}" height="${ph + 10}" rx="28" fill="none" stroke="${GOLD}" stroke-width="5"/>
+  ${photoEl}
+  <rect x="${pad - 12}" y="${ipy}" width="${innerW + 24}" height="${panelH}" rx="22" fill="${NAVY2}" opacity="0.55"/>
+  ${infoEls.join("")}
   ${bodyEls}
-  <rect x="0" y="${H - 70}" width="${W}" height="70" fill="#F2F5F9"/>
-  <text x="${pad}" y="${H - 28}" font-family="NanumGothic Bold" font-size="22" fill="${COLOR_PRIMARY}">MOIDA</text>
-  <text x="${W - pad}" y="${H - 28}" text-anchor="end" font-family="NanumGothic" font-size="20" fill="#8895A6">${escapeXml(BRAND)} · 모이다 자동생성</text>
+  <rect x="0" y="${H - 120}" width="${W}" height="120" fill="#08182F"/>
+  <rect x="0" y="${H - 120}" width="${W}" height="5" fill="${GOLD}"/>
+  <circle cx="${pad + 30}" cy="${H - 60}" r="32" fill="none" stroke="${GOLD}" stroke-width="3"/>
+  <text x="${pad + 30}" y="${H - 50}" text-anchor="middle" font-family="NanumGothic Bold" font-size="26" fill="${GOLD}">의회</text>
+  <text x="${pad + 90}" y="${H - 68}" font-family="NanumGothic" font-size="26" fill="#AEBBD0">${escapeXml(POSTER_ROLE)}</text>
+  <text x="${pad + 90}" y="${H - 30}" font-family="NanumGothic ExtraBold" font-size="44" fill="#FFFFFF">${escapeXml(POSTER_NAME)}</text>
+  <text x="${W - pad}" y="${H - 50}" text-anchor="end" font-family="NanumGothic Bold" font-size="28" fill="${GOLD}">${escapeXml(POSTER_PARTY)} · ${escapeXml(POSTER_REGION)}</text>
 </svg>`;
 }
 
