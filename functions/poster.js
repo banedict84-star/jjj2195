@@ -18,6 +18,10 @@ if (!admin.apps.length) admin.initializeApp();
 const ANTHROPIC_API_KEY = defineSecret("ANTHROPIC_API_KEY");
 const ANTHROPIC_BASE_URL = defineSecret("ANTHROPIC_BASE_URL");
 const ANTHROPIC_MODEL = defineSecret("ANTHROPIC_MODEL");
+// 카카오 "나에게 보내기"용 (콜백 미사용 시 결과를 나와의 채팅으로 전송)
+const KAKAO_REST_API_KEY = defineSecret("KAKAO_REST_API_KEY");
+const KAKAO_REFRESH_TOKEN = defineSecret("KAKAO_REFRESH_TOKEN");
+const KAKAO_CLIENT_SECRET = defineSecret("KAKAO_CLIENT_SECRET");
 
 const AUTH_BASE = "https://asia-northeast3-jjj2195-1bd15.cloudfunctions.net";
 const BRAND = "장윤정 의원실";
@@ -427,13 +431,85 @@ async function buildPoster(input, secrets) {
   return { message, imageUrl, fields };
 }
 
-// ── 5) 콜백 워커: kakaoSkill이 호출 → 무거운 작업 후 콜백 URL로 회신 ──────
+// ── 4-b) 카카오 "나에게 보내기" (콜백 없이 결과 전송) ───────────────────
+async function getKakaoAccessToken() {
+  const rk = (optionalSecret(KAKAO_REST_API_KEY) || "").trim();
+  const rt = (optionalSecret(KAKAO_REFRESH_TOKEN) || "").trim();
+  const body = { grant_type: "refresh_token", client_id: rk, refresh_token: rt };
+  const cs = (optionalSecret(KAKAO_CLIENT_SECRET) || "").trim();
+  if (cs) body.client_secret = cs;
+  const res = await axios.post(
+    "https://kauth.kakao.com/oauth/token",
+    new URLSearchParams(body),
+    { headers: { "Content-Type": "application/x-www-form-urlencoded" }, timeout: 8000 }
+  );
+  return res.data.access_token;
+}
+
+async function kakaoMemoSend(templateObject, accessToken) {
+  await axios.post(
+    "https://kapi.kakao.com/v2/api/talk/memo/default/send",
+    new URLSearchParams({ template_object: JSON.stringify(templateObject) }),
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      timeout: 8000,
+    }
+  );
+}
+
+// 자보 이미지(feed) + 전체 문구(text)를 나와의 채팅으로 전송
+async function sendPosterToMe(result) {
+  const at = await getKakaoAccessToken();
+  const title = result.fields.title || "행사 웹자보";
+  await kakaoMemoSend(
+    {
+      object_type: "feed",
+      content: {
+        title: `🎨 ${title}`,
+        description:
+          "모이다가 만든 행사 웹자보입니다. 탭하면 원본 이미지를 볼 수 있어요.",
+        image_url: result.imageUrl,
+        image_width: 880,
+        image_height: 1245,
+        link: { web_url: result.imageUrl, mobile_web_url: result.imageUrl },
+      },
+      buttons: [
+        {
+          title: "자보 이미지 열기",
+          link: { web_url: result.imageUrl, mobile_web_url: result.imageUrl },
+        },
+      ],
+    },
+    at
+  );
+  await kakaoMemoSend(
+    {
+      object_type: "text",
+      text: result.message,
+      link: { web_url: result.imageUrl, mobile_web_url: result.imageUrl },
+      button_title: "자보 이미지 열기",
+    },
+    at
+  );
+}
+
+// ── 5) 콜백 워커: kakaoSkill 호출 → 자보 생성 후 "나에게 보내기"(+콜백) ────
 exports.posterWorker = onRequest(
   {
     region: "asia-northeast3",
     timeoutSeconds: 120,
     memory: "512MiB",
-    secrets: [ANTHROPIC_API_KEY, ANTHROPIC_BASE_URL, ANTHROPIC_MODEL],
+    secrets: [
+      ANTHROPIC_API_KEY,
+      ANTHROPIC_BASE_URL,
+      ANTHROPIC_MODEL,
+      KAKAO_REST_API_KEY,
+      KAKAO_REFRESH_TOKEN,
+      KAKAO_CLIENT_SECRET,
+    ],
   },
   async (req, res) => {
     const body = req.body || {};
@@ -474,17 +550,29 @@ exports.posterWorker = onRequest(
         "| callbackUrl present:",
         !!callbackUrl
       );
+
+      // 콜백이 켜져 있으면 채널 대화로 바로 회신
       if (callbackUrl) {
-        await axios.post(callbackUrl, skillResponse, {
-          headers: { "Content-Type": "application/json" },
-          timeout: 8000,
-        });
-        console.log("posterWorker callback POSTED to:", callbackUrl);
-      } else {
-        console.warn(
-          "posterWorker: callbackUrl 없음 → 결과 회신 불가. 오픈빌더 콜백 설정 필요."
-        );
+        try {
+          await axios.post(callbackUrl, skillResponse, {
+            headers: { "Content-Type": "application/json" },
+            timeout: 8000,
+          });
+          console.log("posterWorker callback POSTED");
+        } catch (e) {
+          console.warn("콜백 전송 실패:", e.message);
+        }
       }
+
+      // 콜백 유무와 무관하게 "나에게 보내기"로도 전송 (현재 기본 전달 경로)
+      try {
+        await sendPosterToMe(result);
+        console.log("posterWorker 나에게 보내기 전송 완료");
+      } catch (e) {
+        const detail = e.response ? JSON.stringify(e.response.data) : e.message;
+        console.error("나에게 보내기 전송 실패:", detail);
+      }
+
       res.json({ ok: true, imageUrl: result.imageUrl });
     } catch (e) {
       console.error("posterWorker FAILED:", e.message);
