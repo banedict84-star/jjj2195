@@ -563,15 +563,49 @@ async function generateSvgDesign(fields, opts) {
   return null;
 }
 
-// 자보 1건 생성: 문구 + 이미지 URL 반환
-async function buildPoster(input, secrets) {
-  const fields = parseBriefFields(input.brief);
-  // 명시 필드가 들어오면 우선
-  if (input.title) fields.title = input.title;
-  if (input.datetime) fields.datetime = input.datetime;
-  if (input.location) fields.location = input.location;
+// AI가 원문을 구조화된 필드(JSON)로 정리. 창작 금지·날짜 변환·빈값 허용.
+async function aiExtractFields(brief, opts) {
+  if (!opts || !opts.openaiKey) return null;
+  const today = (opts && opts.today) || "";
+  const sys =
+    `너는 행사 안내문에서 정보를 정확히 추출하는 도우미다. 아래 '원문'에서 다음을 JSON으로만 출력하라(다른 텍스트·마크다운 금지):\n` +
+    `{"title":"행사명","datetime":"일시","location":"장소","body":"핵심 내용 1~2문장"}\n` +
+    `[규칙]\n` +
+    `- 원문에 없는 내용을 절대 지어내지 마라(슬로건·표어·장소 창작 금지). 모르는 값은 빈 문자열 "".\n` +
+    (today
+      ? `- '오늘/내일/모레/이번 주' 같은 표현은 기준날짜(${today})로 실제 날짜(예: 2026년 6월 25일(목) 오후 4시)로 변환.\n`
+      : "") +
+    `- title은 원문 기반으로 자연스럽게(예: "업사이클링 행사 참석함" → "업사이클링 행사").\n` +
+    `- body는 원문 내용을 사실대로 정리만. 과장·창작 금지.`;
+  try {
+    const raw = await openaiChat(sys, `원문: ${brief}`, {
+      apiKey: opts.openaiKey,
+      model: opts.openaiModel || "gpt-4o-mini",
+      temperature: 0.2,
+      maxTokens: 500,
+      timeout: 18000,
+    });
+    const m = raw.match(/\{[\s\S]*\}/);
+    if (!m) return null;
+    const o = JSON.parse(m[0]);
+    return {
+      title: String(o.title || "").trim(),
+      datetime: String(o.datetime || "").trim(),
+      location: String(o.location || "").trim(),
+      body: String(o.body || "").trim(),
+    };
+  } catch (e) {
+    console.warn("aiExtractFields 실패:", e.message);
+    return null;
+  }
+}
 
-  // GPT가 '오늘/내일' 등을 실제 날짜로 풀 수 있게 기준 날짜 제공(KST)
+// 자보 1건 생성: 문구 + 이미지 URL 반환
+// 기본: AI가 내용만 정리 → 검증된 템플릿으로 렌더(일관된 품질).
+// secrets.freeDesign === true 일 때만 GPT가 디자인까지 직접(실험적).
+async function buildPoster(input, secrets) {
+  let fields = parseBriefFields(input.brief);
+
   let today = "";
   try {
     today = new Intl.DateTimeFormat("ko-KR", {
@@ -585,24 +619,42 @@ async function buildPoster(input, secrets) {
   const aiOpts = { ...(secrets || {}), rawBrief: input.brief, today };
 
   const photoUri = await fetchImageDataUri(input.imageUrl);
-  const [message, aiSvg] = await Promise.all([
+  const [message, aiFields] = await Promise.all([
     generateMessage(fields, aiOpts),
-    secrets && secrets.aiDesign === false
-      ? Promise.resolve(null)
-      : generateSvgDesign(fields, aiOpts),
+    aiExtractFields(input.brief, aiOpts),
   ]);
 
+  // AI 추출 필드 우선 적용(빈 값은 무시)
+  if (aiFields) {
+    fields = {
+      title: aiFields.title || fields.title,
+      datetime: aiFields.datetime || fields.datetime,
+      location: aiFields.location || fields.location,
+      body: aiFields.body || fields.body,
+    };
+  }
+  // 명시 필드가 들어오면 최우선
+  if (input.title) fields.title = input.title;
+  if (input.datetime) fields.datetime = input.datetime;
+  if (input.location) fields.location = input.location;
+
   let svg;
-  let designedBy;
-  if (aiSvg) {
-    const placeholder =
-      "data:image/svg+xml;base64," +
-      Buffer.from(
-        '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><rect width="10" height="10" fill="#E9EEF5"/></svg>'
-      ).toString("base64");
-    svg = aiSvg.split("__PHOTO__").join(photoUri || placeholder);
-    designedBy = "ai";
-  } else {
+  let designedBy = "template";
+
+  // (실험적) GPT가 디자인까지 직접 — freeDesign 켰을 때만
+  if (secrets && secrets.freeDesign) {
+    const aiSvg = await generateSvgDesign(fields, aiOpts);
+    if (aiSvg) {
+      const placeholder =
+        "data:image/svg+xml;base64," +
+        Buffer.from(
+          '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><rect width="10" height="10" fill="#E9EEF5"/></svg>'
+        ).toString("base64");
+      svg = aiSvg.split("__PHOTO__").join(photoUri || placeholder);
+      designedBy = "ai-free";
+    }
+  }
+  if (!svg) {
     svg = buildSvg(fields, photoUri);
     designedBy = "template";
   }
@@ -892,7 +944,7 @@ exports.testPoster = onRequest(
           baseURL: optionalSecret(ANTHROPIC_BASE_URL),
           model: optionalSecret(ANTHROPIC_MODEL),
           openaiKey: optionalSecret(OPENAI_API_KEY),
-          aiDesign: req.query.ai !== "0",
+          freeDesign: req.query.free === "1",
         }
       );
       if (req.query.format === "json") {
