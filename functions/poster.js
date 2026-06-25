@@ -258,8 +258,14 @@ function extractMessage(raw) {
       return null;
     }
   }
-  // 잔여 구분자/코드펜스 제거
-  t = t.replace(/<<<MSG>>>|<<<END>>>/g, "").replace(/^```[\s\S]*?\n|```$/g, "").trim();
+  // 잔여 구분자/코드펜스/마크다운 제거
+  t = t
+    .replace(/<<<MSG>>>|<<<END>>>/g, "")
+    .replace(/^```[\s\S]*?\n|```$/g, "")
+    .replace(/\*\*/g, "") // 볼드 마크다운
+    .replace(/^#{1,6}\s*/gm, "") // 헤딩 마크다운
+    .replace(/[ \t]+$/gm, "")
+    .trim();
   // 너무 짧거나 비면 폴백
   return t.length >= 10 ? t : null;
 }
