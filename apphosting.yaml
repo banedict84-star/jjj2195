@@ -17,10 +17,15 @@ env:
       - BUILD
       - RUNTIME
 
-  # OpenAI API 키 — Secret Manager 의 'OPENAI_API_KEY' 시크릿을 참조 (런타임 전용)
-  # 사전에 아래 명령으로 시크릿을 등록해야 한다:
-  #   firebase apphosting:secrets:set OPENAI_API_KEY
-  - variable: OPENAI_API_KEY
-    secret: OPENAI_API_KEY
-    availability:
-      - RUNTIME
+  # ──────────────────────────────────────────────────────────────
+  # OpenAI 실제 호출을 켜려면(선택):
+  #   1) 터미널에서:  firebase apphosting:secrets:set OPENAI_API_KEY
+  #      (새 OpenAI 키 입력 → 백엔드 접근 권한 부여 yes)
+  #   2) 아래 주석을 해제하고 다시 푸시
+  #
+  # - variable: OPENAI_API_KEY
+  #   secret: OPENAI_API_KEY
+  #   availability:
+  #     - RUNTIME
+  # ──────────────────────────────────────────────────────────────
+  # 키가 없어도 AI 비서실장은 로컬 데이터 분석으로 정상 동작합니다.
