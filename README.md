@@ -1,30 +1,37 @@
 # 장윤정 AI 비서실 (Jang Yoonjeong AI Secretary)
 
-의원실 통합 업무 관리 플랫폼. PRD 기반으로 **Next.js + TypeScript + TailwindCSS + Supabase + OpenAI** 스택으로 새로 구축합니다.
+의원실 통합 업무 관리 플랫폼. PRD 50개 섹션을 바탕으로 **Next.js + TypeScript + TailwindCSS** 로 구축한 단일 페이지 앱입니다. 설계 문서는 [`docs/`](./docs) 참고.
 
-> 설계 제안서는 [`docs/`](./docs) 참고. 본 README는 MVP 1단계인 **AI 비서실장** 구현 기준입니다.
+## ✨ 특징
 
-## 현재 구현 범위 (MVP 1단계)
+- **외부 서비스 없이 바로 동작** — 데이터는 브라우저 `localStorage` 기반 자체 스토어에 저장되어, Supabase/OpenAI 연결 없이도 모든 모듈(등록·수정·삭제·검색·통계)이 실제로 작동합니다.
+- **AI 비서실장** — OpenAI 키가 있으면 OpenAI로, 없거나 막혀 있으면 **로컬 데이터 기반 폴백 분석**으로 항상 응답합니다. 결과는 `핵심요약 → 상황분석 → 추천행동 → 다음할일` 4단 포맷.
+- **역할 기반 메뉴** — 의원/정책지원관/비서/홍보담당/조직담당 5개 역할별 메뉴 노출 (상단바에서 전환 가능, 추후 로그인 세션으로 대체).
 
-✅ **AI 비서실장** — 자연어 요청을 6개 업무(민원·조직·일정·홍보·정책·뉴스)로 분류하고
-`핵심요약 → 상황분석 → 추천행동 → 다음할일` 4단 포맷으로 응답.
+## 📦 구현된 모듈
 
-- `app/secretary` — 채팅형 입력 UI + 4단 결과 카드
-- `app/api/secretary/route.ts` — REST 엔드포인트 (입력 Zod 검증)
-- `lib/openai/secretary.ts` — OpenAI structured output 으로 4단 포맷 강제
-- `lib/secretary/log.ts` — Supabase `ai_requests` 로깅 (선택)
+| 메뉴 | 경로 | 내용 | PRD |
+|------|------|------|-----|
+| 대시보드 | `/dashboard` | KPI + 오늘의 AI 브리핑 + 최근활동 (실시간 집계) | 6 |
+| AI 비서실장 | `/secretary` | 자연어 → 6개 업무 분류 + 4단 응답 | 5 |
+| CRM | `/crm` | 인물 관리 + 연락 이력 | 7~10 |
+| 민원 | `/minwon` | 접수·처리·상태관리·통계 | 11~14 |
+| 일정·행사 | `/schedule` | 일정·참석자·결과보고 | 15~18 |
+| 홍보실 | `/pr` | 웹자보(PNG) + 보도자료·SNS·문자 생성 | 19~23 |
+| 정책 | `/policy` | 5분발언·도정질문·조례검토 (AI 초안) | 24~27 |
+| 뉴스 | `/news` | 모니터링 + 아침/저녁 보고 | 28~31 |
+| 관리 | `/admin` | 데이터 현황·초기화·역할 권한 | 44~45 |
 
 ## 시작하기
 
 ```bash
 npm install
-cp .env.example .env.local   # OPENAI_API_KEY 입력
-npm run dev                  # http://localhost:3000
+npm run dev          # http://localhost:3000
 ```
 
-- **필수**: `OPENAI_API_KEY` (없으면 친절한 503 오류 반환)
-- **선택**: Supabase 환경변수 설정 시 요청 로그가 `ai_requests` 에 저장됨
-  - 스키마: `supabase/migrations/0001_ai_requests.sql`
+- 추가 설정 없이 바로 동작합니다(샘플 데이터 포함).
+- **AI 실제 호출**을 쓰려면: `cp .env.example .env.local` 후 `OPENAI_API_KEY` 입력.
+  - 키가 없어도 비서실장/홍보/정책은 로컬 폴백 또는 직접 입력으로 동작합니다.
 
 ## 스크립트
 
@@ -33,16 +40,16 @@ npm run dev                  # http://localhost:3000
 | `npm run dev` | 개발 서버 |
 | `npm run build` | 프로덕션 빌드 |
 | `npm run typecheck` | 타입 검사 |
-| `npm run lint` | 린트 |
 
-## 다음 단계 (로드맵)
+## 데이터 저장
 
-2. 인증/권한 (Supabase Auth + 역할별 RLS)
-3. 대시보드 (KPI + 오늘의 AI 브리핑)
-4. CRM · 민원 · 일정 모듈 (MVP 완성)
-5. 홍보/정책/뉴스 생성 → 선거캠프 확장 (PRD 49)
+현재 데이터는 **브라우저 localStorage** 에 저장됩니다(기기/브라우저 단위). 관리 메뉴에서 초기화할 수 있습니다. 추후 Supabase 연동 시 서버 DB(`docs/02-데이터모델.md` 스키마)로 대체하며, 마이그레이션 SQL 은 `supabase/migrations/` 에 있습니다.
+
+## 배포
+
+Vercel 에 배포하면 어디서나 접속 가능한 링크가 생기고 OpenAI 호출도 정상 작동합니다.
+저장소를 Vercel 에 연결하고 환경변수(`OPENAI_API_KEY`)만 설정하면 됩니다.
 
 ## 참고 (기존 자산)
 
-루트의 `MOIDA *.html`, `index.html`, `admin.html` 등은 이전 Firebase 기반 프로토타입으로,
-신규 플랫폼 구축의 **참고용**으로만 보존합니다.
+루트의 `MOIDA *.html`, `index.html` 등은 이전 Firebase 기반 프로토타입으로 참고용으로만 보존합니다.

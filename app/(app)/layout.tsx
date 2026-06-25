@@ -1,6 +1,7 @@
 import { RoleProvider } from "@/components/shell/RoleContext";
 import Sidebar from "@/components/shell/Sidebar";
 import Topbar from "@/components/shell/Topbar";
+import ClientOnly from "@/components/ClientOnly";
 
 export default function AppLayout({
   children,
@@ -13,7 +14,9 @@ export default function AppLayout({
         <Sidebar />
         <div className="flex min-w-0 flex-1 flex-col">
           <Topbar />
-          <div className="flex-1 overflow-y-auto">{children}</div>
+          <div className="flex-1 overflow-y-auto">
+            <ClientOnly>{children}</ClientOnly>
+          </div>
         </div>
       </div>
     </RoleProvider>

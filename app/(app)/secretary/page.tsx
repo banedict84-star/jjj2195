@@ -3,6 +3,8 @@
 import { useState } from "react";
 import ResultCard from "@/components/secretary/ResultCard";
 import type { SecretaryResult } from "@/lib/validators/secretary";
+import { useDB } from "@/lib/store/useDB";
+import { localAnalyze } from "@/lib/secretary/localAnalyze";
 
 const EXAMPLES = [
   "오늘 들어온 교통 민원들 정리하고 처리 방향 알려줘",
@@ -14,9 +16,11 @@ const EXAMPLES = [
 interface HistoryItem {
   input: string;
   result: SecretaryResult;
+  offline?: boolean;
 }
 
 export default function SecretaryPage() {
+  const db = useDB();
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,12 +39,18 @@ export default function SecretaryPage() {
       });
       const json = await res.json();
       if (!res.ok) {
-        throw new Error(json?.error?.message ?? "요청에 실패했습니다.");
+        // OpenAI 미가용(키 없음/네트워크 차단) → 로컬 데이터 기반 폴백 분석
+        const result = localAnalyze(trimmed, db);
+        setHistory((h) => [{ input: trimmed, result, offline: true }, ...h]);
+        setInput("");
+        return;
       }
       setHistory((h) => [{ input: trimmed, result: json.data }, ...h]);
       setInput("");
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "알 수 없는 오류가 발생했습니다.");
+    } catch {
+      const result = localAnalyze(trimmed, db);
+      setHistory((h) => [{ input: trimmed, result, offline: true }, ...h]);
+      setInput("");
     } finally {
       setLoading(false);
     }
@@ -117,9 +127,16 @@ export default function SecretaryPage() {
         )}
         {history.map((item, i) => (
           <div key={i}>
-            <p className="mb-2 text-sm font-medium text-slate-500">
-              “{item.input}”
-            </p>
+            <div className="mb-2 flex items-center gap-2">
+              <p className="text-sm font-medium text-slate-500">
+                “{item.input}”
+              </p>
+              {item.offline && (
+                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-500">
+                  오프라인 분석(로컬 데이터)
+                </span>
+              )}
+            </div>
             <ResultCard result={item.result} />
           </div>
         ))}
