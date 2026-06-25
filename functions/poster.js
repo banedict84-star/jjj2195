@@ -8,6 +8,8 @@ const path = require("path");
 const Anthropic = require("@anthropic-ai/sdk");
 const { Resvg } = require("@resvg/resvg-js");
 const sharp = require("sharp");
+const puppeteer = require("puppeteer-core");
+const chromium = require("@sparticuz/chromium");
 
 // 정식 Storage 버킷(없으면 Firestore 폴백). create_bucket 워크플로우로 1회 생성.
 const STORAGE_BUCKET_NAME = "jjj2195-1bd15-moida";
@@ -486,6 +488,94 @@ async function renderImage(svg) {
   }
 }
 
+// ── 3-b) HTML/CSS 템플릿 → 헤드리스 크롬 → JPG ─────────────────────────
+let FONT_B64 = null;
+function fontB64() {
+  if (FONT_B64) return FONT_B64;
+  const d = path.join(__dirname, "assets");
+  FONT_B64 = {
+    reg: fs.readFileSync(path.join(d, "NanumGothic.ttf")).toString("base64"),
+    bold: fs.readFileSync(path.join(d, "NanumGothic-Bold.ttf")).toString("base64"),
+    xb: fs.readFileSync(path.join(d, "NanumGothic-ExtraBold.ttf")).toString("base64"),
+  };
+  return FONT_B64;
+}
+
+function esc(s) {
+  return String(s == null ? "" : s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+// 밝은 카드뉴스 HTML 템플릿 (장윤정 경기도의원 스타일)
+function htmlTemplate(f, photoDataUri) {
+  const ft = fontB64();
+  const photoCss = photoDataUri
+    ? `background:url('${photoDataUri}') center/cover`
+    : `background:linear-gradient(135deg,#7f9fce,#cdddf0)`;
+  const info = [];
+  if (f.datetime)
+    info.push(`<div><span class="l">일시</span><span class="v">${esc(f.datetime)}</span></div>`);
+  if (f.location)
+    info.push(`<div><span class="l">장소</span><span class="v">${esc(f.location)}</span></div>`);
+  return `<!doctype html><html><head><meta charset="utf-8"><style>
+@font-face{font-family:NG;src:url(data:font/ttf;base64,${ft.reg});font-weight:400}
+@font-face{font-family:NG;src:url(data:font/ttf;base64,${ft.bold});font-weight:700}
+@font-face{font-family:NG;src:url(data:font/ttf;base64,${ft.xb});font-weight:800}
+*{margin:0;padding:0;box-sizing:border-box}
+body{width:1080px;height:1350px;font-family:NG;display:flex;flex-direction:column;background:linear-gradient(180deg,#fff,#eaf2fc 72%,#dcebfa)}
+.photo{flex:none;height:600px;position:relative;${photoCss};clip-path:polygon(0 0,100% 0,100% 100%,0 86%)}
+.logo{position:absolute;top:42px;right:54px;background:#0B2A5B;color:#fff;border-radius:14px;padding:11px 22px;text-align:center;line-height:1.12}
+.logo .s{font-size:18px;color:#9fc0ff}.logo .b{font-size:30px;font-weight:800}
+.main{flex:1;display:flex;flex-direction:column;padding:42px 72px 0;min-height:0}
+.tag{color:#0B2A5B;font-weight:700;font-size:29px;line-height:1.35;margin-bottom:14px}
+.tag b{color:#1A4FB4;font-weight:800}
+.head{font-size:88px;font-weight:800;color:#1A4FB4;line-height:1.1;letter-spacing:-1px}
+.bar{width:170px;height:12px;background:#7FC241;border-radius:6px;margin:18px 0 26px}
+.info{display:flex;gap:50px;font-size:31px;margin-bottom:24px;flex-wrap:wrap}
+.info .l{color:#1A4FB4;font-weight:800;margin-right:14px}.info .v{color:#0B2A5B;font-weight:700}
+.body{background:#fff;border-radius:26px;box-shadow:0 12px 34px rgba(60,90,140,.16);padding:40px 46px;font-size:33px;font-weight:700;color:#2b3b53;line-height:1.55}
+.foot{margin-top:auto;padding:26px 0 30px}
+.foot .r{font-size:30px;color:#0B2A5B;font-weight:700}
+.foot .n{font-size:92px;font-weight:800;color:#0B2A5B;letter-spacing:8px;line-height:1.05}
+.bar2{flex:none;height:52px;background:#0B2A5B;color:#cfe0ff;font-size:23px;display:flex;align-items:center;justify-content:center;gap:24px}
+</style></head><body>
+<div class="photo"><div class="logo"><div class="s">더불어</div><div class="b">민주당</div></div></div>
+<div class="main">
+  <div class="tag">${esc(POSTER_SLOGAN1)}<br><b>${esc(POSTER_SLOGAN2)}</b></div>
+  <div class="head">${esc(f.title || "행사 안내")}</div>
+  <div class="bar"></div>
+  <div class="info">${info.join("")}</div>
+  <div class="body">${esc(f.body || "")}</div>
+  <div class="foot"><div class="r">경기도의회 ${esc(POSTER_PARTY)} · 도의원</div><div class="n">${esc(POSTER_NAME)}</div></div>
+</div>
+<div class="bar2"><span>${esc(POSTER_BLOG)}</span><span>·</span><span>instagram ${esc(POSTER_INSTA)}</span></div>
+</body></html>`;
+}
+
+// HTML → 1080x1350 JPG Buffer (서버리스: 호출마다 launch/close)
+async function renderHtmlImage(html) {
+  const browser = await puppeteer.launch({
+    args: chromium.args,
+    executablePath: await chromium.executablePath(),
+    headless: chromium.headless,
+    defaultViewport: { width: 1080, height: 1350, deviceScaleFactor: 1 },
+  });
+  try {
+    const page = await browser.newPage();
+    await page.setViewport({ width: 1080, height: 1350, deviceScaleFactor: 1 });
+    await page.setContent(html, { waitUntil: "load", timeout: 30000 });
+    return await page.screenshot({
+      type: "jpeg",
+      quality: 90,
+      clip: { x: 0, y: 0, width: 1080, height: 1350 },
+    });
+  } finally {
+    await browser.close().catch(() => {});
+  }
+}
+
 // ── 4) PNG 호스팅 (Storage 우선 → 실패 시 Firestore + posterImage 서빙) ──
 function projectId() {
   return (
@@ -725,10 +815,9 @@ async function buildPoster(input, secrets) {
   if (input.datetime) fields.datetime = input.datetime;
   if (input.location) fields.location = input.location;
 
-  let svg;
-  let designedBy = "template";
+  let buffer, contentType, ext, designedBy;
 
-  // (실험적) GPT가 디자인까지 직접 — freeDesign 켰을 때만
+  // (실험적) GPT가 SVG 디자인까지 직접 — freeDesign 켰을 때만
   if (secrets && secrets.freeDesign) {
     const aiSvg = await generateSvgDesign(fields, aiOpts);
     if (aiSvg) {
@@ -737,24 +826,30 @@ async function buildPoster(input, secrets) {
         Buffer.from(
           '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><rect width="10" height="10" fill="#E9EEF5"/></svg>'
         ).toString("base64");
-      svg = aiSvg.split("__PHOTO__").join(photoUri || placeholder);
+      const svg = aiSvg.split("__PHOTO__").join(photoUri || placeholder);
+      ({ buffer, contentType, ext } = await renderImage(svg));
       designedBy = "ai-free";
     }
   }
-  if (!svg) {
-    svg = buildSvg(fields, photoUri, bgUri);
-    designedBy = bgUri ? "hybrid" : "template";
+
+  // 기본: HTML/CSS 템플릿을 헤드리스 크롬으로 렌더
+  if (!buffer && secrets && secrets.htmlRender !== false) {
+    try {
+      buffer = await renderHtmlImage(htmlTemplate(fields, photoUri));
+      contentType = "image/jpeg";
+      ext = "jpg";
+      designedBy = "html";
+    } catch (e) {
+      console.warn("HTML 렌더 실패 → SVG 템플릿 폴백:", e.message);
+    }
   }
 
-  let buffer, contentType, ext;
-  try {
-    ({ buffer, contentType, ext } = await renderImage(svg));
-  } catch (e) {
-    console.warn("렌더 실패, 기본 배경으로 재시도:", e.message);
-    svg = buildSvg(fields, photoUri);
-    designedBy = "template";
-    ({ buffer, contentType, ext } = await renderImage(svg));
+  // 폴백: SVG 템플릿(resvg)
+  if (!buffer) {
+    ({ buffer, contentType, ext } = await renderImage(buildSvg(fields, photoUri, bgUri)));
+    designedBy = bgUri ? "hybrid" : "template-svg";
   }
+
   const imageUrl = await hostImage(buffer, ext, contentType);
   return { message, imageUrl, fields, designedBy };
 }
@@ -830,7 +925,7 @@ exports.posterWorker = onRequest(
   {
     region: "asia-northeast3",
     timeoutSeconds: 120,
-    memory: "512MiB",
+    memory: "2GiB",
     secrets: [
       ANTHROPIC_API_KEY,
       ANTHROPIC_BASE_URL,
@@ -974,7 +1069,7 @@ exports.testPoster = onRequest(
   {
     region: "asia-northeast3",
     timeoutSeconds: 120,
-    memory: "512MiB",
+    memory: "2GiB",
     secrets: [
       ANTHROPIC_API_KEY,
       ANTHROPIC_BASE_URL,

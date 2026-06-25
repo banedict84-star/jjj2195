@@ -15,11 +15,13 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.40.0",
     "@resvg/resvg-js": "^2.6.2",
+    "@sparticuz/chromium": "^131.0.1",
     "axios": "^1.18.0",
     "cheerio": "^1.2.0",
     "firebase-admin": "^13.10.0",
     "firebase-functions": "^7.2.5",
     "googleapis": "^144.0.0",
+    "puppeteer-core": "^23.11.1",
     "sharp": "^0.33.5"
   }
 }
