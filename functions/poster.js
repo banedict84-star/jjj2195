@@ -375,7 +375,8 @@ async function fetchImageDataUri(url) {
 
 // ── 3) SVG 자보 → PNG ──────────────────────────────────────────────────
 // 남색+골드 카드뉴스 템플릿 (장윤정 경기도의원 스타일)
-function buildSvg(f, photoDataUri) {
+// bgDataUri 가 있으면 AI 생성 배경(글자 없음) 위에 글자·사진을 얹는다(하이브리드).
+function buildSvg(f, photoDataUri, bgDataUri) {
   const W = 1080;
   const H = 1350;
   const pad = 70;
@@ -427,14 +428,21 @@ function buildSvg(f, photoDataUri) {
     .join("");
   const panelH = iy + 22 + bodyLines.length * 44 + 18 - ipy;
 
+  // 배경: AI 생성 배경이 있으면 풀블리드 + 가독성용 남색 스크림, 없으면 그라데이션+스와시
+  const bgEl = bgDataUri
+    ? `<image x="0" y="0" width="${W}" height="${H}" href="${bgDataUri}" preserveAspectRatio="xMidYMid slice"/>` +
+      `<rect width="${W}" height="${H}" fill="${NAVY}" opacity="0.40"/>` +
+      `<rect width="${W}" height="430" fill="${NAVY}" opacity="0.30"/>`
+    : `<rect width="${W}" height="${H}" fill="url(#bg)"/>` +
+      `<path d="M0,360 L1080,150 L1080,360 L0,540 Z" fill="${NAVY2}" opacity="0.5"/>` +
+      `<path d="M0,372 L1080,162" stroke="${GOLD}" stroke-width="3" opacity="0.8"/>`;
+
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${NAVY}"/><stop offset="1" stop-color="#0E2750"/></linearGradient>
     <clipPath id="pc"><rect x="${px}" y="${py}" width="${pw}" height="${ph}" rx="24"/></clipPath>
   </defs>
-  <rect width="${W}" height="${H}" fill="url(#bg)"/>
-  <path d="M0,360 L1080,150 L1080,360 L0,540 Z" fill="${NAVY2}" opacity="0.5"/>
-  <path d="M0,372 L1080,162" stroke="${GOLD}" stroke-width="3" opacity="0.8"/>
+  ${bgEl}
   <rect x="${pad}" y="50" width="220" height="56" rx="28" fill="${GOLD}"/>
   <text x="${pad + 110}" y="88" text-anchor="middle" font-family="NanumGothic ExtraBold" font-size="30" fill="${NAVY}">${escapeXml(POSTER_PARTY)}</text>
   <text x="${W - pad}" y="90" text-anchor="end" font-family="NanumGothic Bold" font-size="32" fill="${GOLD}">${escapeXml(POSTER_REGION)}</text>
@@ -681,10 +689,23 @@ async function buildPoster(input, secrets) {
   } catch (_) {}
   const aiOpts = { ...(secrets || {}), rawBrief: input.brief, today };
 
+  // 하이브리드 배경: GPT 이미지로 글자 없는 고급 배경 생성(기본 ON, bgDesign===false면 OFF)
+  const wantBg =
+    secrets && secrets.openaiKey && secrets.bgDesign !== false && !secrets.freeDesign;
+  const bgPromise = wantBg
+    ? generateDalleImage(dallePrompt(fields, "bg"), { openaiKey: secrets.openaiKey })
+        .then((buf) => (buf ? `data:image/png;base64,${buf.toString("base64")}` : null))
+        .catch((e) => {
+          console.warn("배경 생성 실패 → 기본 배경:", e.message);
+          return null;
+        })
+    : Promise.resolve(null);
+
   const photoUri = await fetchImageDataUri(input.imageUrl);
-  const [message, aiFields] = await Promise.all([
+  const [message, aiFields, bgUri] = await Promise.all([
     generateMessage(fields, aiOpts),
     aiExtractFields(input.brief, aiOpts),
+    bgPromise,
   ]);
 
   // AI 추출 필드 우선 적용(빈 값은 무시)
@@ -718,15 +739,15 @@ async function buildPoster(input, secrets) {
     }
   }
   if (!svg) {
-    svg = buildSvg(fields, photoUri);
-    designedBy = "template";
+    svg = buildSvg(fields, photoUri, bgUri);
+    designedBy = bgUri ? "hybrid" : "template";
   }
 
   let buffer, contentType, ext;
   try {
     ({ buffer, contentType, ext } = await renderImage(svg));
   } catch (e) {
-    console.warn("렌더 실패, 템플릿으로 재시도:", e.message);
+    console.warn("렌더 실패, 기본 배경으로 재시도:", e.message);
     svg = buildSvg(fields, photoUri);
     designedBy = "template";
     ({ buffer, contentType, ext } = await renderImage(svg));
