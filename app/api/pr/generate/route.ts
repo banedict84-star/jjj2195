@@ -30,7 +30,8 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { content } = await generatePoster(parsed.data);
+    const userKey = req.headers.get("x-openai-key") || undefined;
+    const { content } = await generatePoster(parsed.data, userKey);
     return NextResponse.json({ data: content });
   } catch (err) {
     if (err instanceof PosterError) {

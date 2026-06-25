@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useCollection } from "@/lib/store/useDB";
 import { insert, remove, newId, nowISO } from "@/lib/store/db";
 import type { PrType } from "@/lib/store/types";
+import { aiHeaders } from "@/lib/openai/userKey";
 import { Badge } from "@/components/ui/primitives";
 
 const TYPES: Exclude<PrType, "웹자보">[] = ["보도자료", "SNS", "문자"];
@@ -35,7 +36,7 @@ export default function TextPrStudio() {
     try {
       const res = await fetch("/api/pr/text", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...aiHeaders() },
         body: JSON.stringify({ type, topic, tone }),
       });
       const json = await res.json();

@@ -33,7 +33,11 @@ export async function POST(req: NextRequest) {
 
   // 2) AI 비서실장 실행 (분류 + 4단 응답)
   try {
-    const { result, tokens, model } = await runSecretary(parsed.data.input);
+    const userKey = req.headers.get("x-openai-key") || undefined;
+    const { result, tokens, model } = await runSecretary(
+      parsed.data.input,
+      userKey
+    );
 
     // 3) 로깅 (Supabase 설정 시) — 실패해도 응답에 영향 없음
     await logSecretaryRequest({

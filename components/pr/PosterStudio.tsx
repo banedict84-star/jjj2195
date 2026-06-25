@@ -6,6 +6,7 @@ import PosterPreview from "@/components/pr/PosterPreview";
 import { POSTER_THEMES } from "@/lib/pr/themes";
 import type { PosterContent } from "@/lib/validators/pr";
 import { insert, newId, nowISO } from "@/lib/store/db";
+import { aiHeaders } from "@/lib/openai/userKey";
 
 const DEFAULT_CONTENT: PosterContent = {
   headline: "청년 일자리 정책 간담회",
@@ -40,7 +41,7 @@ export default function PosterStudio() {
     try {
       const res = await fetch("/api/pr/generate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...aiHeaders() },
         body: JSON.stringify({ topic, keyMessage, tone }),
       });
       const json = await res.json();

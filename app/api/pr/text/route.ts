@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const client = getOpenAI();
+  const client = getOpenAI(req.headers.get("x-openai-key") || undefined);
   if (!client) {
     return NextResponse.json(
       {

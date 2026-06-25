@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useCollection } from "@/lib/store/useDB";
 import { insert, update, remove, newId, nowISO } from "@/lib/store/db";
+import { aiHeaders } from "@/lib/openai/userKey";
 import type { PolicyItem, PolicyStatus, PolicyType } from "@/lib/store/types";
 import Modal from "@/components/ui/Modal";
 import {
@@ -60,7 +61,7 @@ export default function PolicyPage() {
     try {
       const res = await fetch("/api/policy/generate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...aiHeaders() },
         body: JSON.stringify({
           type: edit.type,
           title: edit.title,

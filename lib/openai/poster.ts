@@ -46,9 +46,10 @@ export class PosterError extends Error {
 }
 
 export async function generatePoster(
-  req: PosterRequest
+  req: PosterRequest,
+  apiKey?: string
 ): Promise<{ content: PosterContent; tokens: number; model: string }> {
-  const client = getOpenAI();
+  const client = getOpenAI(apiKey);
   if (!client) {
     throw new PosterError(
       "NO_API_KEY",

@@ -63,9 +63,10 @@ export class SecretaryError extends Error {
  * @returns 검증된 SecretaryResult 와 사용 토큰 수
  */
 export async function runSecretary(
-  input: string
+  input: string,
+  apiKey?: string
 ): Promise<{ result: SecretaryResult; tokens: number; model: string }> {
-  const client = getOpenAI();
+  const client = getOpenAI(apiKey);
   if (!client) {
     throw new SecretaryError(
       "NO_API_KEY",

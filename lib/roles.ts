@@ -27,6 +27,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/policy", label: "정책", icon: "📑", roles: ["정책지원관", "의원"] },
   { href: "/news", label: "뉴스", icon: "📰", roles: ["정책지원관", "의원"] },
   { href: "/admin", label: "관리", icon: "⚙️", roles: ["의원"] },
+  { href: "/settings", label: "설정", icon: "🔑", roles: "all" },
 ];
 
 /** 의원은 전체 메뉴 접근. 그 외 역할은 자기 업무 + 공통 메뉴만. */
