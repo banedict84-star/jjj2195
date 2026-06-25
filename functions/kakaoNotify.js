@@ -30,6 +30,33 @@ function googleCreds() {
   };
 }
 
+// 브리핑용 구글 자격: 연동된 사용자 토큰(Firestore)을 우선 사용.
+// 공유 GOOGLE_REFRESH_TOKEN 시크릿은 멀티유저 전환/연동해제로 만료됐을 수 있음.
+async function briefingGoogleCreds() {
+  try {
+    const snap = await admin
+      .firestore()
+      .collection("userTokens")
+      .orderBy("linkedAt", "desc")
+      .limit(1)
+      .get();
+    if (!snap.empty) {
+      const d = snap.docs[0].data();
+      if (d.refreshToken) {
+        return {
+          clientId: GOOGLE_CLIENT_ID.value(),
+          clientSecret: GOOGLE_CLIENT_SECRET.value(),
+          refreshToken: d.refreshToken,
+          calendarId: d.calendarId || "primary",
+        };
+      }
+    }
+  } catch (e) {
+    console.warn("briefingGoogleCreds firestore 실패, 공유 토큰 사용:", e.message);
+  }
+  return googleCreds();
+}
+
 // 한국 시각 기준 현재 Date
 function kstNow() {
   const s = new Date().toLocaleString("en-US", { timeZone: TIMEZONE });
@@ -122,7 +149,7 @@ exports.morningBriefing = onSchedule(
   },
   async () => {
     const today = ymdKST(kstNow());
-    const items = await getEventsForDate(today, googleCreds());
+    const items = await getEventsForDate(today, await briefingGoogleCreds());
 
     let text;
     const head = `🌅 좋은 아침입니다!\n${today} (${weekdayKo(today)})`;
