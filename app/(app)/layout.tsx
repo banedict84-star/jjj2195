@@ -1,7 +1,5 @@
 import { RoleProvider } from "@/components/shell/RoleContext";
-import Sidebar from "@/components/shell/Sidebar";
-import Topbar from "@/components/shell/Topbar";
-import ClientOnly from "@/components/ClientOnly";
+import Shell from "@/components/shell/Shell";
 
 export default function AppLayout({
   children,
@@ -10,15 +8,7 @@ export default function AppLayout({
 }) {
   return (
     <RoleProvider>
-      <div className="flex min-h-screen">
-        <Sidebar />
-        <div className="flex min-w-0 flex-1 flex-col">
-          <Topbar />
-          <div className="flex-1 overflow-y-auto">
-            <ClientOnly>{children}</ClientOnly>
-          </div>
-        </div>
-      </div>
+      <Shell>{children}</Shell>
     </RoleProvider>
   );
 }
