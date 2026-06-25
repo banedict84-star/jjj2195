@@ -186,6 +186,67 @@ async function openaiChat(system, user, opts) {
   return (c && c.message && c.message.content) || "";
 }
 
+// OpenAI 이미지 생성(DALL·E / gpt-image-1) → PNG/JPEG Buffer 반환
+async function generateDalleImage(prompt, opts) {
+  const key = opts.openaiKey;
+  if (!key) return null;
+  const call = async (body) => {
+    const res = await axios.post(
+      "https://api.openai.com/v1/images/generations",
+      body,
+      {
+        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+        timeout: 120000,
+      }
+    );
+    const d = res.data && res.data.data && res.data.data[0];
+    if (d && d.b64_json) return Buffer.from(d.b64_json, "base64");
+    if (d && d.url) {
+      const r = await axios.get(d.url, { responseType: "arraybuffer", timeout: 40000 });
+      return Buffer.from(r.data);
+    }
+    return null;
+  };
+  // 1) gpt-image-1 우선(텍스트 렌더 더 나음)
+  try {
+    return await call({ model: "gpt-image-1", prompt, size: "1024x1536", quality: "medium" });
+  } catch (e) {
+    console.warn(
+      "gpt-image-1 실패 → dall-e-3:",
+      e.response ? JSON.stringify(e.response.data).slice(0, 300) : e.message
+    );
+  }
+  // 2) dall-e-3 폴백
+  return await call({
+    model: "dall-e-3",
+    prompt,
+    size: "1024x1792",
+    quality: "standard",
+    response_format: "b64_json",
+  });
+}
+
+function dallePrompt(fields, mode) {
+  if (mode === "bg") {
+    return (
+      "An elegant abstract background for a Korean political party card-news poster, vertical 2:3. " +
+      "Deep navy blue (#0B1F44) with subtle gold (#C9A24B) geometric accents, a soft diagonal gold line, gentle gradient and light bokeh. " +
+      "Absolutely NO text, NO letters, NO words. Leave clean negative space for text to be overlaid later. " +
+      "Modern, premium, official government/party branding aesthetic, high quality."
+    );
+  }
+  const title = (fields && fields.title) || "행사 안내";
+  return (
+    "A professional Korean political event promotional 'card news' poster, vertical 2:3 ratio. " +
+    "Deep navy blue background with elegant gold accents and a diagonal gold line. " +
+    "A gold pill badge at top-left reading '더불어민주당'. The word '안산' in gold at top-right. " +
+    `A large bold white Korean headline reading '${title}'. ` +
+    "A centered photo frame with a thin gold border showing a community event. " +
+    "A navy footer bar at the bottom with gold Korean text '경기도의원 장윤정' and a small round emblem. " +
+    "Clean, modern, official party design, sharp, high quality, realistic. Korean text must be accurate and legible."
+  );
+}
+
 const MSG_SYSTEM =
   `너는 국회의원실 공보 담당자다. 아래 '행사 정보 원문'을 읽고 카카오톡에 그대로 전달할 ` +
   `한국어 홍보 안내문을 작성한다.\n` +
@@ -921,6 +982,28 @@ exports.testPoster = onRequest(
             keyLen: key.length,
             status: e.response && e.response.status,
             data: e.response && e.response.data,
+            msg: e.message,
+          });
+        }
+      }
+
+      // 디버그: DALL·E / gpt-image-1 로 포스터 이미지 생성
+      if (req.query.format === "dalle") {
+        const key = optionalSecret(OPENAI_API_KEY);
+        if (!key) return res.json({ ok: false, reason: "OPENAI_API_KEY 시크릿 없음" });
+        const mode = String(req.query.mode || "full");
+        const fields = parseBriefFields(String(brief));
+        try {
+          const buf = await generateDalleImage(dallePrompt(fields, mode), { openaiKey: key });
+          if (!buf) return res.json({ ok: false, reason: "이미지 응답 없음" });
+          const jpg = await sharp(buf).jpeg({ quality: 88 }).toBuffer();
+          const url = await hostImage(jpg, "jpg", "image/jpeg");
+          return res.json({ ok: true, mode, imageUrl: url });
+        } catch (e) {
+          return res.json({
+            ok: false,
+            status: e.response && e.response.status,
+            data: e.response && JSON.stringify(e.response.data).slice(0, 400),
             msg: e.message,
           });
         }

@@ -44,6 +44,10 @@ on:
         description: "(선택) true 입력 시 AI 생성 SVG 디자인을 받아 출력(로컬 렌더 확인용)"
         required: false
         default: ""
+      test_dalle:
+        description: "(선택) true 입력 시 DALL·E로 포스터 이미지 생성(full+bg) URL 반환"
+        required: false
+        default: ""
 
 jobs:
   deploy:
@@ -164,6 +168,16 @@ jobs:
           curl -s -G "$BASE" --data-urlencode "format=svg" --data-urlencode "brief=$BRIEF" --max-time 110
           echo ""
           echo "=== END AI SVG ==="
+
+      - name: Test DALL-E (optional)
+        if: ${{ github.event.inputs.test_dalle == 'true' }}
+        run: |
+          BRIEF="업사이클링 행사 오늘 4시 참석함"
+          BASE="https://asia-northeast3-jjj2195-1bd15.cloudfunctions.net/testPoster"
+          echo "=== DALL-E full poster ==="
+          curl -s -G "$BASE" --data-urlencode "format=dalle" --data-urlencode "mode=full" --data-urlencode "brief=$BRIEF" --max-time 160 ; echo ""
+          echo "=== DALL-E background only ==="
+          curl -s -G "$BASE" --data-urlencode "format=dalle" --data-urlencode "mode=bg" --data-urlencode "brief=$BRIEF" --max-time 160 ; echo ""
 
       - name: Dump bot logs (optional)
         if: ${{ github.event.inputs.dump_bot_logs == 'true' }}
