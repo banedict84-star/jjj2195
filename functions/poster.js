@@ -408,12 +408,22 @@ exports.posterWorker = onRequest(
         },
       };
 
+      console.log(
+        "posterWorker done:",
+        result.imageUrl,
+        "| callbackUrl present:",
+        !!callbackUrl
+      );
       if (callbackUrl) {
         await axios.post(callbackUrl, skillResponse, {
           headers: { "Content-Type": "application/json" },
           timeout: 8000,
         });
-        console.log("posterWorker callback OK:", result.imageUrl);
+        console.log("posterWorker callback POSTED to:", callbackUrl);
+      } else {
+        console.warn(
+          "posterWorker: callbackUrl 없음 → 결과 회신 불가. 오픈빌더 콜백 설정 필요."
+        );
       }
       res.json({ ok: true, imageUrl: result.imageUrl });
     } catch (e) {

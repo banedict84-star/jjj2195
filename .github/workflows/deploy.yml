@@ -28,6 +28,10 @@ on:
         description: "(선택) true 입력 시 웹자보 샘플 렌더 후 이미지 URL 반환"
         required: false
         default: ""
+      dump_bot_logs:
+        description: "(선택) true 입력 시 kakaoSkill/posterWorker 최근 로그 출력"
+        required: false
+        default: ""
 
 jobs:
   deploy:
@@ -102,6 +106,15 @@ jobs:
         run: |
           echo "=== testPoster (json) ==="
           curl -s "https://asia-northeast3-jjj2195-1bd15.cloudfunctions.net/testPoster?format=json" ; echo ""
+
+      - name: Dump bot logs (optional)
+        if: ${{ github.event.inputs.dump_bot_logs == 'true' }}
+        run: |
+          gcloud auth activate-service-account --key-file="$GOOGLE_APPLICATION_CREDENTIALS"
+          echo "=== kakaoSkill logs (recent) ==="
+          gcloud logging read 'resource.labels.service_name="kakaoskill"' --project=jjj2195-1bd15 --limit=40 --freshness=30m --format="value(timestamp,textPayload,jsonPayload.message)" || true
+          echo "=== posterWorker logs (recent) ==="
+          gcloud logging read 'resource.labels.service_name="posterworker"' --project=jjj2195-1bd15 --limit=40 --freshness=30m --format="value(timestamp,textPayload,jsonPayload.message)" || true
 
       - name: Curl testKakao (synchronous result)
         if: ${{ github.event.inputs.show_logs == 'true' }}
