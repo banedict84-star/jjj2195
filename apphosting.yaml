@@ -1,0 +1,26 @@
+# Firebase App Hosting 런타임 설정
+# 문서: https://firebase.google.com/docs/app-hosting/configure
+
+runConfig:
+  # 의원실 내부용 트래픽 규모 — 비용 절감을 위해 최대 인스턴스 제한
+  maxInstances: 2
+  minInstances: 0
+  concurrency: 80
+  cpu: 1
+  memoryMiB: 512
+
+env:
+  # 사용할 OpenAI 모델 (빌드/런타임 모두 노출)
+  - variable: OPENAI_MODEL
+    value: gpt-4o-mini
+    availability:
+      - BUILD
+      - RUNTIME
+
+  # OpenAI API 키 — Secret Manager 의 'OPENAI_API_KEY' 시크릿을 참조 (런타임 전용)
+  # 사전에 아래 명령으로 시크릿을 등록해야 한다:
+  #   firebase apphosting:secrets:set OPENAI_API_KEY
+  - variable: OPENAI_API_KEY
+    secret: OPENAI_API_KEY
+    availability:
+      - RUNTIME
