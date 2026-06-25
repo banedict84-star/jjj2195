@@ -241,10 +241,10 @@ async function generateDalleImage(prompt, opts) {
 function dallePrompt(fields, mode) {
   if (mode === "bg") {
     return (
-      "An elegant abstract background for a Korean political party card-news poster, vertical 2:3. " +
-      "Deep navy blue (#0B1F44) with subtle gold (#C9A24B) geometric accents, a soft diagonal gold line, gentle gradient and light bokeh. " +
-      "Absolutely NO text, NO letters, NO words. Leave clean negative space for text to be overlaid later. " +
-      "Modern, premium, official government/party branding aesthetic, high quality."
+      "A clean, bright, premium background for a Korean political 'card news' poster, vertical 2:3. " +
+      "Soft white and light sky-blue (#EAF2FC) with very subtle blue geometric accents, gentle clouds, soft light, airy and minimal. " +
+      "Absolutely NO text, NO letters, NO words, NO people. Keep it light and uncluttered with lots of clean negative space for text to be overlaid later. " +
+      "Modern, fresh, hopeful, official party branding aesthetic, high quality."
     );
   }
   const title = (fields && fields.title) || "행사 안내";
@@ -509,11 +509,15 @@ function esc(s) {
 }
 
 // 밝은 카드뉴스 HTML 템플릿 (장윤정 경기도의원 스타일)
-function htmlTemplate(f, photoDataUri) {
+// bgDataUri 가 있으면 GPT 이미지가 만든 밝은 배경을 깔고 위에 글자/사진을 얹는다.
+function htmlTemplate(f, photoDataUri, bgDataUri) {
   const ft = fontB64();
   const photoCss = photoDataUri
     ? `background:url('${photoDataUri}') center/cover`
     : `background:linear-gradient(135deg,#7f9fce,#cdddf0)`;
+  const bodyBg = bgDataUri
+    ? `background:url('${bgDataUri}') center/cover`
+    : `background:linear-gradient(180deg,#fff,#eaf2fc 72%,#dcebfa)`;
   const info = [];
   if (f.datetime)
     info.push(`<div><span class="l">일시</span><span class="v">${esc(f.datetime)}</span></div>`);
@@ -524,7 +528,9 @@ function htmlTemplate(f, photoDataUri) {
 @font-face{font-family:NG;src:url(data:font/ttf;base64,${ft.bold});font-weight:700}
 @font-face{font-family:NG;src:url(data:font/ttf;base64,${ft.xb});font-weight:800}
 *{margin:0;padding:0;box-sizing:border-box}
-body{width:1080px;height:1350px;font-family:NG;display:flex;flex-direction:column;background:linear-gradient(180deg,#fff,#eaf2fc 72%,#dcebfa)}
+body{width:1080px;height:1350px;font-family:NG;display:flex;flex-direction:column;${bodyBg};position:relative}
+body::before{content:"";position:absolute;inset:0;background:rgba(255,255,255,.5);z-index:0}
+body>*{position:relative;z-index:1}
 .photo{flex:none;height:600px;position:relative;${photoCss};clip-path:polygon(0 0,100% 0,100% 100%,0 86%)}
 .logo{position:absolute;top:42px;right:54px;background:#0B2A5B;color:#fff;border-radius:14px;padding:11px 22px;text-align:center;line-height:1.12}
 .logo .s{font-size:18px;color:#9fc0ff}.logo .b{font-size:30px;font-weight:800}
@@ -782,9 +788,9 @@ async function buildPoster(input, secrets) {
   } catch (_) {}
   const aiOpts = { ...(secrets || {}), rawBrief: input.brief, today };
 
-  // 디자인은 코드 템플릿(블루톤)으로. 이미지 생성 AI 배경은 기본 OFF(bgDesign===true일 때만).
+  // GPT 이미지로 밝은 배경 생성(기본 ON) → HTML 템플릿 배경으로 사용. bgDesign===false면 OFF.
   const wantBg =
-    secrets && secrets.openaiKey && secrets.bgDesign === true && !secrets.freeDesign;
+    secrets && secrets.openaiKey && secrets.bgDesign !== false && !secrets.freeDesign;
   const bgPromise = wantBg
     ? generateDalleImage(dallePrompt(fields, "bg"), { openaiKey: secrets.openaiKey })
         .then((buf) => (buf ? `data:image/png;base64,${buf.toString("base64")}` : null))
@@ -832,13 +838,13 @@ async function buildPoster(input, secrets) {
     }
   }
 
-  // 기본: HTML/CSS 템플릿을 헤드리스 크롬으로 렌더
+  // 기본: HTML/CSS 템플릿을 헤드리스 크롬으로 렌더 (GPT 이미지 배경 합성)
   if (!buffer && secrets && secrets.htmlRender !== false) {
     try {
-      buffer = await renderHtmlImage(htmlTemplate(fields, photoUri));
+      buffer = await renderHtmlImage(htmlTemplate(fields, photoUri, bgUri));
       contentType = "image/jpeg";
       ext = "jpg";
-      designedBy = "html";
+      designedBy = bgUri ? "html-aibg" : "html";
     } catch (e) {
       console.warn("HTML 렌더 실패 → SVG 템플릿 폴백:", e.message);
     }
