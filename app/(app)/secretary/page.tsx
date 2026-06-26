@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import ResultCard from "@/components/secretary/ResultCard";
 import type { SecretaryResult } from "@/lib/validators/secretary";
 import { useDB } from "@/lib/store/useDB";
@@ -9,6 +9,7 @@ import { localAnalyze } from "@/lib/secretary/localAnalyze";
 import { aiHeaders } from "@/lib/openai/userKey";
 import { buildContext } from "@/lib/secretary/context";
 import type { SecretaryAction } from "@/lib/validators/secretary";
+import { useSpeech } from "@/lib/useSpeech";
 
 const EXAMPLES = [
   "내일 오후 2시 행신동 주민간담회 일정 잡아줘",
@@ -74,6 +75,23 @@ export default function SecretaryPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [voiceChat, setVoiceChat] = useState(false);
+  const voiceChatRef = useRef(false);
+  voiceChatRef.current = voiceChat;
+
+  const speechRef = useRef<ReturnType<typeof useSpeech> | null>(null);
+
+  // 음성 답변을 읽어주고, 끝나면 다시 듣기(핸즈프리 대화 루프)
+  function speakAnswer(result: SecretaryResult, done?: string) {
+    const sp = speechRef.current;
+    if (!sp || !voiceChatRef.current) return;
+    const text = [done, result.summary, result.recommendation]
+      .filter(Boolean)
+      .join(". ");
+    sp.speak(text, () => {
+      if (voiceChatRef.current) sp.start();
+    });
+  }
 
   async function submit(text: string) {
     const trimmed = text.trim();
@@ -96,18 +114,43 @@ export default function SecretaryPage() {
         const result = localAnalyze(trimmed, db);
         setHistory((h) => [{ input: trimmed, result, offline: true }, ...h]);
         setInput("");
+        speakAnswer(result);
         return;
       }
       const result: SecretaryResult = json.data;
       const done = runAction(result.action);
       setHistory((h) => [{ input: trimmed, result, done }, ...h]);
       setInput("");
+      speakAnswer(result, done);
     } catch {
       const result = localAnalyze(trimmed, db);
       setHistory((h) => [{ input: trimmed, result, offline: true }, ...h]);
       setInput("");
+      speakAnswer(result);
     } finally {
       setLoading(false);
+    }
+  }
+
+  const speech = useSpeech({
+    onResult: (text) => setInput(text),
+    onEnd: (finalText) => {
+      // 음성 대화 모드: 말이 끝나면 자동 전송
+      if (voiceChatRef.current && finalText.trim()) submit(finalText);
+    },
+  });
+  speechRef.current = speech;
+  const { supported: micSupported, listening, start, stop, cancelSpeak } =
+    speech;
+
+  function toggleVoiceChat() {
+    if (voiceChat) {
+      setVoiceChat(false);
+      stop();
+      cancelSpeak();
+    } else {
+      setVoiceChat(true);
+      start();
     }
   }
 
@@ -140,14 +183,53 @@ export default function SecretaryPage() {
           className="w-full resize-none rounded-lg border border-slate-200 p-3 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand"
         />
         <div className="mt-3 flex items-center justify-between">
-          <span className="text-xs text-slate-400">⌘/Ctrl + Enter 로 전송</span>
-          <button
-            type="submit"
-            disabled={loading || !input.trim()}
-            className="rounded-lg bg-brand px-5 py-2 text-sm font-semibold text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            {loading ? "분석 중…" : "요청 보내기"}
-          </button>
+          <span className="text-xs text-slate-400">
+            {voiceChat
+              ? listening
+                ? "🎙️ 말씀하세요…"
+                : "🔊 답변 중…"
+              : listening
+                ? "🎙️ 듣고 있어요…"
+                : "⌘/Ctrl + Enter 로 전송"}
+          </span>
+          <div className="flex items-center gap-2">
+            {micSupported && (
+              <>
+                <button
+                  type="button"
+                  onClick={toggleVoiceChat}
+                  aria-label="음성 대화 모드"
+                  title="음성으로 대화 (말하면 자동 전송 + 답변 읽어줌)"
+                  className={`flex h-9 items-center gap-1 rounded-lg border px-2.5 text-sm transition ${
+                    voiceChat
+                      ? "border-brand bg-brand text-white"
+                      : "border-slate-200 text-slate-500 hover:bg-slate-50"
+                  }`}
+                >
+                  🔊 대화
+                </button>
+                <button
+                  type="button"
+                  onClick={() => (listening ? stop() : start())}
+                  aria-label="음성 입력"
+                  className={`flex h-9 w-9 items-center justify-center rounded-lg border text-lg transition ${
+                    listening
+                      ? "animate-pulse border-rose-300 bg-rose-50 text-rose-600"
+                      : "border-slate-200 text-slate-500 hover:bg-slate-50"
+                  }`}
+                >
+                  🎤
+                </button>
+              </>
+            )}
+            <button
+              type="submit"
+              disabled={loading || !input.trim()}
+              className="rounded-lg bg-brand px-5 py-2 text-sm font-semibold text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {loading ? "분석 중…" : "요청 보내기"}
+            </button>
+          </div>
         </div>
       </form>
 
