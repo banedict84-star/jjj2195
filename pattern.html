@@ -15,7 +15,7 @@
   html,body{ height:100%; }
   body{ font-family:"Pretendard Variable",Pretendard,-apple-system,system-ui,sans-serif;
     background:var(--bg); color:var(--ink); -webkit-font-smoothing:antialiased; letter-spacing:-.01em; }
-  .app{ display:flex; flex-direction:column; min-height:100vh; }
+  .app{ display:flex; flex-direction:column; height:100vh; overflow:hidden; }
 
   /* ===== Top bar ===== */
   .topbar{ display:flex; align-items:center; gap:16px; padding:14px 24px; border-bottom:1px solid var(--line); background:var(--surface); flex-wrap:wrap; }
@@ -108,11 +108,14 @@
   .seg{ display:flex; gap:3px; background:var(--line-soft); border-radius:10px; padding:3px; }
   .seg button{ border:none; background:transparent; padding:7px 13px; border-radius:8px; font-size:13px; font-weight:700; color:var(--ink-2); cursor:pointer; font-family:inherit; display:flex; align-items:center; gap:6px; }
   .seg button.on{ background:var(--surface); color:var(--primary); box-shadow:0 1px 3px rgba(22,26,45,.12); }
+  .seg button i{ font-style:normal; font-size:10px; font-weight:800; color:var(--ink-3); border:1px solid var(--line); border-radius:4px; padding:0 4px; }
+  .seg button.on i{ color:var(--primary); border-color:#c7c3f5; }
   .tool-hint{ font-size:12px; color:var(--ink-3); font-weight:600; }
   .stage-svg{ flex:1; min-height:0; }
   #canvas{ width:100%; height:100%; display:block; }
   #canvas.point-mode{ cursor:crosshair; }
   #canvas.guide-mode{ cursor:cell; }
+  #canvas.select-mode{ cursor:crosshair; }
   .stat-bar{ display:flex; gap:20px; padding:11px 22px; background:var(--surface); border-top:1px solid var(--line); flex-wrap:wrap; }
   .stat{ display:flex; flex-direction:column; gap:2px; }
   .stat .k{ font-size:11px; color:var(--ink-3); font-weight:600; }
@@ -120,8 +123,9 @@
   .stat .v small{ font-size:11px; color:var(--ink-3); font-weight:600; }
 
   @media (max-width:980px){
-    .builder{ grid-template-columns:1fr; } .panel{ border-right:none; border-bottom:1px solid var(--line); }
-    .stage-svg{ min-height:380px; }
+    .app{ height:auto; overflow:visible; }
+    .builder{ grid-template-columns:1fr; } .panel{ border-right:none; border-bottom:1px solid var(--line); overflow:visible; }
+    .stage-svg{ min-height:460px; }
   }
 </style>
 </head>
@@ -138,6 +142,8 @@
       </div>
     </div>
     <div class="tb-actions">
+      <input type="file" id="fileInput" accept=".dxf,.svg,image/svg+xml" style="display:none">
+      <button class="btn" id="btnImport"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M8 7l4-4 4 4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>가져오기</button>
       <button class="btn" id="btnUndo"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-1"/></svg>되돌리기</button>
       <button class="btn" id="btnClose"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><circle cx="5" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg><span id="closeLbl">닫기</span></button>
       <button class="btn danger" id="btnClear"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>초기화</button>
@@ -247,9 +253,13 @@
     <div class="stage">
       <div class="stage-tools">
         <div class="seg" id="modeSeg">
-          <button data-mode="block" class="on"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg>블록</button>
-          <button data-mode="point"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>점 찍기</button>
-          <button data-mode="guide"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20 20 4" stroke-dasharray="3 3"/><circle cx="4" cy="20" r="1.6"/><circle cx="20" cy="4" r="1.6"/></svg>보조선</button>
+          <button data-mode="block" class="on">⬚ 블록 <i>B</i></button>
+          <button data-mode="line">╱ 선 <i>L</i></button>
+          <button data-mode="offset">⇉ 오프셋 <i>O</i></button>
+          <button data-mode="circle">◯ 원 <i>C</i></button>
+          <button data-mode="rect">▭ 사각형 <i>R</i></button>
+          <button data-mode="guide">┄ 보조선 <i>G</i></button>
+          <button data-mode="select">⬚ 선택·삭제 <i>V</i></button>
         </div>
         <span class="tool-hint" id="toolHint">블록 모드 — 왼쪽에서 방향·길이를 눌러 선을 이어요</span>
       </div>
@@ -281,13 +291,17 @@
   let unit = 1;
   let mode = 'block';          // 'block' | 'point' | 'guide'
   let guides = [];             // {x1,y1,x2,y2}
-  let guideTmp = null;         // first clicked point of a guide
+  let clickTmp = null;         // first click of a 2-click tool (guide/rect/circle)
   let snapGrid = true;
   let snapCm = 0.5;
+  let selectedP = new Set();   // selected piece indices (select mode)
+  let selectedG = new Set();   // selected guide indices
+  let marquee = null;          // {x1,y1,x2,y2} drag-select box
+  let dragSel = false;
   let T = {scale:1, offX:0, offY:0};  // last render transform (world->viewBox)
   let pieceSeq = 1;
 
-  function newPiece(x,y,idx){ return { pts:[{x,y}], closed:false, mirror:false, name:'조각 '+(idx+1) }; }
+  function newPiece(x,y,idx){ return { pts:[{x,y}], closed:false, mirror:false, fresh:true, kind:null, name:'조각 '+(idx+1) }; }
   const AP = () => pieces[active];
   const lastPt = () => { const p=AP().pts; return p[p.length-1]; };
 
@@ -387,16 +401,22 @@
 
   /* ---------- mode ---------- */
   function setMode(m){
-    mode=m; guideTmp=null;
+    mode=m; clickTmp=null;
+    if(m!=='select'){ selectedP=new Set(); selectedG=new Set(); marquee=null; }
     document.querySelectorAll('#modeSeg button').forEach(b=> b.classList.toggle('on', b.dataset.mode===m));
     document.getElementById('cardLen').classList.toggle('block-disabled', m!=='block');
     document.getElementById('cardDir').classList.toggle('block-disabled', m!=='block');
-    const hints={ block:'블록 모드 — 왼쪽에서 방향·길이를 눌러 선을 이어요',
-      point:'점 찍기 모드 — 캔버스를 클릭해 꼭짓점을 직접 찍어요 (격자에 붙어요)',
-      guide:'보조선 모드 — 두 점을 클릭하면 안내용 선이 그려져요 (중심선·다트 등)' };
+    const hints={ block:'블록(B) — 왼쪽에서 방향·길이를 눌러 선을 이어요',
+      line:'선(L) — 캔버스를 클릭해 꼭짓점을 이어요. 시작점에 닿으면 닫혀요',
+      offset:'오프셋(O) — 평행 복사할 선/도형을 클릭하면 거리를 물어봐요 (시접)',
+      circle:'원(C) — 중심을 클릭하고, 가장자리 한 점을 클릭하면 원이 생겨요',
+      rect:'사각형(R) — 두 모서리를 클릭하면 새 사각형 조각이 생겨요',
+      guide:'보조선(G) — 두 점을 클릭하면 안내선(중심선·다트 등)이 그려져요',
+      select:'선택·삭제(V) — 빈 곳에서 드래그해 박스로 감싼 뒤 Delete 키로 지워요' };
     document.getElementById('toolHint').textContent = hints[m];
-    canvas.classList.toggle('point-mode', m==='point');
-    canvas.classList.toggle('guide-mode', m==='guide');
+    canvas.classList.toggle('point-mode', m==='line');
+    canvas.classList.toggle('guide-mode', m==='rect'||m==='circle'||m==='guide'||m==='offset');
+    canvas.classList.toggle('select-mode', m==='select');
     render();
   }
   document.querySelectorAll('#modeSeg button').forEach(b=> b.addEventListener('click', ()=> setMode(b.dataset.mode)));
@@ -426,7 +446,7 @@
 
   /* ---------- actions ---------- */
   function undo(){
-    if(guideTmp){ guideTmp=null; render(); return; }
+    if(clickTmp){ clickTmp=null; render(); return; }
     const pc=AP();
     if(pc.closed){ pc.closed=false; }
     else if(pc.pts.length>1){ pc.pts.pop(); }
@@ -435,7 +455,7 @@
   }
   function clearAll(){
     if((AP().pts.length>1||guides.length) && !confirm('전체를 지울까요?')) return;
-    pieces=[newPiece(0,0,0)]; active=0; pieceSeq=1; guides=[]; guideTmp=null; syncPieceUI(); render();
+    pieces=[newPiece(0,0,0)]; active=0; pieceSeq=1; guides=[]; clickTmp=null; syncPieceUI(); render();
   }
   function toggleClose(){ const pc=AP(); if(pc.pts.length<3) return; pc.closed=!pc.closed; render(); }
   document.getElementById('btnUndo').addEventListener('click', undo);
@@ -477,8 +497,7 @@
     const a=[{x:0,y:0}];
     pieces.forEach(pc=> outline(pc).forEach(p=>a.push(p)));
     guides.forEach(g=>{ a.push({x:g.x1,y:g.y1}); a.push({x:g.x2,y:g.y2}); });
-    if(guideTmp) a.push(guideTmp);
-    return a;
+    return a;  // note: clickTmp/marquee excluded so the view stays stable mid-operation
   }
 
   function render(){
@@ -510,14 +529,16 @@
     g+=`<line x1="0" y1="${Y(0).toFixed(1)}" x2="${VBW}" y2="${Y(0).toFixed(1)}" stroke="#c7cde0" stroke-width="1.2"/>`;
 
     // guides
-    for(const gd of guides){
-      g+=`<line x1="${X(gd.x1).toFixed(1)}" y1="${Y(gd.y1).toFixed(1)}" x2="${X(gd.x2).toFixed(1)}" y2="${Y(gd.y2).toFixed(1)}" stroke="#94a3b8" stroke-width="1.3" stroke-dasharray="6 4"/>`;
-    }
-    if(guideTmp){ g+=`<circle cx="${X(guideTmp.x).toFixed(1)}" cy="${Y(guideTmp.y).toFixed(1)}" r="4.5" fill="#94a3b8"/>`; }
+    guides.forEach((gd,i)=>{ const sel=selectedG.has(i);
+      g+=`<line x1="${X(gd.x1).toFixed(1)}" y1="${Y(gd.y1).toFixed(1)}" x2="${X(gd.x2).toFixed(1)}" y2="${Y(gd.y2).toFixed(1)}" stroke="${sel?'#ef4444':'#94a3b8'}" stroke-width="${sel?2:1.3}" stroke-dasharray="6 4"/>`;
+    });
+    if(clickTmp){ g+=`<circle cx="${X(clickTmp.x).toFixed(1)}" cy="${Y(clickTmp.y).toFixed(1)}" r="4.5" fill="#94a3b8"/>`; }
+    if(marquee){ const mx1=X(Math.min(marquee.x1,marquee.x2)),my1=Y(Math.min(marquee.y1,marquee.y2)),mx2=X(Math.max(marquee.x1,marquee.x2)),my2=Y(Math.max(marquee.y1,marquee.y2));
+      g+=`<rect x="${mx1.toFixed(1)}" y="${my1.toFixed(1)}" width="${(mx2-mx1).toFixed(1)}" height="${(my2-my1).toFixed(1)}" fill="rgba(79,70,229,.08)" stroke="#4f46e5" stroke-width="1.2" stroke-dasharray="6 4"/>`; }
 
     // pieces
     pieces.forEach((pc,pi)=>{
-      const isAct=pi===active, col=PIECE_COLORS[pi%PIECE_COLORS.length];
+      const isAct=pi===active, sel=selectedP.has(pi), col=PIECE_COLORS[pi%PIECE_COLORS.length];
       const o=outline(pc);
       // fold line for mirror
       if(pc.mirror){ const ax=pc.pts[0].x; let yl=Infinity,yh=-Infinity; pc.pts.forEach(p=>{yl=Math.min(yl,p.y);yh=Math.max(yh,p.y);});
@@ -527,7 +548,8 @@
         for(let i=1;i<o.length;i++) d+=' L '+X(o[i].x).toFixed(1)+' '+Y(o[i].y).toFixed(1);
         if(isClosedShape(pc)) d+=' Z';
         if(isClosedShape(pc)) g+=`<path d="${d}" fill="${isAct?'rgba(79,70,229,.07)':'rgba(120,130,150,.05)'}" stroke="none"/>`;
-        g+=`<path d="${d}" fill="none" stroke="${isAct?col:'#aab2c4'}" stroke-width="${isAct?2.2:1.8}" stroke-linejoin="round" stroke-linecap="round"/>`;
+        if(sel) g+=`<path d="${d}" fill="none" stroke="#ef4444" stroke-width="6" stroke-linejoin="round" stroke-linecap="round" opacity=".28"/>`;
+        g+=`<path d="${d}" fill="none" stroke="${sel?'#ef4444':(isAct?col:'#aab2c4')}" stroke-width="${isAct?2.2:1.8}" stroke-linejoin="round" stroke-linecap="round"/>`;
       }
       // measurement labels on the drawn half (active piece only)
       if(isAct){
@@ -602,7 +624,16 @@
   }
 
   function renderBlocks(){
-    const el=document.getElementById('blocks'), segs=segmentsOf(AP().pts);
+    const el=document.getElementById('blocks'), pc=AP();
+    if(pc.kind==='circle' && pc.pts.length){
+      const cx=pc.pts.reduce((s,p)=>s+p.x,0)/pc.pts.length, cy=pc.pts.reduce((s,p)=>s+p.y,0)/pc.pts.length, r=dist({x:cx,y:cy},pc.pts[0]);
+      el.innerHTML=`<div class="blk"><span class="bn">◯</span><span class="ln">원</span><span class="dg">반지름 ${fmt(r)} · 지름 ${fmt(r*2)} cm</span></div>`; return;
+    }
+    if(pc.kind==='rect'){
+      let nx=Infinity,xx=-Infinity,ny=Infinity,xy=-Infinity; pc.pts.forEach(p=>{nx=Math.min(nx,p.x);xx=Math.max(xx,p.x);ny=Math.min(ny,p.y);xy=Math.max(xy,p.y);});
+      el.innerHTML=`<div class="blk"><span class="bn">▭</span><span class="ln">사각형</span><span class="dg">${fmt(xx-nx)} × ${fmt(xy-ny)} cm</span></div>`; return;
+    }
+    const segs=segmentsOf(pc.pts);
     if(!segs.length){ el.innerHTML='<div class="blk-empty">아직 선이 없어요.<br>블록을 누르거나 캔버스를 클릭해 보세요.</div>'; return; }
     el.innerHTML = segs.map((s,i)=>
       `<div class="blk"><span class="bn">${i+1}</span><span class="ar">${arrowFor(s.a)}</span>`+
@@ -628,24 +659,121 @@
   canvas.addEventListener('click', e=>{
     if(mode==='block') return;
     const w=worldFromEvent(e); if(!w) return;
-    if(mode==='point'){ addPointAt(w.x,w.y); }
-    else if(mode==='guide'){ const p=snapAny(w);
-      if(!guideTmp){ guideTmp=p; render(); } else { guides.push({x1:guideTmp.x,y1:guideTmp.y,x2:p.x,y2:p.y}); guideTmp=null; render(); } }
+    const p=snapAny(w);
+    if(mode==='line'){
+      const pc=AP();
+      if(pc.closed || (pc.kind && pc.kind!=='line')) startOrReuse();
+      const cur=AP();
+      if(cur.pts.length===1 && cur.fresh){ cur.pts[0]={x:p.x,y:p.y}; cur.fresh=false; cur.kind='line'; render(); }
+      else { cur.fresh=false; cur.kind='line'; addVertex(p.x,p.y); }
+    }
+    else if(mode==='guide'){
+      if(!clickTmp){ clickTmp=p; render(); } else { guides.push({x1:clickTmp.x,y1:clickTmp.y,x2:p.x,y2:p.y}); clickTmp=null; render(); } }
+    else if(mode==='rect'){
+      if(!clickTmp){ clickTmp=p; render(); } else { makeRect(clickTmp,p); clickTmp=null; } }
+    else if(mode==='circle'){
+      if(!clickTmp){ clickTmp=p; render(); } else { makeCircle(clickTmp,p); clickTmp=null; } }
+    else if(mode==='offset'){ doOffset(w); }
   });
+
+  /* ---- drag-select + delete (V) ---- */
+  function inBox(p,bx){ const x1=Math.min(bx.x1,bx.x2),x2=Math.max(bx.x1,bx.x2),y1=Math.min(bx.y1,bx.y2),y2=Math.max(bx.y1,bx.y2);
+    return p.x>=x1&&p.x<=x2&&p.y>=y1&&p.y<=y2; }
+  function computeSel(){ if(!marquee) return; selectedP=new Set(); selectedG=new Set();
+    pieces.forEach((pc,i)=>{ if(outline(pc).some(p=>inBox(p,marquee))) selectedP.add(i); });
+    guides.forEach((g,i)=>{ if(inBox({x:g.x1,y:g.y1},marquee)||inBox({x:g.x2,y:g.y2},marquee)) selectedG.add(i); }); }
+  function deleteSelection(){
+    if(!selectedP.size && !selectedG.size) return false;
+    pieces=pieces.filter((_,i)=>!selectedP.has(i));
+    guides=guides.filter((_,i)=>!selectedG.has(i));
+    if(!pieces.length){ pieces=[newPiece(0,0,0)]; pieceSeq=1; }
+    active=Math.min(active, pieces.length-1);
+    selectedP=new Set(); selectedG=new Set(); syncPieceUI(); render(); return true;
+  }
+  canvas.addEventListener('pointerdown', e=>{ if(mode!=='select') return; dragSel=true; canvas.setPointerCapture(e.pointerId);
+    const w=worldFromEvent(e); marquee={x1:w.x,y1:w.y,x2:w.x,y2:w.y}; selectedP=new Set(); selectedG=new Set(); render(); });
+  canvas.addEventListener('pointermove', e=>{ if(!dragSel) return; const w=worldFromEvent(e); marquee.x2=w.x; marquee.y2=w.y; computeSel(); render(); });
+  canvas.addEventListener('pointerup', ()=>{ if(!dragSel) return; dragSel=false; computeSel(); marquee=null; render(); });
+
+  function startOrReuse(){
+    if(AP().pts.length===1 && AP().fresh) return AP();
+    const pc=newPiece(0,0,0); pieces.push(pc); active=pieces.length-1; return pc;
+  }
+  function pushPiece(pts, closed, label, kind){
+    const pc=startOrReuse();
+    pc.pts=pts; pc.closed=closed; pc.fresh=false; pc.kind=kind; pc.name=label+' '+(active+1);
+    syncPieceUI(); render();
+  }
+  function makeRect(a,b){
+    if(Math.abs(a.x-b.x)<1e-6||Math.abs(a.y-b.y)<1e-6) return;
+    pushPiece([{x:a.x,y:a.y},{x:b.x,y:a.y},{x:b.x,y:b.y},{x:a.x,y:b.y}], true, '사각형','rect');
+  }
+  function makeCircle(c,edge){
+    const r=dist(c,edge); if(r<1e-4) return;
+    const n=48, pts=[]; for(let k=0;k<n;k++){ const a=k/n*2*Math.PI; pts.push({x:c.x+r*Math.cos(a), y:c.y+r*Math.sin(a)}); }
+    pushPiece(pts, true, '원','circle');
+  }
+  /* ---- offset (O) : parallel copy at a distance — for seam allowance ---- */
+  function nearestPieceIndex(w){
+    let bi=-1, bd=Infinity;
+    pieces.forEach((pc,i)=>{
+      const o=outline(pc); if(o.length<2) return;
+      for(let k=0;k<o.length-1;k++){ const d=distToSeg(w,o[k],o[k+1]); if(d<bd){bd=d;bi=i;} }
+      if(isClosedShape(pc)){ const d=distToSeg(w,o[o.length-1],o[0]); if(d<bd){bd=d;bi=i;} }
+    });
+    return bd<=Math.max(1.5, snapCm*6) ? bi : -1;
+  }
+  function distToSeg(p,a,b){ const dx=b.x-a.x,dy=b.y-a.y, L2=dx*dx+dy*dy;
+    let t = L2? ((p.x-a.x)*dx+(p.y-a.y)*dy)/L2 : 0; t=Math.max(0,Math.min(1,t));
+    return Math.hypot(p.x-(a.x+t*dx), p.y-(a.y+t*dy)); }
+  function offsetPoly(pts, closed, d){
+    const n=pts.length; if(n<2) return null;
+    // signed area to orient outward for closed shapes
+    let area=0; if(closed){ for(let i=0;i<n;i++){ const j=(i+1)%n; area+=pts[i].x*pts[j].y-pts[j].x*pts[i].y; } }
+    const sgn = area<0 ? -1 : 1;
+    const segN=[]; const m = closed ? n : n-1;
+    for(let i=0;i<m;i++){ const a=pts[i], b=pts[(i+1)%n]; let ex=b.x-a.x, ey=b.y-a.y; const L=Math.hypot(ex,ey)||1; ex/=L; ey/=L;
+      segN.push({nx:-ey*sgn, ny:ex*sgn}); } // unit normal
+    const out=[];
+    for(let i=0;i<n;i++){
+      let ni, npn;
+      if(closed){ ni=(i-1+m)%m; npn=i%m; }
+      else { ni=Math.max(0,i-1); npn=Math.min(m-1,i); }
+      const A=segN[ni], B=segN[npn];
+      let nx=A.nx+B.nx, ny=A.ny+B.ny; const L=Math.hypot(nx,ny);
+      if(L<1e-6){ nx=B.nx; ny=B.ny; } else { const cos=Math.max(0.25, (A.nx*B.nx+A.ny*B.ny+1)/2); nx/=L; ny/=L; const scale=d/Math.sqrt(cos); nx*=scale/d; ny*=scale/d; }
+      out.push({x:pts[i].x+nx*d, y:pts[i].y+ny*d});
+    }
+    return out;
+  }
+  function doOffset(w){
+    const i=nearestPieceIndex(w);
+    if(i<0){ document.getElementById('toolHint').textContent='오프셋(O) — 평행 복사할 선/도형 위를 정확히 클릭하세요'; return; }
+    const src=pieces[i];
+    const ans=prompt('오프셋 거리(cm)를 입력하세요.\n방향(안쪽/바깥쪽)이 반대면 부호(+/−)를 바꿔 다시 하세요. 시접은 보통 1cm.', '1');
+    const d=parseFloat(ans); if(isNaN(d)||d===0) return;
+    const base=isClosedShape(src)? outline(src): src.pts;
+    const np=offsetPoly(base, isClosedShape(src), d);
+    if(!np) return;
+    const pc=newPiece(0,0,0); pc.pts=np; pc.closed=isClosedShape(src); pc.fresh=false; pc.kind=src.kind;
+    pc.name='오프셋 '+(pieces.length+1); pieces.push(pc); active=pieces.length-1; syncPieceUI(); render();
+  }
 
   /* ---------- keyboard ---------- */
   document.addEventListener('keydown', e=>{
     const t=e.target.tagName; if(t==='INPUT'||t==='SELECT'||t==='TEXTAREA') return;
-    if(e.key==='ArrowUp'){ setHeading(90); e.preventDefault(); }
-    else if(e.key==='ArrowDown'){ setHeading(270); e.preventDefault(); }
-    else if(e.key==='ArrowLeft'){ setHeading(180); e.preventDefault(); }
-    else if(e.key==='ArrowRight'){ setHeading(0); e.preventDefault(); }
-    else if(e.key==='Enter'||e.key===' '){ if(mode==='block'){ addLength(unit); e.preventDefault(); } }
-    else if(e.key==='Backspace'){ undo(); e.preventDefault(); }
-    else if(e.key==='Escape'){ if(guideTmp){guideTmp=null;render();} }
-    else if(e.key==='+'||e.key==='='){ rotateBy(1); }
-    else if(e.key==='-'){ rotateBy(-1); }
-    else if(e.key==='1'){ setMode('block'); } else if(e.key==='2'){ setMode('point'); } else if(e.key==='3'){ setMode('guide'); }
+    const k=e.key;
+    if(k==='ArrowUp'){ setHeading(90); e.preventDefault(); }
+    else if(k==='ArrowDown'){ setHeading(270); e.preventDefault(); }
+    else if(k==='ArrowLeft'){ setHeading(180); e.preventDefault(); }
+    else if(k==='ArrowRight'){ setHeading(0); e.preventDefault(); }
+    else if(k==='Enter'||k===' '){ if(mode==='block'){ addLength(unit); e.preventDefault(); } }
+    else if(k==='Delete'){ if(deleteSelection()) e.preventDefault(); }
+    else if(k==='Backspace'){ if(!(mode==='select'&&deleteSelection())) undo(); e.preventDefault(); }
+    else if(k==='Escape'){ clickTmp=null; marquee=null; selectedP=new Set(); selectedG=new Set(); render(); }
+    else if(k==='+'||k==='='){ rotateBy(1); }
+    else if(k==='-'){ rotateBy(-1); }
+    else { const map={b:'block',l:'line',o:'offset',c:'circle',r:'rect',g:'guide',v:'select'}, m2=map[k.toLowerCase()]; if(m2) setMode(m2); }
   });
 
   /* ---------- export ---------- */
@@ -677,9 +805,106 @@
   document.getElementById('btnLoad').addEventListener('click', ()=>{
     const v=document.getElementById('saveList').value; if(v==='') return; const p=getSaved()[+v]; if(!p) return;
     pieces=JSON.parse(JSON.stringify(p.pieces||[newPiece(0,0,0)])); guides=JSON.parse(JSON.stringify(p.guides||[]));
-    active=0; guideTmp=null; pieceSeq=pieces.length; syncPieceUI(); render();
+    active=0; clickTmp=null; pieceSeq=pieces.length; syncPieceUI(); render();
   });
   document.getElementById('btnDelSave').addEventListener('click', ()=>{ const v=document.getElementById('saveList').value; if(v==='') return; const list=getSaved(); list.splice(+v,1); setSaved(list); refreshSaveList(); });
+
+  /* ---------- import (DXF / SVG) ---------- */
+  document.getElementById('btnImport').addEventListener('click', ()=> document.getElementById('fileInput').click());
+  document.getElementById('fileInput').addEventListener('change', e=>{
+    const file=e.target.files[0]; if(!file) return;
+    const rd=new FileReader();
+    rd.onload=()=>{ try{
+        const nm=file.name.toLowerCase(), text=rd.result;
+        const parsed = nm.endsWith('.dxf') ? parseDXF(text) : parseSVG(text);
+        applyImport(parsed);
+      }catch(err){ alert('가져오기 실패: '+(err&&err.message||err)); }
+      e.target.value=''; };
+    rd.readAsText(file);
+  });
+
+  function parseDXF(text){
+    const L=text.split(/\r\n|\r|\n/), pairs=[];
+    for(let i=0;i+1<L.length;i+=2){ const c=parseInt((L[i]||'').trim(),10); if(isNaN(c)) continue; pairs.push([c, L[i+1]!==undefined?L[i+1]:'']); }
+    let insunits=0;
+    for(let i=0;i<pairs.length-1;i++){ if(pairs[i][0]===9 && (pairs[i][1]||'').trim()==='$INSUNITS'){ if(pairs[i+1][0]===70) insunits=parseInt((pairs[i+1][1]||'').trim(),10)||0; break; } }
+    const UF=({1:2.54,2:30.48,4:0.1,5:1,6:100,8:0.000254,14:10}[insunits])||0.1; // ->cm (default mm)
+    const ents=[]; let cur=null;
+    for(const [c,vr] of pairs){ const v=(vr||'').trim();
+      if(c===0){ if(cur) ents.push(cur); cur={type:v,c:{}}; }
+      else if(cur){ (cur.c[c]=cur.c[c]||[]).push(v); } }
+    if(cur) ents.push(cur);
+    const polys=[]; const fx=x=>parseFloat(x)*UF, fy=y=>-parseFloat(y)*UF; let poly=null;
+    for(const e of ents){ const C=e.c;
+      try{ switch(e.type){
+        case 'LINE': if(C[10]&&C[11]&&C[20]&&C[21]) polys.push({pts:[{x:fx(C[10][0]),y:fy(C[20][0])},{x:fx(C[11][0]),y:fy(C[21][0])}],closed:false}); break;
+        case 'LWPOLYLINE': { const xs=C[10]||[],ys=C[20]||[],pts=[]; for(let k=0;k<xs.length;k++) pts.push({x:fx(xs[k]),y:fy(ys[k])}); if(pts.length>=2) polys.push({pts,closed:!!(C[70]&&(parseInt(C[70][0])&1))}); break; }
+        case 'POLYLINE': poly={pts:[],closed:!!(C[70]&&(parseInt(C[70][0])&1))}; break;
+        case 'VERTEX': if(poly&&C[10]&&C[20]) poly.pts.push({x:fx(C[10][0]),y:fy(C[20][0])}); break;
+        case 'SEQEND': if(poly){ if(poly.pts.length>=2) polys.push(poly); poly=null; } break;
+        case 'CIRCLE': { const cx=fx(C[10][0]),cy=fy(C[20][0]),r=parseFloat(C[40][0])*UF,pts=[]; for(let k=0;k<48;k++){const a=k/48*2*Math.PI; pts.push({x:cx+r*Math.cos(a),y:cy+r*Math.sin(a)});} polys.push({pts,closed:true}); break; }
+        case 'ARC': { const ox=parseFloat(C[10][0]),oy=parseFloat(C[20][0]),r=parseFloat(C[40][0]); let a0=parseFloat(C[50][0]),a1=parseFloat(C[51][0]); let sw=a1-a0; while(sw<=0) sw+=360; const n=Math.max(6,Math.ceil(sw/8)),pts=[]; for(let k=0;k<=n;k++){const a=(a0+sw*k/n)*Math.PI/180; pts.push({x:(ox+r*Math.cos(a))*UF, y:-(oy+r*Math.sin(a))*UF});} polys.push({pts,closed:false}); break; }
+        case 'SPLINE': { const xs=C[11]||C[10]||[],ys=C[21]||C[20]||[],pts=[]; for(let k=0;k<xs.length;k++) pts.push({x:fx(xs[k]),y:fy(ys[k])}); if(pts.length>=2) polys.push({pts,closed:false}); break; }
+      } }catch(_){}
+    }
+    return {polys};
+  }
+
+  function parseSVG(text){
+    const host=document.createElement('div'); host.style.cssText='position:absolute;left:-99999px;top:0;width:0;height:0;overflow:hidden';
+    host.innerHTML=text; document.body.appendChild(host);
+    const svg=host.querySelector('svg'); if(!svg){ host.remove(); throw new Error('SVG를 찾을 수 없어요'); }
+    const lenToCm=str=>{ const m=/^([\d.]+)\s*(mm|cm|in|pt|px)?$/.exec((str||'').trim()); if(!m) return null; return parseFloat(m[1])*({mm:0.1,cm:1,in:2.54,pt:2.54/72,px:2.54/96}[m[2]||'px']); };
+    let u2cm=2.54/96; const vb=svg.viewBox&&svg.viewBox.baseVal, wCm=lenToCm(svg.getAttribute('width'));
+    if(wCm&&vb&&vb.width) u2cm=wCm/vb.width;
+    const polys=[];
+    const sample=(el,closed)=>{ try{ const len=el.getTotalLength&&el.getTotalLength(); if(!len) return;
+      const n=Math.max(2,Math.min(600,Math.ceil(len/Math.max(0.2,len/200)))); const ctm=el.getCTM&&el.getCTM(),pts=[];
+      for(let k=0;k<=n;k++){ const q=el.getPointAtLength(len*k/n); let x=q.x,y=q.y; if(ctm){ x=ctm.a*q.x+ctm.c*q.y+ctm.e; y=ctm.b*q.x+ctm.d*q.y+ctm.f; } pts.push({x:x*u2cm,y:y*u2cm}); }
+      if(pts.length>=2) polys.push({pts,closed}); }catch(_){} };
+    svg.querySelectorAll('path').forEach(el=> sample(el, /z\s*$/i.test((el.getAttribute('d')||'').trim())));
+    svg.querySelectorAll('polyline,line').forEach(el=> sample(el,false));
+    svg.querySelectorAll('polygon,rect,circle,ellipse').forEach(el=> sample(el,true));
+    host.remove();
+    return {polys};
+  }
+
+  function stitch(polys, eps){
+    let open=polys.filter(p=>!p.closed && p.pts.length>=2).map(p=>p.pts.slice());
+    const closed=polys.filter(p=>p.closed && p.pts.length>=2);
+    const near=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y)<=eps;
+    let merged=true, guard=0;
+    while(merged && guard++<5000){ merged=false;
+      outer: for(let i=0;i<open.length;i++) for(let j=i+1;j<open.length;j++){
+        const A=open[i],B=open[j],a0=A[0],a1=A[A.length-1],b0=B[0],b1=B[B.length-1];
+        if(near(a1,b0)){ open[i]=A.concat(B.slice(1)); open.splice(j,1); merged=true; break outer; }
+        if(near(a1,b1)){ open[i]=A.concat(B.slice().reverse().slice(1)); open.splice(j,1); merged=true; break outer; }
+        if(near(a0,b1)){ open[i]=B.concat(A.slice(1)); open.splice(j,1); merged=true; break outer; }
+        if(near(a0,b0)){ open[i]=B.slice().reverse().concat(A.slice(1)); open.splice(j,1); merged=true; break outer; }
+      }
+    }
+    const out=[];
+    for(const pts of open){ const c=pts.length>2&&near(pts[0],pts[pts.length-1]); if(c) pts.pop(); out.push({pts,closed:c}); }
+    for(const cp of closed) out.push(cp);
+    return out;
+  }
+
+  function applyImport(parsed){
+    let polys=(parsed.polys||[]).filter(p=>p.pts&&p.pts.length>=2);
+    if(!polys.length){ alert('가져올 선을 찾지 못했어요.\n지원: DXF의 LINE/POLYLINE/ARC/CIRCLE/SPLINE, SVG의 path/line/polyline/도형\n(폴리라인의 곡선(bulge)은 직선으로 단순화됩니다.)'); return; }
+    polys=stitch(polys, 0.05);
+    let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+    polys.forEach(p=>p.pts.forEach(q=>{minX=Math.min(minX,q.x);maxX=Math.max(maxX,q.x);minY=Math.min(minY,q.y);maxY=Math.max(maxY,q.y);}));
+    const w=maxX-minX;
+    const ans=prompt('가져온 도면의 실제 가로 길이를 cm로 입력하면 크기를 맞춰요.\n(비우면 그대로 — 현재 추정 가로 '+fmt(w)+'cm)','');
+    let f=1; if(ans && parseFloat(ans)>0 && w>0) f=parseFloat(ans)/w;
+    const np=polys.map((p,i)=>{ const pc=newPiece(0,0,0); pc.pts=p.pts.map(q=>({x:(q.x-minX)*f, y:(q.y-minY)*f})); pc.closed=!!p.closed; pc.fresh=false; pc.name='가져온 '+(i+1); return pc; });
+    const has = pieces.length>1 || AP().pts.length>1 || guides.length;
+    const replace = has ? confirm('기존 패턴을 지우고 가져올까요?\n확인=교체, 취소=기존에 추가') : true;
+    pieces = replace ? np : pieces.concat(np);
+    active=pieces.length-1; pieceSeq=pieces.length; clickTmp=null; selectedP=new Set(); selectedG=new Set(); syncPieceUI(); render();
+    setMode('block');
+  }
 
   /* ---------- init ---------- */
   setMode('block'); syncPieceUI(); refreshSaveList(); drawDial(); render();
