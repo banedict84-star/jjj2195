@@ -314,6 +314,7 @@
   let hover = null;                      // world coords under cursor
   let panning = false, panLast = null;
   let raf = 0;
+  let typeBuf = '';            // typed length for line tool (direction-distance entry)
   let pieceSeq = 1;
 
   function newPiece(x,y,idx){ return { pts:[{x,y}], closed:false, mirror:false, fresh:true, kind:null, name:'조각 '+(idx+1) }; }
@@ -416,13 +417,13 @@
 
   /* ---------- mode ---------- */
   function setMode(m){
-    mode=m; clickTmp=null;
+    mode=m; clickTmp=null; typeBuf='';
     if(m!=='select'){ selectedP=new Set(); selectedG=new Set(); marquee=null; }
     document.querySelectorAll('#modeSeg button').forEach(b=> b.classList.toggle('on', b.dataset.mode===m));
     document.getElementById('cardLen').classList.toggle('block-disabled', m!=='block');
     document.getElementById('cardDir').classList.toggle('block-disabled', m!=='block');
     const hints={ block:'블록(B) — 왼쪽에서 방향·길이를 눌러 선을 이어요',
-      line:'선(L) — 캔버스를 클릭해 꼭짓점을 이어요. 시작점에 닿으면 닫혀요',
+      line:'선(L) — 시작점 클릭 → 마우스로 방향 → 길이 숫자 입력 후 Enter (또는 클릭). 시작점에 닿으면 닫혀요',
       offset:'오프셋(O) — 평행 복사할 선/도형을 클릭하면 거리를 물어봐요 (시접)',
       circle:'원(C) — 중심을 클릭하고, 가장자리 한 점을 클릭하면 원이 생겨요',
       rect:'사각형(R) — 두 모서리를 클릭하면 새 사각형 조각이 생겨요',
@@ -615,12 +616,15 @@
       g+=`<line x1="0" y1="${hy.toFixed(1)}" x2="${VBW}" y2="${hy.toFixed(1)}" stroke="#9aa3b8" stroke-width="0.8" stroke-dasharray="4 4" opacity=".7"/>`;
       g+=`<line x1="${hx.toFixed(1)}" y1="0" x2="${hx.toFixed(1)}" y2="${VBH}" stroke="#9aa3b8" stroke-width="0.8" stroke-dasharray="4 4" opacity=".7"/>`;
       if(sh){
-        const px=X(sh.x), py=Y(sh.y);
-        // preview geometry
-        const pc=AP();
-        if(mode==='line' && pc.pts.length>=1 && !(pc.pts.length===1 && pc.fresh)){
-          const lp=pc.pts[pc.pts.length-1];
-          g+=`<line x1="${X(lp.x).toFixed(1)}" y1="${Y(lp.y).toFixed(1)}" x2="${px.toFixed(1)}" y2="${py.toFixed(1)}" stroke="#4f46e5" stroke-width="1.6" stroke-dasharray="6 4"/>`;
+        let px=X(sh.x), py=Y(sh.y);
+        if(mode==='line'){
+          const anc=lineAnchor();
+          if(anc){ const ep=lineEndpoint(anc, hover); px=X(ep.x); py=Y(ep.y);
+            g+=`<line x1="${X(anc.x).toFixed(1)}" y1="${Y(anc.y).toFixed(1)}" x2="${px.toFixed(1)}" y2="${py.toFixed(1)}" stroke="#4f46e5" stroke-width="1.6" stroke-dasharray="6 4"/>`;
+            const len=Math.hypot(ep.x-anc.x, ep.y-anc.y);
+            if(len>1e-6){ const mx=(X(anc.x)+px)/2, my=(Y(anc.y)+py)/2; const lbl=fmt(len)+(typeBuf!==''?'⌨':'');
+              g+=`<g><rect x="${(mx-19).toFixed(1)}" y="${(my-22).toFixed(1)}" width="40" height="18" rx="6" fill="#15182a" opacity=".9"/><text x="${mx.toFixed(1)}" y="${(my-9).toFixed(1)}" font-size="12" font-weight="700" fill="#fff" text-anchor="middle" font-family="Pretendard">${lbl}</text></g>`; }
+          }
         } else if(mode==='guide' && clickTmp){
           g+=`<line x1="${X(clickTmp.x).toFixed(1)}" y1="${Y(clickTmp.y).toFixed(1)}" x2="${px.toFixed(1)}" y2="${py.toFixed(1)}" stroke="#94a3b8" stroke-width="1.4" stroke-dasharray="6 4"/>`;
         } else if(mode==='rect' && clickTmp){
@@ -630,7 +634,6 @@
           const r=Math.hypot(px-X(clickTmp.x), py-Y(clickTmp.y));
           g+=`<circle cx="${X(clickTmp.x).toFixed(1)}" cy="${Y(clickTmp.y).toFixed(1)}" r="${r.toFixed(1)}" fill="rgba(79,70,229,.06)" stroke="#4f46e5" stroke-width="1.6" stroke-dasharray="6 4"/>`;
         }
-        // snap indicator
         g+=`<rect x="${(px-4).toFixed(1)}" y="${(py-4).toFixed(1)}" width="8" height="8" fill="none" stroke="#4f46e5" stroke-width="1.6"/>`;
       }
     }
@@ -644,7 +647,11 @@
     const el=document.getElementById('hud'); if(!el) return;
     if(!hover){ el.style.display='none'; return; }
     el.style.display='block';
-    const zoom=Math.round(view.scale/ ( (VBW-2*PAD)/10 ) *100); // 100% ≈ 10cm-fit baseline
+    if(mode==='line'){ const anc=lineAnchor();
+      if(anc){ const a=lineDirAngle(anc,hover), v=parseFloat(typeBuf), len=v>0?v:Math.hypot(hover.x-anc.x,hover.y-anc.y);
+        el.textContent = `방향 ${fmt(a)}°   길이 ${typeBuf!==''?typeBuf+' ⌨ (Enter)':fmt(len)} cm`; return; }
+    }
+    const zoom=Math.round(view.scale/((VBW-2*PAD)/10)*100);
     el.textContent = `X ${fmt(hover.x)}  Y ${fmt(-hover.y)} cm · 줌 ${zoom}%`;
   }
 
@@ -723,6 +730,14 @@
     if(best) return best;
     return snapGrid ? {x:snapVal(w.x), y:snapVal(w.y)} : w;
   }
+  // ---- line tool: direction(mouse) + distance(typed) ----
+  function lineAnchor(){ const pc=AP(); if(pc.kind&&pc.kind!=='line') return null; if(pc.closed) return null;
+    if(pc.pts.length>=2) return pc.pts[pc.pts.length-1]; if(pc.pts.length===1&&!pc.fresh) return pc.pts[0]; return null; }
+  function lineDirAngle(anc,h){ let a=Math.atan2(-(h.y-anc.y), h.x-anc.x)*180/Math.PI;
+    if(document.getElementById('snapAngChk').checked){ const st=Math.max(1,parseFloat(document.getElementById('snapStep').value)||15); a=Math.round(a/st)*st; } return a; }
+  function lineEndpoint(anc,h){ const v=parseFloat(typeBuf);
+    if(v>0){ const a=rad(lineDirAngle(anc,h)); return {x:anc.x+v*Math.cos(a), y:anc.y - v*Math.sin(a)}; }
+    return snapAny(h); }
   canvas.addEventListener('click', e=>{
     if(mode==='block') return;
     const w=worldFromEvent(e); if(!w) return;
@@ -731,8 +746,8 @@
       const pc=AP();
       if(pc.closed || (pc.kind && pc.kind!=='line')) startOrReuse();
       const cur=AP();
-      if(cur.pts.length===1 && cur.fresh){ cur.pts[0]={x:p.x,y:p.y}; cur.fresh=false; cur.kind='line'; render(); }
-      else { cur.fresh=false; cur.kind='line'; addVertex(p.x,p.y); }
+      if(cur.pts.length===1 && cur.fresh){ cur.pts[0]={x:p.x,y:p.y}; cur.fresh=false; cur.kind='line'; typeBuf=''; render(); }
+      else { cur.fresh=false; cur.kind='line'; const ep=lineEndpoint(cur.pts[cur.pts.length-1], w); typeBuf=''; addVertex(ep.x,ep.y); }
     }
     else if(mode==='guide'){
       if(!clickTmp){ clickTmp=p; render(); } else { guides.push({x1:clickTmp.x,y1:clickTmp.y,x2:p.x,y2:p.y}); clickTmp=null; render(); } }
@@ -841,6 +856,12 @@
   document.addEventListener('keydown', e=>{
     const t=e.target.tagName; if(t==='INPUT'||t==='SELECT'||t==='TEXTAREA') return;
     const k=e.key;
+    if(mode==='line'){
+      if(/^[0-9]$/.test(k) || k==='.'){ typeBuf+=k; updateHUD(); requestRender(); e.preventDefault(); return; }
+      if(k==='Enter'){ const anc=lineAnchor(); if(anc && parseFloat(typeBuf)>0 && hover){ const ep=lineEndpoint(anc,hover); typeBuf=''; addVertex(ep.x,ep.y); } e.preventDefault(); return; }
+      if(k==='Backspace'){ if(typeBuf!==''){ typeBuf=typeBuf.slice(0,-1); updateHUD(); requestRender(); } else undo(); e.preventDefault(); return; }
+      if(k==='Escape'){ typeBuf=''; clickTmp=null; render(); e.preventDefault(); return; }
+    }
     if(k==='ArrowUp'){ setHeading(90); e.preventDefault(); }
     else if(k==='ArrowDown'){ setHeading(270); e.preventDefault(); }
     else if(k==='ArrowLeft'){ setHeading(180); e.preventDefault(); }
