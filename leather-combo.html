@@ -136,29 +136,48 @@
                aria-label="가죽 카드지갑 미리보기"
                style="--leather:#8a5a32; --edge:#222; --thread:#efe9df;">
             <defs>
-              <!-- 가죽 광택 -->
-              <linearGradient id="sheen" x1="0" y1="0" x2="0.65" y2="1">
-                <stop offset="0%"   stop-color="#fff" stop-opacity=".22"/>
-                <stop offset="42%"  stop-color="#fff" stop-opacity="0"/>
-                <stop offset="100%" stop-color="#000" stop-opacity=".16"/>
-              </linearGradient>
-              <!-- 앞 포켓 광택(살짝 다르게) -->
-              <linearGradient id="sheen2" x1="0" y1="0" x2="0.5" y2="1">
-                <stop offset="0%"   stop-color="#fff" stop-opacity=".16"/>
-                <stop offset="55%"  stop-color="#fff" stop-opacity="0"/>
-                <stop offset="100%" stop-color="#000" stop-opacity=".18"/>
+              <!-- ===== 가죽 그레인(결) + 조명 : 실사 질감 ===== -->
+              <filter id="leatherFx" x="-5%" y="-5%" width="110%" height="110%">
+                <feTurbulence id="leatherTurb" type="fractalNoise" baseFrequency="0.7 0.7"
+                              numOctaves="3" seed="14" stitchTiles="stitch" result="noise"/>
+                <feDiffuseLighting id="leatherLight" in="noise" surfaceScale="1.1"
+                                   diffuseConstant="1.15" lighting-color="#fff" result="emboss">
+                  <feDistantLight azimuth="235" elevation="58"/>
+                </feDiffuseLighting>
+                <!-- 그레인 명암을 본체 색에 곱하기 -->
+                <feComposite in="emboss" in2="SourceGraphic" operator="arithmetic"
+                             k1="1.18" k2="0" k3="0" k4="-0.07" result="lit"/>
+                <feComposite in="lit" in2="SourceGraphic" operator="in"/>
+              </filter>
+
+              <!-- 부드러운 풀업 하이라이트(가운데 밝게) -->
+              <radialGradient id="pullup" cx="42%" cy="34%" r="72%">
+                <stop offset="0%"  stop-color="#fff" stop-opacity=".26"/>
+                <stop offset="45%" stop-color="#fff" stop-opacity=".05"/>
+                <stop offset="100%" stop-color="#000" stop-opacity=".22"/>
+              </radialGradient>
+              <!-- 엣지 광택(위 밝고 아래 어둡게) -->
+              <linearGradient id="edgeGloss" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%"   stop-color="#fff" stop-opacity=".40"/>
+                <stop offset="35%"  stop-color="#fff" stop-opacity="0"/>
+                <stop offset="100%" stop-color="#000" stop-opacity=".40"/>
               </linearGradient>
               <!-- 카드 -->
               <linearGradient id="cardg" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%"   stop-color="#f6f8fc"/>
-                <stop offset="100%" stop-color="#d6dbe5"/>
+                <stop offset="0%"   stop-color="#fbfcfe"/>
+                <stop offset="55%"  stop-color="#e8ebf1"/>
+                <stop offset="100%" stop-color="#cdd3de"/>
               </linearGradient>
               <linearGradient id="chipg" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stop-color="#f0d27a"/>
-                <stop offset="100%" stop-color="#c8a23f"/>
+                <stop offset="0%" stop-color="#f3d684"/>
+                <stop offset="100%" stop-color="#be9636"/>
               </linearGradient>
-              <filter id="drop" x="-30%" y="-25%" width="160%" height="170%">
-                <feDropShadow dx="0" dy="11" stdDeviation="11" flood-color="#1c2030" flood-opacity="0.20"/>
+              <filter id="drop" x="-35%" y="-30%" width="170%" height="185%">
+                <feDropShadow dx="0" dy="13" stdDeviation="13" flood-color="#10131f" flood-opacity="0.26"/>
+              </filter>
+              <!-- 스티치 음각(실이 박힌 구멍 그림자) -->
+              <filter id="stitchShadow" x="-60%" y="-60%" width="220%" height="220%">
+                <feDropShadow dx="0" dy="0.7" stdDeviation="0.7" flood-color="#000" flood-opacity="0.55"/>
               </filter>
             </defs>
 
@@ -166,40 +185,39 @@
             <g filter="url(#drop)">
 
               <!-- 뒷판(가죽 본체) -->
-              <rect x="56" y="70" width="248" height="178" rx="15" fill="var(--leather)"/>
-              <rect x="56" y="70" width="248" height="178" rx="15" fill="url(#sheen)"/>
+              <rect x="56" y="70" width="248" height="178" rx="15" fill="var(--leather)" filter="url(#leatherFx)"/>
+              <rect x="56" y="70" width="248" height="178" rx="15" fill="url(#pullup)"/>
 
               <!-- 카드(앞 포켓에 꽂혀 위로 살짝 보임) -->
               <g>
-                <rect x="86" y="48" width="188" height="120" rx="9" fill="url(#cardg)" stroke="#c4c9d4" stroke-width="1"/>
-                <rect x="100" y="66" width="34" height="25" rx="4.5" fill="url(#chipg)"/>
-                <path d="M117 66v25 M100 78h34" stroke="#a9842f" stroke-width="1" opacity=".5"/>
+                <rect x="86" y="48" width="188" height="118" rx="9" fill="url(#cardg)" stroke="#c4c9d4" stroke-width="1"/>
+                <rect x="100" y="65" width="34" height="25" rx="4.5" fill="url(#chipg)" stroke="#9c7c2e" stroke-width="0.6"/>
+                <path d="M117 65v25 M100 77h34" stroke="#9c7c2e" stroke-width="0.8" opacity=".55"/>
                 <rect x="100" y="104" width="150" height="7" rx="3.5" fill="#b3b9c6"/>
                 <rect x="100" y="118" width="96" height="6" rx="3" fill="#c8cdd8"/>
+                <rect x="86" y="48" width="188" height="48" rx="9" fill="#fff" opacity=".10"/>
               </g>
 
               <!-- 카드가 포켓에 들어가는 곳의 음영 -->
-              <rect x="56" y="126" width="248" height="12" fill="#000" opacity=".10"/>
+              <rect x="58" y="125" width="244" height="14" fill="#000" opacity=".14"/>
 
               <!-- 앞 포켓(가죽) : 위는 직선 컷, 아래는 본체 곡률 -->
               <path d="M56 132 L304 132 L304 233 Q304 248 289 248 L71 248 Q56 248 56 233 Z"
-                    fill="var(--leather)"/>
+                    fill="var(--leather)" filter="url(#leatherFx)"/>
               <path d="M56 132 L304 132 L304 233 Q304 248 289 248 L71 248 Q56 248 56 233 Z"
-                    fill="url(#sheen2)"/>
+                    fill="url(#pullup)"/>
 
-              <!-- 포켓 입구 엣지코트(도색된 컷면) -->
-              <line x1="56" y1="132" x2="304" y2="132" stroke="var(--edge)" stroke-width="6.5"/>
-              <!-- 포켓 입구 새들 스티치 -->
-              <line x1="72" y1="142" x2="288" y2="142" stroke="var(--thread)" stroke-width="3.2"
-                    stroke-linecap="round" stroke-dasharray="9 7"/>
+              <!-- ===== 엣지코트(도색된 컷면) ===== -->
+              <!-- 포켓 입구: 도색 + 광택 -->
+              <line x1="57" y1="132" x2="303" y2="132" stroke="var(--edge)" stroke-width="7" stroke-linecap="round"/>
+              <line x1="57" y1="130.4" x2="303" y2="130.4" stroke="#fff" stroke-width="1.1" stroke-linecap="round" opacity=".35"/>
+              <line x1="57" y1="134.4" x2="303" y2="134.4" stroke="#000" stroke-width="1.4" stroke-linecap="round" opacity=".30"/>
+              <!-- 바깥 둘레: 도색 + 광택(위/아래) -->
+              <rect x="56" y="70" width="248" height="178" rx="15" fill="none" stroke="var(--edge)" stroke-width="8"/>
+              <rect x="56" y="70" width="248" height="178" rx="15" fill="none" stroke="url(#edgeGloss)" stroke-width="8"/>
 
-              <!-- 바깥 둘레 엣지코트(도색된 컷면) -->
-              <rect x="56" y="70" width="248" height="178" rx="15" fill="none"
-                    stroke="var(--edge)" stroke-width="7"/>
-              <!-- 바깥 둘레 새들 스티치 -->
-              <rect x="68" y="82" width="224" height="154" rx="9" fill="none"
-                    stroke="var(--thread)" stroke-width="3.2"
-                    stroke-linecap="round" stroke-dasharray="9 7"/>
+              <!-- ===== 새들 스티치(실) : JS로 생성 ===== -->
+              <g id="stitches" filter="url(#stitchShadow)"></g>
             </g>
           </svg>
         </div>
@@ -355,6 +373,57 @@ function current(){
   };
 }
 
+/* ============================================================
+   새들 스티치 생성 — 사선으로 박힌 실땀을 사실적으로 그림
+   ============================================================ */
+const SVGNS = "http://www.w3.org/2000/svg";
+function stitchAlong(x1,y1,x2,y2,gap){
+  const out=[]; const dx=x2-x1, dy=y2-y1, len=Math.hypot(dx,dy);
+  const ux=dx/len, uy=dy/len;
+  const ang=Math.atan2(dy,dx)*180/Math.PI + 32;   // 실밥은 솔기 방향에서 약간 기운다
+  const n=Math.max(1,Math.round(len/gap)); const step=len/n;
+  for(let i=0;i<=n;i++){ out.push({x:x1+ux*step*i, y:y1+uy*step*i, a:ang}); }
+  return out;
+}
+function buildStitches(){
+  const g=document.getElementById("stitches"); g.innerHTML="";
+  // 바깥 둘레(라운드 사각형의 4변, 모서리 라운드는 비움) + 포켓 입구
+  const seams=[
+    ...stitchAlong(77,82,283,82,11),     // 윗변
+    ...stitchAlong(292,91,292,227,11),   // 오른변
+    ...stitchAlong(283,236,77,236,11),   // 아랫변
+    ...stitchAlong(68,227,68,91,11),     // 왼변
+    ...stitchAlong(73,142,287,142,11),   // 포켓 입구
+  ];
+  const L=9, W=3.3;   // 실밥 길이/두께
+  seams.forEach(s=>{
+    const grp=document.createElementNS(SVGNS,"g");
+    grp.setAttribute("transform",`translate(${s.x.toFixed(1)} ${s.y.toFixed(1)}) rotate(${s.a.toFixed(1)})`);
+    const body=document.createElementNS(SVGNS,"rect");
+    body.setAttribute("x",(-W/2).toFixed(2)); body.setAttribute("y",(-L/2).toFixed(2));
+    body.setAttribute("width",W); body.setAttribute("height",L);
+    body.setAttribute("rx",(W/2).toFixed(2)); body.setAttribute("fill","var(--thread)");
+    const sheen=document.createElementNS(SVGNS,"rect");   // 실 꼬임 광택
+    sheen.setAttribute("x",(-W/2+0.4).toFixed(2)); sheen.setAttribute("y",(-L/2+1).toFixed(2));
+    sheen.setAttribute("width",(W*0.34).toFixed(2)); sheen.setAttribute("height",(L-2).toFixed(2));
+    sheen.setAttribute("rx",(W*0.17).toFixed(2)); sheen.setAttribute("fill","#fff"); sheen.setAttribute("opacity",".30");
+    grp.appendChild(body); grp.appendChild(sheen); g.appendChild(grp);
+  });
+}
+
+/* 브랜드별 가죽 결: 크리스페=곱고 매끈 / 푸에블로=거친 풀업 */
+function applyGrain(){
+  const t=document.getElementById("leatherTurb");
+  const l=document.getElementById("leatherLight");
+  if(state.brand==="pueblo"){
+    t.setAttribute("baseFrequency","0.045 0.09"); t.setAttribute("numOctaves","5");
+    l.setAttribute("surfaceScale","2.3");
+  }else{
+    t.setAttribute("baseFrequency","0.7 0.7"); t.setAttribute("numOctaves","3");
+    l.setAttribute("surfaceScale","1.1");
+  }
+}
+
 function update(){
   renderLeather(); renderThread(); renderEdge();
   const c = current();
@@ -364,6 +433,7 @@ function update(){
   svg.style.setProperty("--leather", c.leather.hex);
   svg.style.setProperty("--thread", c.thread.hex);
   svg.style.setProperty("--edge", c.edge.hex);
+  applyGrain();
 
   // 선택 표시
   document.getElementById("pick-leather").textContent = `${c.brandLabel} · ${c.leather.name}`;
@@ -412,6 +482,7 @@ document.getElementById("btn-copy").addEventListener("click", ()=>{
     .catch(()=>toast(txt));
 });
 
+buildStitches();
 update();
 </script>
 </body>
