@@ -5,100 +5,121 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>베네딕의 가죽조합 시뮬레이터</title>
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Playfair+Display:wght@600;700;800&display=swap">
 <style>
   :root{
-    --bg:#f3f5f8;
-    --surface:#ffffff;
-    --line:#eceef3;
-    --line-soft:#f1f3f7;
-    --ink:#1c2030;
-    --ink-2:#5a6072;
-    --ink-3:#9298a8;
-    --primary:#7a5230;
-    --primary-soft:#f3ece4;
-    --radius:16px;
-    --shadow-card: 0 1px 2px rgba(22,26,45,.04), 0 8px 28px rgba(22,26,45,.07);
-    --shadow-float: 0 2px 6px rgba(22,26,45,.05), 0 18px 44px rgba(22,26,45,.12);
+    --bg:#f4efe6;
+    --bg-2:#ece3d4;
+    --surface:#fffdf9;
+    --line:#ece2d2;
+    --line-soft:#f3ecdf;
+    --ink:#2b2620;
+    --ink-2:#6f6557;
+    --ink-3:#a99c88;
+    --primary:#9c7c41;          /* 앤티크 골드 */
+    --primary-deep:#856734;
+    --primary-soft:#f2ead8;
+    --gold:#bd9a52;
+    --serif:"Cormorant Garamond","Playfair Display",serif;
+    --radius:20px;
+    --shadow-card: 0 1px 2px rgba(60,45,20,.05), 0 10px 30px rgba(70,52,22,.08);
+    --shadow-float: 0 4px 10px rgba(60,45,20,.07), 0 24px 56px rgba(70,52,22,.16);
   }
   *{ box-sizing:border-box; margin:0; padding:0; }
   html,body{ height:100%; }
   body{
     font-family:"Pretendard Variable",Pretendard,-apple-system,system-ui,sans-serif;
-    background:var(--bg); color:var(--ink); -webkit-font-smoothing:antialiased; letter-spacing:-.01em;
-    padding:28px 18px 60px;
+    color:var(--ink); -webkit-font-smoothing:antialiased; letter-spacing:-.01em;
+    padding:40px 18px 72px;
+    background:
+      radial-gradient(120% 80% at 50% -10%, rgba(189,154,82,.12), rgba(189,154,82,0) 55%),
+      linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+    background-attachment:fixed;
   }
   .wrap{ max-width:1080px; margin:0 auto; }
 
-  header.page{ margin-bottom:22px; }
-  header.page h1{ font-size:24px; font-weight:800; letter-spacing:-.03em; display:flex; align-items:center; gap:10px; }
-  header.page .leaf{ width:34px; height:34px; border-radius:10px; background:linear-gradient(140deg,#a9794a,#7a5230 70%); display:flex; align-items:center; justify-content:center; box-shadow:0 5px 14px rgba(122,82,48,.32); }
-  header.page p{ color:var(--ink-2); font-size:14px; margin-top:8px; line-height:1.6; }
+  header.page{ margin-bottom:30px; text-align:center; }
+  header.page h1{ font-family:var(--serif); font-size:38px; font-weight:700; letter-spacing:.005em; color:var(--ink); line-height:1.12; }
+  header.page .h1-sub{ display:block; font-family:"Pretendard Variable",Pretendard,sans-serif; font-size:12px; font-weight:600; letter-spacing:.42em; text-transform:uppercase; color:var(--gold); margin-bottom:10px; }
+  header.page p{ color:var(--ink-2); font-size:14px; margin-top:12px; line-height:1.7; }
+  /* 금색 디바이더 */
+  .gold-rule{ display:flex; align-items:center; justify-content:center; gap:12px; margin:16px auto 2px; }
+  .gold-rule::before,.gold-rule::after{ content:""; height:1px; width:54px; background:linear-gradient(90deg, transparent, var(--gold)); }
+  .gold-rule::after{ background:linear-gradient(90deg, var(--gold), transparent); }
+  .gold-rule i{ width:6px; height:6px; transform:rotate(45deg); background:var(--gold); display:inline-block; }
 
-  .grid{ display:grid; grid-template-columns:1fr 420px; gap:20px; align-items:start; }
+  .grid{ display:grid; grid-template-columns:1fr 420px; gap:24px; align-items:start; }
   @media (max-width:900px){ .grid{ grid-template-columns:1fr; } }
 
-  .panel{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow-card); }
-  .controls{ padding:6px 20px 18px; }
+  .panel{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow-card); position:relative; overflow:hidden; }
+  .panel::before{ content:""; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg, transparent, var(--gold), transparent); opacity:.55; }
+  .controls{ padding:10px 24px 20px; }
 
-  .group{ padding:18px 0; border-bottom:1px solid var(--line-soft); }
+  .group{ padding:20px 0; border-bottom:1px solid var(--line-soft); }
   .group:last-child{ border-bottom:0; }
-  .group h2{ font-size:13px; font-weight:700; letter-spacing:.02em; color:var(--ink-2); display:flex; align-items:center; gap:8px; margin-bottom:4px; text-transform:uppercase; }
-  .group h2 .ko{ font-size:15px; font-weight:800; color:var(--ink); text-transform:none; letter-spacing:-.02em; }
-  .group .pick{ font-size:13px; color:var(--ink-3); margin-bottom:13px; }
-  .group .pick b{ color:var(--primary); font-weight:700; }
+  .group h2{ font-size:11px; font-weight:700; letter-spacing:.22em; color:var(--gold); display:flex; align-items:baseline; gap:10px; margin-bottom:6px; text-transform:uppercase; }
+  .group h2 .ko{ font-family:var(--serif); font-size:21px; font-weight:600; color:var(--ink); text-transform:none; letter-spacing:0; }
+  .group .pick{ font-size:13px; color:var(--ink-3); margin-bottom:14px; }
+  .group .pick b{ color:var(--primary-deep); font-weight:700; }
 
   /* sub-tabs (leather brand) */
-  .tabs{ display:inline-flex; background:var(--line-soft); border-radius:11px; padding:4px; gap:4px; margin-bottom:14px; }
-  .tabs button{ border:0; background:transparent; font:inherit; font-size:13px; font-weight:700; color:var(--ink-2); padding:7px 16px; border-radius:8px; cursor:pointer; transition:all .15s; }
-  .tabs button.on{ background:var(--surface); color:var(--ink); box-shadow:0 1px 3px rgba(22,26,45,.12); }
+  .tabs{ display:inline-flex; background:var(--primary-soft); border:1px solid var(--line); border-radius:12px; padding:4px; gap:4px; margin-bottom:16px; }
+  .tabs button{ border:0; background:transparent; font:inherit; font-size:13px; font-weight:700; color:var(--ink-2); padding:7px 18px; border-radius:9px; cursor:pointer; transition:all .15s; }
+  .tabs button.on{ background:var(--surface); color:var(--primary-deep); box-shadow:0 1px 4px rgba(70,52,22,.16); }
 
-  .swatches{ display:flex; flex-wrap:wrap; gap:11px; }
+  .swatches{ display:flex; flex-wrap:wrap; gap:12px; }
   .sw{ cursor:pointer; width:60px; text-align:center; }
-  .sw .chip{ width:48px; height:48px; margin:0 auto 6px; border-radius:12px; border:1px solid rgba(0,0,0,.08); box-shadow:inset 0 -6px 12px rgba(0,0,0,.12), 0 2px 5px rgba(0,0,0,.08); position:relative; transition:transform .14s; }
-  .sw .chip::after{ content:""; position:absolute; inset:0; border-radius:12px; box-shadow:0 0 0 0 transparent; transition:box-shadow .15s; }
-  .sw:hover .chip{ transform:translateY(-2px); }
-  .sw.on .chip::after{ box-shadow:0 0 0 3px var(--surface), 0 0 0 5px var(--primary); }
+  .sw .chip{ width:48px; height:48px; margin:0 auto 7px; border-radius:13px; border:1px solid rgba(0,0,0,.07); box-shadow:inset 0 -6px 12px rgba(0,0,0,.13), inset 0 2px 3px rgba(255,255,255,.18), 0 2px 6px rgba(60,45,20,.12); position:relative; transition:transform .16s, box-shadow .16s; }
+  .sw .chip::after{ content:""; position:absolute; inset:0; border-radius:13px; box-shadow:0 0 0 0 transparent; transition:box-shadow .16s; }
+  .sw:hover .chip{ transform:translateY(-3px); }
+  .sw.on .chip::after{ box-shadow:0 0 0 2.5px var(--surface), 0 0 0 4.5px var(--gold); }
   .sw .nm{ font-size:11px; line-height:1.3; color:var(--ink-2); font-weight:600; }
   .sw .sub{ font-size:10px; color:var(--ink-3); }
   /* thread chips = round, like spools */
   .sw.thread .chip{ border-radius:50%; }
   .sw.thread .chip::after{ border-radius:50%; }
-  .sw.thread.on .chip::after{ box-shadow:0 0 0 3px var(--surface), 0 0 0 5px var(--primary); }
+  .sw.thread.on .chip::after{ box-shadow:0 0 0 2.5px var(--surface), 0 0 0 4.5px var(--gold); }
 
   /* preview */
-  .preview{ position:sticky; top:20px; }
-  .preview .stage{ padding:24px; }
+  .preview{ position:sticky; top:24px; }
+  .preview .stage{ padding:30px 26px 24px;
+    background:radial-gradient(120% 90% at 50% 25%, #fffefb, #f6efe2); }
   .preview svg{ width:100%; height:auto; display:block; border-radius:12px; }
-  .summary{ border-top:1px solid var(--line-soft); padding:16px 20px 18px; }
-  .summary .row{ display:flex; align-items:center; gap:11px; padding:7px 0; }
-  .summary .dot{ width:22px; height:22px; border-radius:7px; border:1px solid rgba(0,0,0,.1); flex-shrink:0; box-shadow:inset 0 -3px 6px rgba(0,0,0,.12); }
+  .summary{ border-top:1px solid var(--line-soft); padding:18px 24px 20px; }
+  .summary .row{ display:flex; align-items:center; gap:13px; padding:8px 0; }
+  .summary .row + .row{ border-top:1px solid var(--line-soft); }
+  .summary .dot{ width:24px; height:24px; border-radius:8px; border:1px solid rgba(0,0,0,.1); flex-shrink:0; box-shadow:inset 0 -3px 6px rgba(0,0,0,.13); }
   .summary .dot.round{ border-radius:50%; }
-  .summary .lbl{ font-size:12px; color:var(--ink-3); width:64px; flex-shrink:0; }
-  .summary .val{ font-size:14px; font-weight:700; }
+  .summary .lbl{ font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3); width:72px; flex-shrink:0; }
+  .summary .val{ font-family:var(--serif); font-size:19px; font-weight:600; color:var(--ink); }
   .summary .val small{ font-weight:500; color:var(--ink-3); margin-left:5px; }
 
-  .note{ font-size:11.5px; color:var(--ink-3); line-height:1.6; margin-top:16px; padding:12px 14px; background:var(--line-soft); border-radius:10px; }
+  .note{ font-size:11.5px; color:var(--ink-3); line-height:1.7; margin-top:18px; padding:13px 16px; background:rgba(189,154,82,.08); border:1px solid var(--line); border-radius:12px; }
+  .note b{ color:var(--primary-deep); }
 
-  .actions{ display:flex; gap:8px; margin-top:14px; }
-  .btn{ flex:1; border:1px solid var(--line); background:var(--surface); font:inherit; font-size:13px; font-weight:700; color:var(--ink-2); padding:10px; border-radius:10px; cursor:pointer; transition:all .14s; }
-  .btn:hover{ background:var(--line-soft); color:var(--ink); }
-  .btn.primary{ background:var(--primary); color:#fff; border-color:var(--primary); }
-  .btn.primary:hover{ filter:brightness(1.06); color:#fff; }
-  .cafe-btn{ display:inline-flex; align-items:center; gap:8px; margin-top:14px; padding:11px 18px; border-radius:11px; background:#03c75a; color:#fff; font-size:14px; font-weight:700; text-decoration:none; box-shadow:0 4px 12px rgba(3,199,90,.28); transition:filter .14s, transform .14s; }
+  .actions{ display:flex; gap:10px; margin-top:16px; }
+  .btn{ flex:1; border:1px solid var(--line); background:var(--surface); font:inherit; font-size:13px; font-weight:700; color:var(--ink-2); padding:12px; border-radius:12px; cursor:pointer; transition:all .14s; }
+  .btn:hover{ background:var(--primary-soft); color:var(--primary-deep); border-color:var(--gold); }
+  .btn.primary{ background:linear-gradient(180deg, var(--primary) 0%, var(--primary-deep) 100%); color:#fff; border-color:var(--primary-deep); box-shadow:0 4px 14px rgba(140,103,52,.32); }
+  .btn.primary:hover{ filter:brightness(1.07); color:#fff; }
+  .cafe-btn{ display:inline-flex; align-items:center; gap:8px; margin-top:18px; padding:12px 22px; border-radius:12px; background:#03c75a; color:#fff; font-size:14px; font-weight:700; text-decoration:none; box-shadow:0 6px 16px rgba(3,199,90,.3); transition:filter .14s, transform .14s; }
   .cafe-btn:hover{ filter:brightness(1.04); transform:translateY(-1px); }
   .cafe-btn svg{ flex-shrink:0; }
   /* GOOD N LEATHER 나무판 금장 로고 */
-  .brand-plaque{ display:inline-block; padding:13px 28px 15px; border-radius:10px; margin-bottom:16px; text-align:center;
+  .brand-plaque{ display:inline-block; padding:16px 34px 18px; border-radius:12px; margin-bottom:18px; text-align:center;
     background:linear-gradient(180deg,#b88451 0%,#a9794a 30%,#8a5f36 72%,#74502e 100%);
-    box-shadow:0 7px 20px rgba(122,82,48,.32), inset 0 1px 0 rgba(255,255,255,.22), inset 0 -2px 4px rgba(0,0,0,.18);
+    box-shadow:0 12px 30px rgba(110,74,40,.34), inset 0 1px 0 rgba(255,255,255,.24), inset 0 -2px 4px rgba(0,0,0,.2);
     position:relative; overflow:hidden; }
-  .brand-plaque::after{ content:""; position:absolute; inset:0; opacity:.55; pointer-events:none;
-    background:repeating-linear-gradient(91deg, rgba(0,0,0,.06) 0 3px, rgba(255,255,255,.035) 3px 10px); }
-  .brand-plaque .gnl{ position:relative; font-family:"Georgia","Times New Roman",serif; font-weight:700; font-size:27px; letter-spacing:.09em; color:#f1d68b;
-    text-shadow:0 1px 1px rgba(55,28,8,.6), 0 -1px 0 rgba(255,255,255,.16); }
-  .brand-plaque .gnl-tag{ position:relative; font-family:"Georgia",serif; font-style:italic; font-size:12px; letter-spacing:.03em; color:#e6c578; margin-top:4px;
+  .brand-plaque::before{ content:""; position:absolute; inset:6px; border-radius:8px; border:1px solid rgba(241,214,139,.45); pointer-events:none; z-index:1; }
+  .brand-plaque::after{ content:""; position:absolute; inset:0; opacity:.5; pointer-events:none;
+    background:repeating-linear-gradient(91deg, rgba(0,0,0,.06) 0 3px, rgba(255,255,255,.04) 3px 10px); }
+  .brand-plaque .gnl{ position:relative; z-index:2; font-family:"Playfair Display","Georgia",serif; font-weight:800; font-size:30px; letter-spacing:.07em; color:#f4dc97;
+    text-shadow:0 1px 1px rgba(55,28,8,.6), 0 -1px 0 rgba(255,255,255,.18); }
+  .brand-plaque .gnl-tag{ position:relative; z-index:2; font-family:var(--serif); font-style:italic; font-size:13px; letter-spacing:.03em; color:#ecce82; margin-top:5px;
     text-shadow:0 1px 1px rgba(55,28,8,.5); }
-  @media (max-width:520px){ .brand-plaque .gnl{ font-size:21px; } }
+  @media (max-width:520px){ .brand-plaque .gnl{ font-size:22px; } header.page h1{ font-size:30px; } }
   .toast{ position:fixed; left:50%; bottom:32px; transform:translateX(-50%) translateY(20px); background:var(--ink); color:#fff; font-size:13px; font-weight:600; padding:11px 18px; border-radius:11px; box-shadow:var(--shadow-float); opacity:0; pointer-events:none; transition:all .25s; }
   .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
 </style>
@@ -110,7 +131,8 @@
       <div class="gnl">GOOD N LEATHER</div>
       <div class="gnl-tag">Do it professional, make it Awesome :)</div>
     </div>
-    <h1>베네딕의 가죽조합 시뮬레이터</h1>
+    <h1><span class="h1-sub">Leather Combination Studio</span>베네딕의 가죽조합 시뮬레이터</h1>
+    <div class="gold-rule"><i></i></div>
     <p>가죽 · 실 · 엣지코트 색상을 골라 조합을 미리 확인해 보세요. 실은 <b>비니모</b>, 엣지코트는 <b>페니체</b> 색상을 기준으로 합니다.</p>
     <a class="cafe-btn" href="https://cafe.naver.com/chipleather" target="_blank" rel="noopener noreferrer">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3h18v18H3V3zm5.4 4.2v9.6h2.1v-5.3l3.3 5.3h2.7V7.2h-2.1v5.3L11.1 7.2H8.4z"/></svg>
