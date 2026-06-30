@@ -315,6 +315,8 @@
   let panning = false, panLast = null;
   let raf = 0;
   let typeBuf = '';            // typed length for line tool (direction-distance entry)
+  let lineNew = true;          // next line click starts a brand-new line
+  let lastTool = 'line';       // last drawing tool (Enter/Space repeats it)
   let pieceSeq = 1;
 
   function newPiece(x,y,idx){ return { pts:[{x,y}], closed:false, mirror:false, fresh:true, kind:null, name:'조각 '+(idx+1) }; }
@@ -417,8 +419,8 @@
 
   /* ---------- mode ---------- */
   function setMode(m){
-    mode=m; clickTmp=null; typeBuf='';
-    if(m!=='select'){ selectedP=new Set(); selectedG=new Set(); marquee=null; }
+    mode=m; clickTmp=null; typeBuf=''; lineNew=true;
+    if(m!=='select'){ selectedP=new Set(); selectedG=new Set(); marquee=null; lastTool=m; }
     document.querySelectorAll('#modeSeg button').forEach(b=> b.classList.toggle('on', b.dataset.mode===m));
     document.getElementById('cardLen').classList.toggle('block-disabled', m!=='block');
     document.getElementById('cardDir').classList.toggle('block-disabled', m!=='block');
@@ -428,7 +430,7 @@
       circle:'원(C) — 중심을 클릭하고, 가장자리 한 점을 클릭하면 원이 생겨요',
       rect:'사각형(R) — 두 모서리를 클릭하면 새 사각형 조각이 생겨요',
       guide:'보조선(G) — 두 점을 클릭하면 안내선(중심선·다트 등)이 그려져요',
-      select:'선택·삭제(V) — 빈 곳에서 드래그해 박스로 감싼 뒤 Delete 키로 지워요' };
+      select:'선택(V) — 클릭=한 개 선택, 드래그=박스 선택, Delete=삭제. Enter=직전 도구 다시. (Esc로 언제든 여기로)' };
     document.getElementById('toolHint').textContent = hints[m];
     canvas.classList.toggle('point-mode', m==='line');
     canvas.classList.toggle('guide-mode', m==='rect'||m==='circle'||m==='guide'||m==='offset');
@@ -477,6 +479,8 @@
     pieces=[newPiece(0,0,0)]; active=0; pieceSeq=1; guides=[]; clickTmp=null; selectedP=new Set(); selectedG=new Set(); syncPieceUI(); fitView();
   }
   function toggleClose(){ const pc=AP(); if(pc.pts.length<3) return; pc.closed=!pc.closed; render(); }
+  // Esc: cancel current command/in-progress and return to neutral select state (CAD-style)
+  function cancelToNeutral(){ typeBuf=''; clickTmp=null; marquee=null; dragSel=false; lineNew=true; selectedP=new Set(); selectedG=new Set(); setMode('select'); }
   document.getElementById('btnUndo').addEventListener('click', undo);
   document.getElementById('btnClear').addEventListener('click', clearAll);
   document.getElementById('btnClose').addEventListener('click', toggleClose);
@@ -731,8 +735,7 @@
     return snapGrid ? {x:snapVal(w.x), y:snapVal(w.y)} : w;
   }
   // ---- line tool: direction(mouse) + distance(typed) ----
-  function lineAnchor(){ const pc=AP(); if(pc.kind&&pc.kind!=='line') return null; if(pc.closed) return null;
-    if(pc.pts.length>=2) return pc.pts[pc.pts.length-1]; if(pc.pts.length===1&&!pc.fresh) return pc.pts[0]; return null; }
+  function lineAnchor(){ if(lineNew) return null; const pc=AP(); if(pc.kind!=='line'||pc.closed) return null; return pc.pts[pc.pts.length-1]; }
   function lineDirAngle(anc,h){ let a=Math.atan2(-(h.y-anc.y), h.x-anc.x)*180/Math.PI;
     if(document.getElementById('snapAngChk').checked){ const st=Math.max(1,parseFloat(document.getElementById('snapStep').value)||15); a=Math.round(a/st)*st; } return a; }
   function lineEndpoint(anc,h){ const v=parseFloat(typeBuf);
@@ -743,11 +746,8 @@
     const w=worldFromEvent(e); if(!w) return;
     const p=snapAny(w);
     if(mode==='line'){
-      const pc=AP();
-      if(pc.closed || (pc.kind && pc.kind!=='line')) startOrReuse();
-      const cur=AP();
-      if(cur.pts.length===1 && cur.fresh){ cur.pts[0]={x:p.x,y:p.y}; cur.fresh=false; cur.kind='line'; typeBuf=''; render(); }
-      else { cur.fresh=false; cur.kind='line'; const ep=lineEndpoint(cur.pts[cur.pts.length-1], w); typeBuf=''; addVertex(ep.x,ep.y); }
+      if(lineNew){ const pc=startOrReuse(); pc.pts=[{x:p.x,y:p.y}]; pc.fresh=false; pc.kind='line'; pc.closed=false; pc.name='선 '+(active+1); lineNew=false; typeBuf=''; render(); }
+      else { const cur=AP(); const ep=lineEndpoint(cur.pts[cur.pts.length-1], w); typeBuf=''; addVertex(ep.x,ep.y); }
     }
     else if(mode==='guide'){
       if(!clickTmp){ clickTmp=p; render(); } else { guides.push({x1:clickTmp.x,y1:clickTmp.y,x2:p.x,y2:p.y}); clickTmp=null; render(); } }
@@ -783,7 +783,13 @@
     if(dragSel){ const w=worldFromEvent(e); marquee.x2=w.x; marquee.y2=w.y; computeSel(); requestRender(); return; }
     hover=worldFromEvent(e); updateHUD(); requestRender();
   });
-  canvas.addEventListener('pointerup', ()=>{ if(panning){ panning=false; return; } if(dragSel){ dragSel=false; computeSel(); marquee=null; render(); } });
+  canvas.addEventListener('pointerup', e=>{ if(panning){ panning=false; return; }
+    if(dragSel){ dragSel=false;
+      const d = marquee ? Math.hypot(marquee.x2-marquee.x1, marquee.y2-marquee.y1) : 0;
+      if(d < snapCm*1.2){ const w=worldFromEvent(e); const i=nearestPieceIndex(w); selectedP = i>=0?new Set([i]):new Set(); selectedG=new Set(); }  // single click = pick one
+      else computeSel();
+      marquee=null; render();
+    } });
   canvas.addEventListener('pointerleave', ()=>{ hover=null; updateHUD(); requestRender(); });
   canvas.addEventListener('wheel', e=>{ e.preventDefault(); const vb=eventToVB(e); if(!vb) return; zoomBy(Math.exp(-e.deltaY*0.0015), vb.x, vb.y); }, {passive:false});
   canvas.addEventListener('dblclick', e=>{ if(mode==='select'||mode==='block') fitView(); });
@@ -860,16 +866,16 @@
       if(/^[0-9]$/.test(k) || k==='.'){ typeBuf+=k; updateHUD(); requestRender(); e.preventDefault(); return; }
       if(k==='Enter'){ const anc=lineAnchor(); if(anc && parseFloat(typeBuf)>0 && hover){ const ep=lineEndpoint(anc,hover); typeBuf=''; addVertex(ep.x,ep.y); } e.preventDefault(); return; }
       if(k==='Backspace'){ if(typeBuf!==''){ typeBuf=typeBuf.slice(0,-1); updateHUD(); requestRender(); } else undo(); e.preventDefault(); return; }
-      if(k==='Escape'){ typeBuf=''; clickTmp=null; render(); e.preventDefault(); return; }
+      if(k==='Escape'){ cancelToNeutral(); e.preventDefault(); return; }
     }
     if(k==='ArrowUp'){ setHeading(90); e.preventDefault(); }
     else if(k==='ArrowDown'){ setHeading(270); e.preventDefault(); }
     else if(k==='ArrowLeft'){ setHeading(180); e.preventDefault(); }
     else if(k==='ArrowRight'){ setHeading(0); e.preventDefault(); }
-    else if(k==='Enter'||k===' '){ if(mode==='block'){ addLength(unit); e.preventDefault(); } }
+    else if(k==='Enter'||k===' '){ if(mode==='block'){ addLength(unit); e.preventDefault(); } else if(mode==='select'){ setMode(lastTool); e.preventDefault(); } }
     else if(k==='Delete'){ if(deleteSelection()) e.preventDefault(); }
     else if(k==='Backspace'){ if(!(mode==='select'&&deleteSelection())) undo(); e.preventDefault(); }
-    else if(k==='Escape'){ clickTmp=null; marquee=null; selectedP=new Set(); selectedG=new Set(); render(); }
+    else if(k==='Escape'){ cancelToNeutral(); e.preventDefault(); }
     else if(k==='+'||k==='='){ rotateBy(1); }
     else if(k==='-'){ rotateBy(-1); }
     else if(k==='f'||k==='F'||k==='Home'){ fitView(); }
