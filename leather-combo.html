@@ -469,7 +469,7 @@ function update(){
 
   // 요약
   document.getElementById("sum-leather").innerHTML = `${c.leather.name}${lsub} <small>가죽</small>`;
-  document.getElementById("sum-thread").innerHTML  = `비니모 ${c.thread.name} <small>실</small>`;
+  document.getElementById("sum-thread").innerHTML  = `${c.thread.name} <small>비니모</small>`;
   document.getElementById("sum-edge").innerHTML    = `${c.edge.name}${c.edge.sub?` `+c.edge.sub:""} <small>페니체</small>`;
   document.getElementById("sum-leather-dot").style.background = c.leather.hex;
   document.getElementById("sum-thread-dot").style.background  = c.thread.hex;
