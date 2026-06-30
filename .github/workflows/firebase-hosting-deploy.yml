@@ -1,0 +1,26 @@
+name: Deploy to Firebase Hosting
+
+# 베네딕의 실 길이 계산기를 포함한 사이트를 Firebase Hosting에 배포합니다.
+# 사용하려면 GitHub 저장소 Settings > Secrets and variables > Actions 에
+# FIREBASE_SERVICE_ACCOUNT 시크릿(서비스 계정 JSON 전체)을 추가하세요.
+
+on:
+  push:
+    branches:
+      - main
+      - claude/leather-thread-calculator-r5cka8
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to Firebase Hosting (live channel)
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: jjj2195-1bd15
+          channelId: live
