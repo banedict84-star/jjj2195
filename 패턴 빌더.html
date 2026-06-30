@@ -3,60 +3,27 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MOIDA · 패턴 빌더</title>
+<title>패턴 빌더</title>
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
 <style>
   :root{
     --bg:#f3f5f8; --surface:#ffffff; --line:#eceef3; --line-soft:#f1f3f7;
     --ink:#1c2030; --ink-2:#5a6072; --ink-3:#9298a8;
     --primary:#4f46e5; --primary-soft:#eef0fe;
-    --shadow-card: 0 1px 2px rgba(22,26,45,.04), 0 8px 28px rgba(22,26,45,.07);
-    --shadow-float: 0 2px 6px rgba(22,26,45,.05), 0 18px 44px rgba(22,26,45,.12);
   }
   *{ box-sizing:border-box; margin:0; padding:0; }
   html,body{ height:100%; }
   body{ font-family:"Pretendard Variable",Pretendard,-apple-system,system-ui,sans-serif;
     background:var(--bg); color:var(--ink); -webkit-font-smoothing:antialiased; letter-spacing:-.01em; }
-  .app{ display:grid; grid-template-columns:236px 1fr; min-height:100vh; transition:grid-template-columns .22s ease; }
+  .app{ display:flex; flex-direction:column; min-height:100vh; }
 
-  /* ===== Sidebar ===== */
-  .sidebar{ background:var(--surface); border-right:1px solid var(--line); display:flex; flex-direction:column; padding:18px 16px; position:sticky; top:0; height:100vh; overflow-y:auto; }
-  .side-top{ display:flex; align-items:center; justify-content:space-between; gap:8px; position:relative; }
-  .logo{ display:flex; align-items:center; gap:11px; padding:8px 8px 18px; }
-  .logo-mark{ width:36px; height:36px; border-radius:11px; flex-shrink:0; background:linear-gradient(140deg,#6a5cf5 0%,#4f46e5 60%,#4338ca 100%); display:flex; align-items:center; justify-content:center; box-shadow:0 5px 14px rgba(79,70,229,.34); position:relative; overflow:hidden; }
-  .logo-mark::after{ content:""; position:absolute; inset:0; background:radial-gradient(65% 55% at 28% 20%, rgba(255,255,255,.42), rgba(255,255,255,0) 70%); }
-  .logo-name{ font-size:20px; font-weight:800; letter-spacing:-.04em; color:#1c2030; line-height:1; }
-  .logo-name b{ color:var(--primary); font-weight:800; }
-  .collapse-btn{ position:absolute; top:1px; right:0; width:30px; height:30px; border-radius:9px; border:1px solid var(--line); background:var(--surface); color:var(--ink-3); display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; transition:background .14s,color .14s; }
-  .collapse-btn:hover{ background:var(--line-soft); color:var(--ink-2); }
-  .collapse-btn svg{ transition:transform .22s ease; }
-  .app.collapsed{ grid-template-columns:72px 1fr; }
-  .app.collapsed .sidebar{ padding:18px 12px; }
-  .app.collapsed .logo{ justify-content:center; }
-  .app.collapsed .logo-name{ display:none; }
-  .app.collapsed .collapse-btn{ position:static; }
-  .app.collapsed .collapse-btn svg{ transform:rotate(180deg); }
-  .app.collapsed .nav-item{ justify-content:center; padding:11px 0; gap:0; }
-  .app.collapsed .nav-item .nm,.app.collapsed .sec{ display:none; }
-
-  nav{ display:flex; flex-direction:column; gap:2px; margin-top:14px; }
-  .nav-item{ display:flex; align-items:center; gap:11px; padding:10px 10px; border-radius:11px; cursor:pointer; color:var(--ink-2); font-size:14px; font-weight:600; text-decoration:none; transition:background .14s,color .14s; }
-  .nav-item:hover{ background:var(--line-soft); color:var(--ink); }
-  .nav-item.active{ background:var(--primary-soft); color:var(--primary); }
-  .nav-item.active svg{ color:var(--primary); }
-  .nav-item svg{ color:var(--ink-3); }
-  .nav-item .nm{ flex:1; }
-  .sec{ padding:18px 10px 8px; font-size:11.5px; font-weight:700; color:var(--ink-3); letter-spacing:.04em; }
-  .side-foot{ margin-top:auto; padding-top:14px; border-top:1px solid var(--line); }
-  .foot-item{ display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:10px; color:var(--ink-2); font-size:13.5px; font-weight:600; cursor:pointer; text-decoration:none; transition:background .14s; }
-  .foot-item:hover{ background:var(--line-soft); }
-  .foot-item svg{ color:var(--ink-3); }
-
-  /* ===== Main ===== */
-  .main{ display:flex; flex-direction:column; min-width:0; }
-  .topbar{ display:flex; align-items:center; gap:16px; padding:18px 28px; border-bottom:1px solid var(--line); background:var(--surface); flex-wrap:wrap; }
-  .tb-title h1{ font-size:21px; font-weight:800; letter-spacing:-.03em; }
-  .tb-title p{ font-size:13px; color:var(--ink-3); margin-top:3px; font-weight:500; }
+  /* ===== Top bar ===== */
+  .topbar{ display:flex; align-items:center; gap:16px; padding:14px 24px; border-bottom:1px solid var(--line); background:var(--surface); flex-wrap:wrap; }
+  .brand{ display:flex; align-items:center; gap:11px; }
+  .brand-mark{ width:38px; height:38px; border-radius:11px; flex-shrink:0; background:linear-gradient(140deg,#6a5cf5 0%,#4f46e5 60%,#4338ca 100%); display:flex; align-items:center; justify-content:center; box-shadow:0 5px 14px rgba(79,70,229,.34); position:relative; overflow:hidden; }
+  .brand-mark::after{ content:""; position:absolute; inset:0; background:radial-gradient(65% 55% at 28% 20%, rgba(255,255,255,.42), rgba(255,255,255,0) 70%); }
+  .brand-tx h1{ font-size:18px; font-weight:800; letter-spacing:-.03em; line-height:1.1; }
+  .brand-tx p{ font-size:12px; color:var(--ink-3); margin-top:2px; font-weight:500; }
   .tb-actions{ display:flex; gap:8px; margin-left:auto; flex-wrap:wrap; }
   .btn{ display:inline-flex; align-items:center; gap:7px; border:1px solid var(--line); background:var(--surface); color:var(--ink-2); border-radius:10px; padding:9px 13px; font-size:13px; font-weight:600; font-family:inherit; cursor:pointer; transition:background .14s,border-color .14s,color .14s,transform .1s; }
   .btn:hover{ background:var(--line-soft); color:var(--ink); }
@@ -132,7 +99,6 @@
   .save-row select{ flex:1; border:1px solid var(--line); border-radius:9px; padding:8px 9px; font-size:12.5px; font-family:inherit; color:var(--ink-2); outline:none; background:var(--surface); }
 
   @media (max-width:980px){
-    .app,.app.collapsed{ grid-template-columns:1fr; } .sidebar{ display:none; }
     .builder{ grid-template-columns:1fr; } .panel{ border-right:none; border-bottom:1px solid var(--line); }
     .stage-svg{ min-height:380px; }
   }
@@ -141,134 +107,105 @@
 <body>
 <div class="app">
 
-  <!-- ===== Sidebar ===== -->
-  <aside class="sidebar">
-    <div class="side-top">
-      <div class="logo">
-        <div class="logo-mark"><svg width="21" height="21" viewBox="0 0 24 24" fill="none">
-          <path d="M7 8.5 12 14.5 17 8.5" stroke="#fff" stroke-opacity=".55" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-          <circle cx="7" cy="8" r="2.6" fill="#fff"/><circle cx="17" cy="8" r="2.6" fill="#fff"/><circle cx="12" cy="15.5" r="3.1" fill="#fff"/>
-        </svg></div>
-        <div class="logo-name">MO<b>IDA</b></div>
-      </div>
-      <button class="collapse-btn" data-collapse aria-label="사이드바 접기"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
-    </div>
-
-    <nav>
-      <a class="nav-item" href="MOIDA Dashboard v2.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg><span class="nm">대시보드</span></a>
-      <a class="nav-item" href="MOIDA 공지사항.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 14-6v14L3 13z"/><path d="M3 11v2a2 2 0 0 0 2 2h2"/></svg><span class="nm">공지사항</span></a>
-      <a class="nav-item" href="MOIDA 조직관리.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="7" r="2.3"/><path d="M16.5 13.5a5 5 0 0 1 4.5 5"/></svg><span class="nm">조직관리</span></a>
-      <a class="nav-item" href="MOIDA 일정.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16" rx="3"/><path d="M3.5 9h17M8 3v3M16 3v3"/></svg><span class="nm">일정</span></a>
-    </nav>
-
-    <div class="sec">디자인 도구</div>
-    <nav>
-      <a class="nav-item active"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19 19 4"/><path d="M5 5h3v3H5zM16 16h3v3h-3z"/><path d="M4 14v5h5"/></svg><span class="nm">패턴 빌더</span></a>
-    </nav>
-
-    <div class="side-foot">
-      <a class="foot-item" href="MOIDA Dashboard v2.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 17l5-5-5-5M15 12H3"/></svg><span>대시보드로</span></a>
-    </div>
-  </aside>
-
-  <!-- ===== Main ===== -->
-  <main class="main">
-    <div class="topbar">
-      <div class="tb-title">
+  <!-- ===== Top bar ===== -->
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19 19 4"/><path d="M5 5h3v3H5zM16 16h3v3h-3z"/><path d="M4 14v5h5"/></svg></div>
+      <div class="brand-tx">
         <h1>패턴 빌더</h1>
         <p>방향을 정하고 길이 블록을 눌러 선을 이어 패턴을 만드세요</p>
       </div>
-      <div class="tb-actions">
-        <button class="btn" id="btnUndo"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-1"/></svg>되돌리기</button>
-        <button class="btn" id="btnClose"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><circle cx="5" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg><span id="closeLbl">닫기</span></button>
-        <button class="btn danger" id="btnClear"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>초기화</button>
-        <button class="btn" id="btnSvg"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 11l4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>SVG</button>
-        <button class="btn primary" id="btnPng"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>PNG</button>
+    </div>
+    <div class="tb-actions">
+      <button class="btn" id="btnUndo"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-1"/></svg>되돌리기</button>
+      <button class="btn" id="btnClose"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><circle cx="5" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg><span id="closeLbl">닫기</span></button>
+      <button class="btn danger" id="btnClear"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>초기화</button>
+      <button class="btn" id="btnSvg"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 11l4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>SVG</button>
+      <button class="btn primary" id="btnPng"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>PNG</button>
+    </div>
+  </div>
+
+  <div class="builder">
+    <!-- control panel -->
+    <div class="panel">
+      <!-- direction -->
+      <div class="pcard">
+        <h3>① 방향 정하기 <span class="hint">각도 자유</span></h3>
+        <div class="dir-wrap">
+          <svg id="dial" width="124" height="124" viewBox="0 0 124 124"></svg>
+          <div class="dir-grid">
+            <div class="dir-btn" data-ang="135">↖</div>
+            <div class="dir-btn" data-ang="90">↑</div>
+            <div class="dir-btn" data-ang="45">↗</div>
+            <div class="dir-btn" data-ang="180">←</div>
+            <div class="dir-btn dir-center" id="dirCenter">0°<small>방향</small></div>
+            <div class="dir-btn" data-ang="0">→</div>
+            <div class="dir-btn" data-ang="225">↙</div>
+            <div class="dir-btn" data-ang="270">↓</div>
+            <div class="dir-btn" data-ang="315">↘</div>
+          </div>
+        </div>
+        <div class="angle-row">
+          <label>각도</label>
+          <input class="num" type="number" id="angleInput" step="1" value="90">
+          <span style="color:var(--ink-3);font-size:13px">°</span>
+          <button class="rot" id="rotL" title="반시계 회전">↺</button>
+          <button class="rot" id="rotR" title="시계 회전">↻</button>
+        </div>
+        <div class="snap-row">
+          <input type="checkbox" id="snapChk" checked>
+          <span>각도 스냅</span>
+          <input class="num" type="number" id="snapStep" value="15" min="1" max="90">
+          <span style="color:var(--ink-3)">° 단위</span>
+        </div>
+      </div>
+
+      <!-- length blocks -->
+      <div class="pcard">
+        <h3>② 길이 블록 누르기 <span class="hint">눌러서 누적</span></h3>
+        <div class="now-dir">
+          <span class="ar" id="nowAr">↑</span>
+          <span class="tx">지금 방향 <b id="nowDeg">90°</b><br>아래 블록을 누르면 이 방향으로 그려져요</span>
+        </div>
+        <div class="chips" id="chips"></div>
+        <div class="custom-row">
+          <input type="number" id="customLen" placeholder="직접 입력 (cm)" step="0.1" min="0.1">
+          <button id="addCustom">추가</button>
+        </div>
+      </div>
+
+      <!-- block list -->
+      <div class="pcard">
+        <h3>③ 블록 순서 <span class="hint" id="blkHint">0개</span></h3>
+        <div class="blocks" id="blocks"></div>
+      </div>
+
+      <!-- save / load -->
+      <div class="pcard">
+        <h3>패턴 저장</h3>
+        <div class="save-row">
+          <select id="saveList"><option value="">저장된 패턴…</option></select>
+          <button class="btn" id="btnLoad">불러오기</button>
+        </div>
+        <div class="save-row" style="margin-top:8px">
+          <button class="btn" id="btnSave" style="flex:1;justify-content:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7"/></svg>현재 패턴 저장</button>
+          <button class="btn danger" id="btnDelSave">삭제</button>
+        </div>
       </div>
     </div>
 
-    <div class="builder">
-      <!-- control panel -->
-      <div class="panel">
-        <!-- direction -->
-        <div class="pcard">
-          <h3>① 방향 정하기 <span class="hint">각도 자유</span></h3>
-          <div class="dir-wrap">
-            <svg id="dial" width="124" height="124" viewBox="0 0 124 124"></svg>
-            <div class="dir-grid">
-              <div class="dir-btn" data-ang="135">↖</div>
-              <div class="dir-btn" data-ang="90">↑</div>
-              <div class="dir-btn" data-ang="45">↗</div>
-              <div class="dir-btn" data-ang="180">←</div>
-              <div class="dir-btn dir-center" id="dirCenter">0°<small>방향</small></div>
-              <div class="dir-btn" data-ang="0">→</div>
-              <div class="dir-btn" data-ang="225">↙</div>
-              <div class="dir-btn" data-ang="270">↓</div>
-              <div class="dir-btn" data-ang="315">↘</div>
-            </div>
-          </div>
-          <div class="angle-row">
-            <label>각도</label>
-            <input class="num" type="number" id="angleInput" step="1" value="90">
-            <span style="color:var(--ink-3);font-size:13px">°</span>
-            <button class="rot" id="rotL" title="반시계 회전">↺</button>
-            <button class="rot" id="rotR" title="시계 회전">↻</button>
-          </div>
-          <div class="snap-row">
-            <input type="checkbox" id="snapChk" checked>
-            <span>각도 스냅</span>
-            <input class="num" type="number" id="snapStep" value="15" min="1" max="90">
-            <span style="color:var(--ink-3)">° 단위</span>
-          </div>
-        </div>
-
-        <!-- length blocks -->
-        <div class="pcard">
-          <h3>② 길이 블록 누르기 <span class="hint">눌러서 누적</span></h3>
-          <div class="now-dir">
-            <span class="ar" id="nowAr">↑</span>
-            <span class="tx">지금 방향 <b id="nowDeg">90°</b><br>아래 블록을 누르면 이 방향으로 그려져요</span>
-          </div>
-          <div class="chips" id="chips"></div>
-          <div class="custom-row">
-            <input type="number" id="customLen" placeholder="직접 입력 (cm)" step="0.1" min="0.1">
-            <button id="addCustom">추가</button>
-          </div>
-        </div>
-
-        <!-- block list -->
-        <div class="pcard">
-          <h3>③ 블록 순서 <span class="hint" id="blkHint">0개</span></h3>
-          <div class="blocks" id="blocks"></div>
-        </div>
-
-        <!-- save / load -->
-        <div class="pcard">
-          <h3>패턴 저장</h3>
-          <div class="save-row">
-            <select id="saveList"><option value="">저장된 패턴…</option></select>
-            <button class="btn" id="btnLoad">불러오기</button>
-          </div>
-          <div class="save-row" style="margin-top:8px">
-            <button class="btn" id="btnSave" style="flex:1;justify-content:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7"/></svg>현재 패턴 저장</button>
-            <button class="btn danger" id="btnDelSave">삭제</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- stage -->
-      <div class="stage">
-        <div class="stage-svg"><svg id="canvas" preserveAspectRatio="xMidYMid meet"></svg></div>
-        <div class="stat-bar">
-          <div class="stat"><span class="k">총 길이</span><span class="v" id="stTotal">0 <small>cm</small></span></div>
-          <div class="stat"><span class="k">선분</span><span class="v" id="stSeg">0 <small>개</small></span></div>
-          <div class="stat"><span class="k">현재 위치</span><span class="v" id="stPos" style="font-size:14px">0.0, 0.0 <small>cm</small></span></div>
-          <div class="stat"><span class="k">가로 × 세로</span><span class="v" id="stBox" style="font-size:14px">0 × 0 <small>cm</small></span></div>
-          <div class="stat"><span class="k">상태</span><span class="v" id="stClosed" style="font-size:14px">열림</span></div>
-        </div>
+    <!-- stage -->
+    <div class="stage">
+      <div class="stage-svg"><svg id="canvas" preserveAspectRatio="xMidYMid meet"></svg></div>
+      <div class="stat-bar">
+        <div class="stat"><span class="k">총 길이</span><span class="v" id="stTotal">0 <small>cm</small></span></div>
+        <div class="stat"><span class="k">선분</span><span class="v" id="stSeg">0 <small>개</small></span></div>
+        <div class="stat"><span class="k">현재 위치</span><span class="v" id="stPos" style="font-size:14px">0.0, 0.0 <small>cm</small></span></div>
+        <div class="stat"><span class="k">가로 × 세로</span><span class="v" id="stBox" style="font-size:14px">0 × 0 <small>cm</small></span></div>
+        <div class="stat"><span class="k">상태</span><span class="v" id="stClosed" style="font-size:14px">열림</span></div>
       </div>
     </div>
-  </main>
+  </div>
 </div>
 
 <script>
@@ -281,7 +218,7 @@
   let unit = 1;          // last used length (keyboard Enter)
   let closed = false;
   const VBW = 1000, VBH = 700, PAD = 64;
-  const SAVE_KEY = 'moida_patterns';
+  const SAVE_KEY = 'pattern_builder_saves';
 
   /* ---------- helpers ---------- */
   const norm = a => ((a % 360) + 360) % 360;
@@ -461,16 +398,13 @@
 
     // ----- measurement labels (per merged stroke) -----
     const st=strokes();
-    let idx=0;
     for(const s of st){
       const p0=pts[s.start], p1=pts[s.start+s.count];
       const mx=(X(p0.x)+X(p1.x))/2, my=(Y(p0.y)+Y(p1.y))/2;
-      // perpendicular offset
-      const ang=rad(s.a); const ox=Math.sin(ang)*16, oy=Math.sin(ang)*0 - Math.cos(ang)*16;
+      const ang=rad(s.a);
       const tx=mx+Math.sin(ang)*16, ty=my+Math.cos(ang)*16; // offset perpendicular (screen)
       g+=`<g><rect x="${(tx-20).toFixed(1)}" y="${(ty-11).toFixed(1)}" width="40" height="20" rx="6" fill="#fff" stroke="#e5e8f0" stroke-width="1" opacity=".92"/>`+
          `<text x="${tx.toFixed(1)}" y="${(ty+4).toFixed(1)}" font-size="13" font-weight="700" fill="#3b34b8" text-anchor="middle" font-family="Pretendard">${fmt(s.l)}</text></g>`;
-      idx++;
     }
 
     // ----- start & current markers -----
@@ -479,7 +413,6 @@
     g+=`<text x="${X(start.x).toFixed(1)}" y="${(Y(start.y)-13).toFixed(1)}" font-size="12" font-weight="700" fill="#0e8f63" text-anchor="middle" font-family="Pretendard">시작</text>`;
     if(pts.length>1 && !closed){
       g+=`<circle cx="${X(cur.x).toFixed(1)}" cy="${Y(cur.y).toFixed(1)}" r="7" fill="#4f46e5" stroke="#fff" stroke-width="2.5"/>`;
-      // heading arrow preview
       const al=Math.min(extent*0.18, 4)*scale; // preview length
       const hx=X(cur.x)+Math.cos(rad(heading))*al, hy=Y(cur.y)-Math.sin(rad(heading))*al;
       g+=`<line x1="${X(cur.x).toFixed(1)}" y1="${Y(cur.y).toFixed(1)}" x2="${hx.toFixed(1)}" y2="${hy.toFixed(1)}" stroke="#f59e0b" stroke-width="2.4" stroke-dasharray="5 4" stroke-linecap="round"/>`;
@@ -489,18 +422,17 @@
     }
 
     canvas.innerHTML=g;
-    updateStats(pts, st, bw, bh);
+    updateStats(pts, st);
     renderBlocks(st);
   }
 
-  function updateStats(pts, st, bw, bh){
+  function updateStats(pts, st){
     let total=0; for(const o of ops) total+=o.l;
     if(closed && pts.length>1){ const a=pts[0],b=pts[pts.length-1]; total+=Math.hypot(a.x-b.x,a.y-b.y); }
     const cur=pts[pts.length-1];
     document.getElementById('stTotal').innerHTML = fmt(total)+' <small>cm</small>';
     document.getElementById('stSeg').innerHTML = st.length+' <small>개</small>';
     document.getElementById('stPos').innerHTML = fmt(cur.x)+', '+fmt(-cur.y)+' <small>cm</small>';
-    // actual drawn bbox (without padding): recompute
     let nx=0,xx=0,ny=0,xy=0; for(const p of pts){nx=Math.min(nx,p.x);xx=Math.max(xx,p.x);ny=Math.min(ny,p.y);xy=Math.max(xy,p.y);}
     document.getElementById('stBox').innerHTML = fmt(xx-nx)+' × '+fmt(xy-ny)+' <small>cm</small>';
     const cl=document.getElementById('stClosed');
@@ -551,14 +483,14 @@
     a.href=url; a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000);
   }
   document.getElementById('btnSvg').addEventListener('click', ()=>{
-    download('moida-pattern.svg', new Blob([exportSVG()], {type:'image/svg+xml'}));
+    download('pattern.svg', new Blob([exportSVG()], {type:'image/svg+xml'}));
   });
   document.getElementById('btnPng').addEventListener('click', ()=>{
     const svg=exportSVG(), img=new Image();
     img.onload=()=>{
       const sc=2, c=document.createElement('canvas'); c.width=VBW*sc; c.height=VBH*sc;
       const ctx=c.getContext('2d'); ctx.scale(sc,sc); ctx.drawImage(img,0,0);
-      c.toBlob(b=> download('moida-pattern.png', b), 'image/png');
+      c.toBlob(b=> download('pattern.png', b), 'image/png');
     };
     img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
   });
@@ -586,14 +518,6 @@
     const v=document.getElementById('saveList').value; if(v==='') return;
     const list=getSaved(); list.splice(parseInt(v),1); setSaved(list); refreshSaveList();
   });
-
-  /* ---------- sidebar collapse ---------- */
-  const app=document.querySelector('.app'), CK='moida_sidebar_collapsed';
-  if(localStorage.getItem(CK)==='1') app.classList.add('collapsed');
-  document.querySelectorAll('[data-collapse]').forEach(b=>b.addEventListener('click',()=>{
-    app.classList.toggle('collapsed');
-    localStorage.setItem(CK, app.classList.contains('collapsed')?'1':'0');
-  }));
 
   /* ---------- init ---------- */
   syncHeadingUI();
