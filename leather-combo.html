@@ -382,7 +382,7 @@ function current(){
    새들 스티치 생성 — 사선으로 박힌 실땀을 사실적으로 그림
    ============================================================ */
 const SVGNS = "http://www.w3.org/2000/svg";
-const STITCH_TILT = 38;   // 실밥 기울기(솔기 방향 기준 +38°): 윗변에서 왼쪽위→오른쪽아래(＼)
+const STITCH_TILT = -38;   // 실밥 기울기(솔기 방향 기준 -38°): 윗변에서 왼쪽아래→오른쪽위(⟋)
 function stitchAlong(x1,y1,x2,y2,gap){
   const out=[]; const dx=x2-x1, dy=y2-y1, len=Math.hypot(dx,dy);
   const ux=dx/len, uy=dy/len;
@@ -421,7 +421,7 @@ function buildStitches(){
     ...stitchRoundRect(68,82,224,154,9,gap),  // 바깥 둘레(접선 따라 균등 → 끊김 없음)
     ...stitchAlong(90,142,270,142,gap),       // 포켓 입구
   ];
-  const L=10.5, W=3.3;   // 실밥 길이/두께 (가로로 그린 뒤 회전)
+  const L=10.5, W=2.5;   // 실밥 길이/두께 (가로로 그린 뒤 회전)
   seams.forEach(s=>{
     const grp=document.createElementNS(SVGNS,"g");
     grp.setAttribute("transform",`translate(${s.x.toFixed(1)} ${s.y.toFixed(1)}) rotate(${(s.a+STITCH_TILT).toFixed(1)})`);
