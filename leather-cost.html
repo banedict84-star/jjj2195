@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>가죽공예 원가 계산기</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+  :root{
+    --bg:#f3f5f8;
+    --surface:#ffffff;
+    --line:#eceef3;
+    --line-soft:#f1f3f7;
+    --ink:#1c2030;
+    --ink-2:#5a6072;
+    --ink-3:#9298a8;
+    --primary:#a65a2e;
+    --primary-2:#8a4a24;
+    --primary-soft:#fbf2ea;
+    --good:#16a06b;
+    --good-soft:#e8f7f0;
+    --warn:#e0892b;
+    --danger:#d64545;
+    --shadow-card: 0 1px 2px rgba(22,26,45,.04), 0 8px 28px rgba(22,26,45,.07);
+    --shadow-float: 0 2px 6px rgba(22,26,45,.05), 0 18px 44px rgba(22,26,45,.12);
+    --radius:14px;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; }
+  body{
+    font-family:"Pretendard Variable",Pretendard,-apple-system,system-ui,sans-serif;
+    background:var(--bg); color:var(--ink); -webkit-font-smoothing:antialiased; letter-spacing:-.01em;
+    line-height:1.45;
+  }
+  .wrap{ max-width:1180px; margin:0 auto; padding:26px 22px 80px; }
+
+  /* Header */
+  .top{ display:flex; align-items:center; gap:14px; margin-bottom:22px; flex-wrap:wrap; }
+  .logo-mark{
+    width:46px; height:46px; border-radius:13px; flex-shrink:0;
+    background:linear-gradient(140deg,#b9683a,#8a4a24);
+    display:grid; place-items:center; color:#fff; box-shadow:var(--shadow-card);
+  }
+  .logo-mark svg{ width:26px; height:26px; }
+  .title h1{ font-size:21px; font-weight:800; letter-spacing:-.02em; }
+  .title p{ font-size:13px; color:var(--ink-3); margin-top:1px; }
+  .top-actions{ margin-left:auto; display:flex; gap:8px; flex-wrap:wrap; }
+  .btn{
+    border:1px solid var(--line); background:var(--surface); color:var(--ink-2);
+    padding:9px 14px; border-radius:10px; font-size:13px; font-weight:600; cursor:pointer;
+    font-family:inherit; transition:.15s; display:inline-flex; align-items:center; gap:6px;
+  }
+  .btn:hover{ border-color:#d8dce4; color:var(--ink); }
+  .btn.primary{ background:var(--primary); border-color:var(--primary); color:#fff; }
+  .btn.primary:hover{ background:var(--primary-2); border-color:var(--primary-2); color:#fff; }
+  .btn.ghost-danger:hover{ border-color:#f0c7c7; color:var(--danger); }
+
+  /* Layout */
+  .grid{ display:grid; grid-template-columns:1fr 372px; gap:20px; align-items:start; }
+  @media (max-width:920px){ .grid{ grid-template-columns:1fr; } }
+
+  .card{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow-card); margin-bottom:18px; }
+  .card-h{ padding:16px 20px; border-bottom:1px solid var(--line-soft); display:flex; align-items:center; gap:10px; }
+  .card-h .ic{ width:30px; height:30px; border-radius:9px; background:var(--primary-soft); color:var(--primary); display:grid; place-items:center; flex-shrink:0; }
+  .card-h .ic svg{ width:17px; height:17px; }
+  .card-h h2{ font-size:15px; font-weight:700; }
+  .card-h .sub{ font-size:12px; color:var(--ink-3); margin-left:auto; }
+  .card-b{ padding:18px 20px; }
+
+  /* Form fields */
+  .field{ margin-bottom:14px; }
+  .field:last-child{ margin-bottom:0; }
+  .field label{ display:block; font-size:12.5px; font-weight:600; color:var(--ink-2); margin-bottom:6px; }
+  .field label .hint{ font-weight:500; color:var(--ink-3); font-size:11.5px; }
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .row3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+  @media (max-width:560px){ .row2,.row3{ grid-template-columns:1fr; } }
+
+  input[type=text], input[type=number], select{
+    width:100%; border:1px solid var(--line); border-radius:10px; padding:10px 12px;
+    font-size:14px; font-family:inherit; color:var(--ink); background:#fff; transition:.15s;
+  }
+  input:focus, select:focus{ outline:none; border-color:var(--primary); box-shadow:0 0 0 3px var(--primary-soft); }
+  input::placeholder{ color:#c2c7d2; }
+  .inwrap{ position:relative; }
+  .inwrap .unit{ position:absolute; right:12px; top:50%; transform:translateY(-50%); font-size:12.5px; color:var(--ink-3); pointer-events:none; }
+  .inwrap input{ padding-right:42px; }
+
+  /* Dynamic list table */
+  .ltable{ width:100%; border-collapse:collapse; }
+  .ltable th{ text-align:left; font-size:11.5px; font-weight:600; color:var(--ink-3); padding:0 8px 8px; }
+  .ltable th.num,.ltable td.num{ text-align:right; }
+  .ltable td{ padding:4px 4px; vertical-align:middle; }
+  .ltable input{ padding:8px 10px; font-size:13.5px; }
+  .ltable .name-in{ min-width:120px; }
+  .ltable .amt{ font-size:13.5px; font-weight:600; white-space:nowrap; padding-right:8px; }
+  .del-btn{ width:30px; height:30px; border-radius:8px; border:1px solid var(--line); background:#fff; color:var(--ink-3); cursor:pointer; display:grid; place-items:center; transition:.15s; }
+  .del-btn:hover{ border-color:#f0c7c7; color:var(--danger); }
+  .del-btn svg{ width:15px; height:15px; }
+  .add-row{ margin-top:10px; }
+  .add-row .btn{ width:100%; justify-content:center; border-style:dashed; }
+  .sub-total{ display:flex; justify-content:space-between; align-items:center; margin-top:14px; padding-top:12px; border-top:1px dashed var(--line); font-size:13px; }
+  .sub-total b{ font-size:15px; }
+
+  /* Result panel */
+  .result{ position:sticky; top:18px; }
+  .res-hero{ background:linear-gradient(150deg,#8a4a24,#6f3a1c); border-radius:var(--radius); padding:22px 22px 20px; color:#fff; box-shadow:var(--shadow-float); }
+  .res-hero .lbl{ font-size:12.5px; opacity:.78; font-weight:500; }
+  .res-hero .price{ font-size:33px; font-weight:800; letter-spacing:-.03em; margin-top:3px; }
+  .res-hero .price small{ font-size:17px; font-weight:600; opacity:.85; }
+  .res-hero .vat{ font-size:12px; opacity:.7; margin-top:4px; }
+  .res-hero .split{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:18px; }
+  .res-hero .split .box{ background:rgba(255,255,255,.12); border-radius:10px; padding:10px 12px; }
+  .res-hero .split .box .k{ font-size:11px; opacity:.75; }
+  .res-hero .split .box .v{ font-size:16px; font-weight:700; margin-top:2px; }
+
+  .breakdown{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow-card); margin-top:16px; overflow:hidden; }
+  .bd-row{ display:flex; align-items:center; justify-content:space-between; padding:11px 18px; font-size:13.5px; border-bottom:1px solid var(--line-soft); }
+  .bd-row:last-child{ border-bottom:none; }
+  .bd-row .k{ color:var(--ink-2); display:flex; align-items:center; gap:8px; }
+  .bd-row .dot{ width:9px; height:9px; border-radius:3px; flex-shrink:0; }
+  .bd-row .v{ font-weight:600; }
+  .bd-row.total{ background:var(--primary-soft); }
+  .bd-row.total .k{ color:var(--primary-2); font-weight:700; }
+  .bd-row.total .v{ color:var(--primary-2); font-weight:800; font-size:15px; }
+  .bd-row.profit .v{ color:var(--good); }
+
+  /* Bar */
+  .bar{ height:12px; border-radius:7px; overflow:hidden; display:flex; margin:14px 18px 4px; background:var(--line-soft); }
+  .bar span{ display:block; height:100%; }
+  .legend{ display:flex; flex-wrap:wrap; gap:10px 16px; padding:8px 18px 16px; }
+  .legend .it{ display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--ink-2); }
+  .legend .it .dot{ width:9px; height:9px; border-radius:3px; }
+
+  .note{ font-size:11.5px; color:var(--ink-3); margin-top:12px; line-height:1.6; padding:0 2px; }
+
+  .seg{ display:flex; gap:0; border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  .seg button{ flex:1; border:none; background:#fff; padding:9px 8px; font-size:12.5px; font-weight:600; color:var(--ink-3); cursor:pointer; font-family:inherit; transition:.15s; }
+  .seg button.on{ background:var(--primary-soft); color:var(--primary); }
+
+  .pill{ display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:600; padding:3px 9px; border-radius:20px; background:var(--good-soft); color:var(--good); }
+  .pill.warn{ background:#fdf3e6; color:var(--warn); }
+  .pill.danger{ background:#fbecec; color:var(--danger); }
+
+  @media print{
+    body{ background:#fff; }
+    .top-actions,.add-row,.del-btn,.seg,.note{ display:none !important; }
+    .card,.breakdown,.res-hero{ box-shadow:none; }
+    .grid{ grid-template-columns:1fr 340px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="logo-mark">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 7l4-3 5 2 5-2 4 3v10l-4 3-5-2-5 2-4-3z"/>
+        <path d="M7 4v13M17 4v13M12 6v13"/>
+      </svg>
+    </div>
+    <div class="title">
+      <h1>가죽공예 원가 계산기</h1>
+      <p>재료비 · 인건비 · 경비 · 마진을 한 번에 — 판매가가 바로 나옵니다</p>
+    </div>
+    <div class="top-actions">
+      <button class="btn" id="btnReset">초기화</button>
+      <button class="btn" id="btnPrint">인쇄 / PDF</button>
+      <button class="btn primary" id="btnSave">저장</button>
+    </div>
+  </div>
+
+  <div class="grid">
+    <!-- LEFT: INPUTS -->
+    <div class="left">
+
+      <!-- 제품 정보 -->
+      <div class="card">
+        <div class="card-h">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></div>
+          <h2>제품 정보</h2>
+        </div>
+        <div class="card-b">
+          <div class="row2">
+            <div class="field"><label>제품명</label><input type="text" id="prodName" placeholder="예) 미니멀 카드지갑"></div>
+            <div class="field"><label>제작 수량 <span class="hint">(개)</span></label>
+              <div class="inwrap"><input type="number" id="qty" value="1" min="1" step="1"><span class="unit">개</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 가죽 원가 -->
+      <div class="card">
+        <div class="card-h">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg></div>
+          <h2>가죽 (본판)</h2>
+          <span class="sub">데시(ds) 단위 · 1ds = 10×10cm</span>
+        </div>
+        <div class="card-b">
+          <table class="ltable" id="leatherTable">
+            <thead><tr>
+              <th>가죽 종류</th>
+              <th class="num">사용량(ds)</th>
+              <th class="num">데시당 단가</th>
+              <th class="num">금액</th>
+              <th></th>
+            </tr></thead>
+            <tbody id="leatherBody"></tbody>
+          </table>
+          <div class="add-row"><button class="btn" id="addLeather">+ 가죽 추가</button></div>
+          <div class="field" style="margin-top:16px;">
+            <label>가죽 손실률 <span class="hint">(재단 시 버려지는 자투리 비율)</span></label>
+            <div class="inwrap"><input type="number" id="lossRate" value="15" min="0" step="1"><span class="unit">%</span></div>
+          </div>
+          <div class="sub-total">가죽 소계 <span>손실 반영 <b id="leatherSum">0원</b></span></div>
+        </div>
+      </div>
+
+      <!-- 부자재 -->
+      <div class="card">
+        <div class="card-h">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg></div>
+          <h2>부자재 · 철물</h2>
+          <span class="sub">지퍼 · 버클 · 단추 · D링 등</span>
+        </div>
+        <div class="card-b">
+          <table class="ltable" id="partTable">
+            <thead><tr>
+              <th>품목</th>
+              <th class="num">수량</th>
+              <th class="num">개당 단가</th>
+              <th class="num">금액</th>
+              <th></th>
+            </tr></thead>
+            <tbody id="partBody"></tbody>
+          </table>
+          <div class="add-row"><button class="btn" id="addPart">+ 부자재 추가</button></div>
+          <div class="sub-total">부자재 소계 <b id="partSum">0원</b></div>
+        </div>
+      </div>
+
+      <!-- 소모품 -->
+      <div class="card">
+        <div class="card-h">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="9"/></svg></div>
+          <h2>소모품</h2>
+          <span class="sub">실 · 본드 · 엣지코트 · 사포 등</span>
+        </div>
+        <div class="card-b">
+          <table class="ltable" id="suppTable">
+            <thead><tr>
+              <th>품목</th>
+              <th class="num">사용분(개당)</th>
+              <th class="num">단가</th>
+              <th class="num">금액</th>
+              <th></th>
+            </tr></thead>
+            <tbody id="suppBody"></tbody>
+          </table>
+          <div class="add-row"><button class="btn" id="addSupp">+ 소모품 추가</button></div>
+          <div class="sub-total">소모품 소계 <b id="suppSum">0원</b></div>
+        </div>
+      </div>
+
+      <!-- 인건비 & 경비 -->
+      <div class="card">
+        <div class="card-h">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+          <h2>인건비 · 간접경비</h2>
+        </div>
+        <div class="card-b">
+          <div class="row3">
+            <div class="field"><label>작업 시간 <span class="hint">(개당)</span></label>
+              <div class="inwrap"><input type="number" id="workHours" value="2" min="0" step="0.25"><span class="unit">시간</span></div>
+            </div>
+            <div class="field"><label>시급</label>
+              <div class="inwrap"><input type="number" id="wage" value="15000" min="0" step="500"><span class="unit">원</span></div>
+            </div>
+            <div class="field"><label>공방 경비율 <span class="hint">(전기·임대·공구)</span></label>
+              <div class="inwrap"><input type="number" id="overhead" value="10" min="0" step="1"><span class="unit">%</span></div>
+            </div>
+          </div>
+          <div class="row2">
+            <div class="field"><label>포장비 <span class="hint">(개당)</span></label>
+              <div class="inwrap"><input type="number" id="packaging" value="1500" min="0" step="100"><span class="unit">원</span></div>
+            </div>
+            <div class="field"><label>기타 고정비 <span class="hint">(택배·수수료 등, 개당)</span></label>
+              <div class="inwrap"><input type="number" id="etc" value="0" min="0" step="100"><span class="unit">원</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 마진 -->
+      <div class="card">
+        <div class="card-h">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H9M17 7v8"/></svg></div>
+          <h2>마진 · 판매가 설정</h2>
+        </div>
+        <div class="card-b">
+          <div class="field">
+            <label>마진 산정 방식</label>
+            <div class="seg" id="marginMode">
+              <button data-mode="markup" class="on">원가가산 (원가×배수)</button>
+              <button data-mode="margin">목표마진율 (판매가 기준)</button>
+            </div>
+          </div>
+          <div class="field" id="markupField">
+            <label>이윤율 <span class="hint">(총원가 대비 붙이는 마진)</span></label>
+            <div class="inwrap"><input type="number" id="markup" value="50" min="0" step="5"><span class="unit">%</span></div>
+          </div>
+          <div class="field" id="marginField" style="display:none;">
+            <label>목표 마진율 <span class="hint">(판매가에서 이익이 차지하는 비율)</span></label>
+            <div class="inwrap"><input type="number" id="marginPct" value="40" min="0" max="95" step="5"><span class="unit">%</span></div>
+          </div>
+          <div class="row2">
+            <div class="field"><label>부가세(VAT)</label>
+              <div class="inwrap"><input type="number" id="vat" value="10" min="0" step="1"><span class="unit">%</span></div>
+            </div>
+            <div class="field"><label>가격 절삭 단위</label>
+              <select id="rounding">
+                <option value="0">절삭 안 함</option>
+                <option value="100" selected>100원</option>
+                <option value="500">500원</option>
+                <option value="1000">1,000원</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT: RESULT -->
+    <div class="result">
+      <div class="res-hero">
+        <div class="lbl">권장 판매가 <span id="qtyTag"></span></div>
+        <div class="price"><span id="sellPrice">0</span><small>원</small></div>
+        <div class="vat" id="vatLine">부가세 별도</div>
+        <div class="split">
+          <div class="box"><div class="k">개당 총원가</div><div class="v"><span id="unitCost">0</span>원</div></div>
+          <div class="box"><div class="k">개당 순이익</div><div class="v"><span id="unitProfit">0</span>원</div></div>
+        </div>
+      </div>
+
+      <div class="breakdown">
+        <div class="bd-row"><span class="k"><span class="dot" style="background:#a65a2e"></span>가죽 (손실 포함)</span><span class="v" id="bdLeather">0원</span></div>
+        <div class="bd-row"><span class="k"><span class="dot" style="background:#d6904a"></span>부자재 · 철물</span><span class="v" id="bdPart">0원</span></div>
+        <div class="bd-row"><span class="k"><span class="dot" style="background:#e6c07b"></span>소모품</span><span class="v" id="bdSupp">0원</span></div>
+        <div class="bd-row"><span class="k"><span class="dot" style="background:#5b8def"></span>인건비</span><span class="v" id="bdLabor">0원</span></div>
+        <div class="bd-row"><span class="k"><span class="dot" style="background:#9298a8"></span>경비 · 포장 · 기타</span><span class="v" id="bdOver">0원</span></div>
+        <div class="bd-row total"><span class="k">개당 총원가</span><span class="v" id="bdTotal">0원</span></div>
+        <div class="bd-row profit"><span class="k">개당 순이익 <span id="profitPill"></span></span><span class="v" id="bdProfit">0원</span></div>
+
+        <div class="bar" id="costBar"></div>
+        <div class="legend">
+          <div class="it"><span class="dot" style="background:#a65a2e"></span>가죽</div>
+          <div class="it"><span class="dot" style="background:#d6904a"></span>부자재</div>
+          <div class="it"><span class="dot" style="background:#e6c07b"></span>소모품</div>
+          <div class="it"><span class="dot" style="background:#5b8def"></span>인건비</div>
+          <div class="it"><span class="dot" style="background:#9298a8"></span>경비</div>
+        </div>
+      </div>
+
+      <div class="breakdown" style="margin-top:14px;">
+        <div class="bd-row"><span class="k">재료비 합계</span><span class="v" id="sumMaterial">0원</span></div>
+        <div class="bd-row"><span class="k">제조원가 (재료+인건비)</span><span class="v" id="sumMfg">0원</span></div>
+        <div class="bd-row"><span class="k">총 제작수량 판매액</span><span class="v" id="sumTotalSell">0원</span></div>
+      </div>
+
+      <p class="note">
+        ※ 가격은 입력값에 따라 실시간 계산됩니다. <b>원가가산 방식</b>은 총원가에 이윤율을 더하고,
+        <b>목표마진율 방식</b>은 판매가 중 이익 비중을 기준으로 역산합니다(판매가 = 원가 ÷ (1−마진율)).
+        부가세는 판매가에 별도로 표시되며, 절삭 단위로 끝자리를 정리합니다.
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  const $ = id => document.getElementById(id);
+  const won = n => Math.round(n).toLocaleString('ko-KR') + '원';
+  const KEY = 'leathercost.v1';
+
+  // ---- default rows ----
+  const DEF = {
+    leather: [{name:'베지터블 탄닝', qty:6, price:1200}],
+    part:    [{name:'스냅단추', qty:2, price:350}],
+    supp:    [{name:'마끈 (실)', qty:1, price:300},{name:'엣지코트', qty:1, price:200}]
+  };
+
+  const tpl = {
+    leather: r => `
+      <td><input type="text" class="name-in" data-k="name" value="${esc(r.name)}" placeholder="가죽 종류"></td>
+      <td class="num"><input type="number" data-k="qty" value="${r.qty}" min="0" step="0.5" style="width:80px;text-align:right"></td>
+      <td class="num"><input type="number" data-k="price" value="${r.price}" min="0" step="50" style="width:96px;text-align:right"></td>
+      <td class="num amt" data-amt>0원</td>
+      <td><button class="del-btn" data-del>${trash}</button></td>`,
+    part: r => `
+      <td><input type="text" class="name-in" data-k="name" value="${esc(r.name)}" placeholder="품목명"></td>
+      <td class="num"><input type="number" data-k="qty" value="${r.qty}" min="0" step="1" style="width:80px;text-align:right"></td>
+      <td class="num"><input type="number" data-k="price" value="${r.price}" min="0" step="50" style="width:96px;text-align:right"></td>
+      <td class="num amt" data-amt>0원</td>
+      <td><button class="del-btn" data-del>${trash}</button></td>`,
+    supp: r => `
+      <td><input type="text" class="name-in" data-k="name" value="${esc(r.name)}" placeholder="품목명"></td>
+      <td class="num"><input type="number" data-k="qty" value="${r.qty}" min="0" step="0.1" style="width:80px;text-align:right"></td>
+      <td class="num"><input type="number" data-k="price" value="${r.price}" min="0" step="50" style="width:96px;text-align:right"></td>
+      <td class="num amt" data-amt>0원</td>
+      <td><button class="del-btn" data-del>${trash}</button></td>`
+  };
+  const trash = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>';
+  function esc(s){ return String(s).replace(/"/g,'&quot;'); }
+
+  const bodies = { leather:$('leatherBody'), part:$('partBody'), supp:$('suppBody') };
+
+  function addRow(type, data){
+    const tr = document.createElement('tr');
+    tr.innerHTML = tpl[type](data || {name:'', qty:1, price:0});
+    bodies[type].appendChild(tr);
+    tr.querySelector('[data-del]').addEventListener('click', ()=>{ tr.remove(); calc(); });
+    tr.querySelectorAll('input').forEach(i=> i.addEventListener('input', calc));
+  }
+
+  function rowsOf(type){
+    return [...bodies[type].querySelectorAll('tr')].map(tr=>{
+      const o={}; tr.querySelectorAll('[data-k]').forEach(i=> o[i.dataset.k] = i.dataset.k==='name'? i.value : (parseFloat(i.value)||0));
+      o._tr = tr; return o;
+    });
+  }
+
+  function sumType(type){
+    let s=0;
+    rowsOf(type).forEach(r=>{
+      const amt = r.qty * r.price; s += amt;
+      r._tr.querySelector('[data-amt]').textContent = won(amt);
+    });
+    return s;
+  }
+
+  // ---- main calc ----
+  function calc(){
+    const qty = Math.max(1, parseFloat($('qty').value)||1);
+    const lossRate = (parseFloat($('lossRate').value)||0)/100;
+
+    const leatherBase = sumType('leather');
+    const leather = leatherBase * (1 + lossRate);
+    const part = sumType('part');
+    const supp = sumType('supp');
+
+    const material = leather + part + supp;
+
+    const labor = (parseFloat($('workHours').value)||0) * (parseFloat($('wage').value)||0);
+    const mfg = material + labor;                         // 제조원가
+    const overheadPct = (parseFloat($('overhead').value)||0)/100;
+    const overheadCost = mfg * overheadPct;
+    const packaging = parseFloat($('packaging').value)||0;
+    const etc = parseFloat($('etc').value)||0;
+    const overAll = overheadCost + packaging + etc;       // 경비묶음
+
+    const totalCost = mfg + overAll;                      // 개당 총원가
+
+    // selling price
+    const mode = currentMode;
+    let sell;
+    if(mode==='markup'){
+      sell = totalCost * (1 + (parseFloat($('markup').value)||0)/100);
+    } else {
+      const m = Math.min(0.95, Math.max(0,(parseFloat($('marginPct').value)||0)/100));
+      sell = m>=1 ? totalCost : totalCost / (1 - m);
+    }
+    // rounding
+    const unit = parseInt($('rounding').value)||0;
+    if(unit>0) sell = Math.ceil(sell/unit)*unit;
+
+    const profit = sell - totalCost;
+    const vatPct = (parseFloat($('vat').value)||0)/100;
+    const vatAmt = sell * vatPct;
+
+    // sub totals display
+    $('leatherSum').textContent = won(leather);
+    $('partSum').textContent = won(part);
+    $('suppSum').textContent = won(supp);
+
+    // hero
+    $('sellPrice').textContent = Math.round(sell).toLocaleString('ko-KR');
+    $('unitCost').textContent = Math.round(totalCost).toLocaleString('ko-KR');
+    $('unitProfit').textContent = Math.round(profit).toLocaleString('ko-KR');
+    $('qtyTag').textContent = qty>1 ? `· 개당` : '';
+    $('vatLine').textContent = vatPct>0 ? `부가세 ${won(vatAmt)} 포함 시 ${won(sell+vatAmt)}` : '부가세 미적용';
+
+    // breakdown
+    $('bdLeather').textContent = won(leather);
+    $('bdPart').textContent = won(part);
+    $('bdSupp').textContent = won(supp);
+    $('bdLabor').textContent = won(labor);
+    $('bdOver').textContent = won(overAll);
+    $('bdTotal').textContent = won(totalCost);
+    $('bdProfit').textContent = won(profit);
+
+    $('sumMaterial').textContent = won(material);
+    $('sumMfg').textContent = won(mfg);
+    $('sumTotalSell').textContent = won(sell*qty);
+
+    // profit margin pill
+    const marginReal = sell>0 ? profit/sell*100 : 0;
+    const pill = $('profitPill');
+    let cls='pill', txt=`이익률 ${marginReal.toFixed(0)}%`;
+    if(profit<=0){ cls='pill danger'; txt='적자 ⚠'; }
+    else if(marginReal<20){ cls='pill warn'; txt=`이익률 ${marginReal.toFixed(0)}% (낮음)`; }
+    pill.className = cls; pill.textContent = txt;
+
+    // cost bar
+    drawBar([
+      ['#a65a2e', leather],['#d6904a', part],['#e6c07b', supp],
+      ['#5b8def', labor],['#9298a8', overAll]
+    ], totalCost);
+
+    persist();
+  }
+
+  function drawBar(parts, total){
+    const bar = $('costBar');
+    if(total<=0){ bar.innerHTML='<span style="width:100%;background:var(--line-soft)"></span>'; return; }
+    bar.innerHTML = parts.map(([c,v])=>{
+      const w = Math.max(0, v/total*100);
+      return w>0 ? `<span style="width:${w}%;background:${c}"></span>` : '';
+    }).join('');
+  }
+
+  // ---- margin mode toggle ----
+  let currentMode = 'markup';
+  $('marginMode').addEventListener('click', e=>{
+    const b = e.target.closest('button'); if(!b) return;
+    currentMode = b.dataset.mode;
+    [...$('marginMode').children].forEach(x=> x.classList.toggle('on', x===b));
+    $('markupField').style.display = currentMode==='markup' ? '' : 'none';
+    $('marginField').style.display = currentMode==='margin' ? '' : 'none';
+    calc();
+  });
+
+  // ---- persistence ----
+  function persist(){
+    const data = {
+      prodName:$('prodName').value, qty:$('qty').value, lossRate:$('lossRate').value,
+      workHours:$('workHours').value, wage:$('wage').value, overhead:$('overhead').value,
+      packaging:$('packaging').value, etc:$('etc').value,
+      mode:currentMode, markup:$('markup').value, marginPct:$('marginPct').value,
+      vat:$('vat').value, rounding:$('rounding').value,
+      leather:rowsOf('leather').map(r=>({name:r.name,qty:r.qty,price:r.price})),
+      part:rowsOf('part').map(r=>({name:r.name,qty:r.qty,price:r.price})),
+      supp:rowsOf('supp').map(r=>({name:r.name,qty:r.qty,price:r.price})),
+    };
+    try{ localStorage.setItem(KEY, JSON.stringify(data)); }catch(e){}
+  }
+
+  function load(){
+    let d=null;
+    try{ d = JSON.parse(localStorage.getItem(KEY)||'null'); }catch(e){}
+    const simple = ['prodName','qty','lossRate','workHours','wage','overhead','packaging','etc','markup','marginPct','vat','rounding'];
+    if(d){
+      simple.forEach(k=>{ if(d[k]!=null && $(k)) $(k).value = d[k]; });
+      currentMode = d.mode || 'markup';
+      ['leather','part','supp'].forEach(t=> (d[t]||[]).forEach(r=> addRow(t, r)) );
+    } else {
+      ['leather','part','supp'].forEach(t=> DEF[t].forEach(r=> addRow(t, r)) );
+    }
+    // ensure at least one row each
+    ['leather','part','supp'].forEach(t=>{ if(!bodies[t].children.length) addRow(t); });
+    // apply mode UI
+    [...$('marginMode').children].forEach(x=> x.classList.toggle('on', x.dataset.mode===currentMode));
+    $('markupField').style.display = currentMode==='markup' ? '' : 'none';
+    $('marginField').style.display = currentMode==='margin' ? '' : 'none';
+  }
+
+  // ---- buttons ----
+  $('addLeather').addEventListener('click', ()=>{ addRow('leather'); calc(); });
+  $('addPart').addEventListener('click', ()=>{ addRow('part'); calc(); });
+  $('addSupp').addEventListener('click', ()=>{ addRow('supp'); calc(); });
+  $('btnPrint').addEventListener('click', ()=> window.print());
+  $('btnSave').addEventListener('click', ()=>{
+    persist();
+    const b=$('btnSave'); const t=b.textContent; b.textContent='저장됨 ✓';
+    setTimeout(()=> b.textContent=t, 1200);
+  });
+  $('btnReset').addEventListener('click', ()=>{
+    if(!confirm('모든 입력을 초기화할까요?')) return;
+    try{ localStorage.removeItem(KEY); }catch(e){}
+    location.reload();
+  });
+
+  // recalc on any top-level input change
+  document.querySelectorAll('.left input, .left select').forEach(i=> i.addEventListener('input', calc));
+
+  load();
+  calc();
+})();
+</script>
+</body>
+</html>
