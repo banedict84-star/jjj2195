@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>가죽 조합 시뮬레이터 · 크리스페 / 푸에블로 · 비니모 · 페니체</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+  :root{
+    --bg:#f3f5f8;
+    --surface:#ffffff;
+    --line:#eceef3;
+    --line-soft:#f1f3f7;
+    --ink:#1c2030;
+    --ink-2:#5a6072;
+    --ink-3:#9298a8;
+    --primary:#7a5230;
+    --primary-soft:#f3ece4;
+    --radius:16px;
+    --shadow-card: 0 1px 2px rgba(22,26,45,.04), 0 8px 28px rgba(22,26,45,.07);
+    --shadow-float: 0 2px 6px rgba(22,26,45,.05), 0 18px 44px rgba(22,26,45,.12);
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; }
+  body{
+    font-family:"Pretendard Variable",Pretendard,-apple-system,system-ui,sans-serif;
+    background:var(--bg); color:var(--ink); -webkit-font-smoothing:antialiased; letter-spacing:-.01em;
+    padding:28px 18px 60px;
+  }
+  .wrap{ max-width:1080px; margin:0 auto; }
+
+  header.page{ margin-bottom:22px; }
+  header.page h1{ font-size:24px; font-weight:800; letter-spacing:-.03em; display:flex; align-items:center; gap:10px; }
+  header.page .leaf{ width:34px; height:34px; border-radius:10px; background:linear-gradient(140deg,#a9794a,#7a5230 70%); display:flex; align-items:center; justify-content:center; box-shadow:0 5px 14px rgba(122,82,48,.32); }
+  header.page p{ color:var(--ink-2); font-size:14px; margin-top:8px; line-height:1.6; }
+
+  .grid{ display:grid; grid-template-columns:1fr 420px; gap:20px; align-items:start; }
+  @media (max-width:900px){ .grid{ grid-template-columns:1fr; } }
+
+  .panel{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow-card); }
+  .controls{ padding:6px 20px 18px; }
+
+  .group{ padding:18px 0; border-bottom:1px solid var(--line-soft); }
+  .group:last-child{ border-bottom:0; }
+  .group h2{ font-size:13px; font-weight:700; letter-spacing:.02em; color:var(--ink-2); display:flex; align-items:center; gap:8px; margin-bottom:4px; text-transform:uppercase; }
+  .group h2 .ko{ font-size:15px; font-weight:800; color:var(--ink); text-transform:none; letter-spacing:-.02em; }
+  .group .pick{ font-size:13px; color:var(--ink-3); margin-bottom:13px; }
+  .group .pick b{ color:var(--primary); font-weight:700; }
+
+  /* sub-tabs (leather brand) */
+  .tabs{ display:inline-flex; background:var(--line-soft); border-radius:11px; padding:4px; gap:4px; margin-bottom:14px; }
+  .tabs button{ border:0; background:transparent; font:inherit; font-size:13px; font-weight:700; color:var(--ink-2); padding:7px 16px; border-radius:8px; cursor:pointer; transition:all .15s; }
+  .tabs button.on{ background:var(--surface); color:var(--ink); box-shadow:0 1px 3px rgba(22,26,45,.12); }
+
+  .swatches{ display:flex; flex-wrap:wrap; gap:11px; }
+  .sw{ cursor:pointer; width:60px; text-align:center; }
+  .sw .chip{ width:48px; height:48px; margin:0 auto 6px; border-radius:12px; border:1px solid rgba(0,0,0,.08); box-shadow:inset 0 -6px 12px rgba(0,0,0,.12), 0 2px 5px rgba(0,0,0,.08); position:relative; transition:transform .14s; }
+  .sw .chip::after{ content:""; position:absolute; inset:0; border-radius:12px; box-shadow:0 0 0 0 transparent; transition:box-shadow .15s; }
+  .sw:hover .chip{ transform:translateY(-2px); }
+  .sw.on .chip::after{ box-shadow:0 0 0 3px var(--surface), 0 0 0 5px var(--primary); }
+  .sw .nm{ font-size:11px; line-height:1.3; color:var(--ink-2); font-weight:600; }
+  .sw .sub{ font-size:10px; color:var(--ink-3); }
+  /* thread chips = round, like spools */
+  .sw.thread .chip{ border-radius:50%; }
+  .sw.thread .chip::after{ border-radius:50%; }
+  .sw.thread.on .chip::after{ box-shadow:0 0 0 3px var(--surface), 0 0 0 5px var(--primary); }
+
+  /* preview */
+  .preview{ position:sticky; top:20px; }
+  .preview .stage{ padding:24px; }
+  .preview svg{ width:100%; height:auto; display:block; border-radius:12px; }
+  .summary{ border-top:1px solid var(--line-soft); padding:16px 20px 18px; }
+  .summary .row{ display:flex; align-items:center; gap:11px; padding:7px 0; }
+  .summary .dot{ width:22px; height:22px; border-radius:7px; border:1px solid rgba(0,0,0,.1); flex-shrink:0; box-shadow:inset 0 -3px 6px rgba(0,0,0,.12); }
+  .summary .dot.round{ border-radius:50%; }
+  .summary .lbl{ font-size:12px; color:var(--ink-3); width:64px; flex-shrink:0; }
+  .summary .val{ font-size:14px; font-weight:700; }
+  .summary .val small{ font-weight:500; color:var(--ink-3); margin-left:5px; }
+
+  .note{ font-size:11.5px; color:var(--ink-3); line-height:1.6; margin-top:16px; padding:12px 14px; background:var(--line-soft); border-radius:10px; }
+
+  .actions{ display:flex; gap:8px; margin-top:14px; }
+  .btn{ flex:1; border:1px solid var(--line); background:var(--surface); font:inherit; font-size:13px; font-weight:700; color:var(--ink-2); padding:10px; border-radius:10px; cursor:pointer; transition:all .14s; }
+  .btn:hover{ background:var(--line-soft); color:var(--ink); }
+  .btn.primary{ background:var(--primary); color:#fff; border-color:var(--primary); }
+  .btn.primary:hover{ filter:brightness(1.06); color:#fff; }
+  .toast{ position:fixed; left:50%; bottom:32px; transform:translateX(-50%) translateY(20px); background:var(--ink); color:#fff; font-size:13px; font-weight:600; padding:11px 18px; border-radius:11px; box-shadow:var(--shadow-float); opacity:0; pointer-events:none; transition:all .25s; }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="page">
+    <h1>
+      <span class="leaf">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 18c8 2 14-3 16-14C10 2 4 8 4 18Z" fill="#fff" opacity=".92"/><path d="M5 17C9 12 14 8 18 6" stroke="#7a5230" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </span>
+      가죽 조합 시뮬레이터
+    </h1>
+    <p>가죽 · 실 · 엣지코트 색상을 골라 조합을 미리 확인해 보세요. 가죽은 <b>크리스페 / 푸에블로</b>, 실은 <b>비니모</b>, 엣지코트는 <b>페니체</b> 색상을 기준으로 합니다.</p>
+  </header>
+
+  <div class="grid">
+    <!-- 컨트롤 -->
+    <div class="panel controls">
+
+      <div class="group">
+        <h2>LEATHER <span class="ko">가죽</span></h2>
+        <div class="pick">선택: <b id="pick-leather">—</b></div>
+        <div class="tabs" id="leather-tabs">
+          <button data-brand="crispe" class="on">크리스페</button>
+          <button data-brand="pueblo">푸에블로</button>
+        </div>
+        <div class="swatches" id="leather-sw"></div>
+      </div>
+
+      <div class="group">
+        <h2>THREAD <span class="ko">실 · 비니모</span></h2>
+        <div class="pick">선택: <b id="pick-thread">—</b></div>
+        <div class="swatches" id="thread-sw"></div>
+      </div>
+
+      <div class="group">
+        <h2>EDGE COAT <span class="ko">엣지코트 · 페니체</span></h2>
+        <div class="pick">선택: <b id="pick-edge">—</b></div>
+        <div class="swatches" id="edge-sw"></div>
+      </div>
+
+    </div>
+
+    <!-- 미리보기 -->
+    <div class="preview">
+      <div class="panel">
+        <div class="stage">
+          <svg viewBox="0 0 360 300" xmlns="http://www.w3.org/2000/svg" aria-label="가죽 조합 미리보기">
+            <defs>
+              <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" result="n"/><feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .05 0"/><feComposite operator="over" in2="SourceGraphic"/></filter>
+              <linearGradient id="sheen" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#fff" stop-opacity=".18"/>
+                <stop offset="45%" stop-color="#fff" stop-opacity="0"/>
+                <stop offset="100%" stop-color="#000" stop-opacity=".10"/>
+              </linearGradient>
+            </defs>
+
+            <!-- 엣지코트(테두리 도색) -->
+            <rect id="edge-rect" x="30" y="35" width="300" height="230" rx="20"
+                  fill="none" stroke="#222" stroke-width="11"/>
+            <!-- 가죽 본체 -->
+            <rect id="leather-rect" x="35.5" y="40.5" width="289" height="219" rx="15.5"
+                  fill="#8a5a32"/>
+            <rect x="35.5" y="40.5" width="289" height="219" rx="15.5" fill="url(#sheen)"/>
+            <rect x="35.5" y="40.5" width="289" height="219" rx="15.5" fill="#000" opacity="0" filter="url(#grain)"/>
+
+            <!-- 새들 스티치(실) -->
+            <rect id="stitch-rect" x="58" y="63" width="244" height="174" rx="9"
+                  fill="none" stroke="#efe9df" stroke-width="3.4"
+                  stroke-linecap="round" stroke-dasharray="9 8"/>
+          </svg>
+        </div>
+        <div class="summary">
+          <div class="row">
+            <span class="dot" id="sum-leather-dot"></span>
+            <span class="lbl">가죽</span>
+            <span class="val" id="sum-leather">—</span>
+          </div>
+          <div class="row">
+            <span class="dot round" id="sum-thread-dot"></span>
+            <span class="lbl">실</span>
+            <span class="val" id="sum-thread">—</span>
+          </div>
+          <div class="row">
+            <span class="dot" id="sum-edge-dot"></span>
+            <span class="lbl">엣지코트</span>
+            <span class="val" id="sum-edge">—</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn" id="btn-random">🎲 랜덤 조합</button>
+        <button class="btn primary" id="btn-copy">조합 복사</button>
+      </div>
+
+      <p class="note">※ 화면 색상은 실제 가죽/실/엣지코트의 색감과 차이가 있을 수 있습니다. 모니터 환경, 가죽 무두질 편차, 도색 두께에 따라 달라지니 참고용으로만 활용하세요.</p>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   색상 데이터  (HEX는 실제 색감에 근접한 참고용 값)
+   ============================================================ */
+const LEATHER = {
+  crispe: {
+    label:"크리스페",
+    colors:[
+      {name:"내추럴",  hex:"#d8b483"},
+      {name:"카멜",    hex:"#b07b41"},
+      {name:"브라운",  hex:"#7c4f2c"},
+      {name:"초코",    hex:"#4f3220"},
+      {name:"블랙",    hex:"#262321"},
+      {name:"레드",    hex:"#8e2f2a"},
+      {name:"오렌지",  hex:"#c5662a"},
+      {name:"옐로우",  hex:"#d9a531"},
+      {name:"그린",    hex:"#465c3b"},
+      {name:"네이비",  hex:"#2c3a55"},
+    ],
+  },
+  pueblo: {
+    label:"푸에블로",
+    colors:[
+      {name:"라떼",      hex:"#cdab7e"},
+      {name:"타바코",    hex:"#9b6a3c"},
+      {name:"카스타냐",  hex:"#7a4a2b"},
+      {name:"치오콜라또",hex:"#4a3122"},
+      {name:"네로",      hex:"#23201e"},
+      {name:"로쏘",      hex:"#7e2e2c"},
+      {name:"아란치오",  hex:"#bf5d2a"},
+      {name:"세나페",    hex:"#b88a2e"},
+      {name:"베르데",    hex:"#3f5440"},
+      {name:"코발토",    hex:"#2f4a6b"},
+    ],
+  },
+};
+
+/* 비니모(Vinymo MBT) — 대표 색번 */
+const THREAD = [
+  {name:"#1 화이트",   hex:"#f3efe7"},
+  {name:"#20 내추럴",  hex:"#e2d4b8"},
+  {name:"#46 베이지",  hex:"#c8a877"},
+  {name:"#9 탄",       hex:"#a9743f"},
+  {name:"#13 브라운",  hex:"#6e4a2c"},
+  {name:"#5 블랙",     hex:"#222020"},
+  {name:"#214 레드",   hex:"#a83232"},
+  {name:"#264 오렌지", hex:"#cf6a2a"},
+  {name:"#147 옐로우", hex:"#dab43a"},
+  {name:"#48 그린",    hex:"#3f6347"},
+  {name:"#116 네이비", hex:"#314463"},
+  {name:"#42 그레이",  hex:"#9a9892"},
+];
+
+/* 페니체(Fenice) 엣지코트 — 대표 색상 */
+const EDGE = [
+  {name:"네로(블랙)",   hex:"#1d1b19"},
+  {name:"비앙코(화이트)",hex:"#f0ece3"},
+  {name:"마로네(브라운)",hex:"#5a3a22"},
+  {name:"테스타디모로", hex:"#3a2519"},
+  {name:"쿠오이오",     hex:"#9c6b3e"},
+  {name:"베이지",       hex:"#caa978"},
+  {name:"로쏘(레드)",   hex:"#922b27"},
+  {name:"보르도",       hex:"#5e2230"},
+  {name:"아란치오",     hex:"#c65f27"},
+  {name:"잘로(옐로우)", hex:"#d6a82f"},
+  {name:"베르데",       hex:"#3c5740"},
+  {name:"블루",         hex:"#2b3f63"},
+  {name:"그리지오",     hex:"#8e8c87"},
+];
+
+/* ============================================================
+   상태
+   ============================================================ */
+const state = { brand:"crispe", leatherIdx:1, threadIdx:1, edgeIdx:2 };
+
+/* ============================================================
+   렌더링 헬퍼
+   ============================================================ */
+function makeSwatch(item, sub, kind, selected, onClick){
+  const el = document.createElement("div");
+  el.className = "sw" + (kind==="thread" ? " thread":"") + (selected ? " on":"");
+  el.innerHTML = `<div class="chip" style="background:${item.hex}"></div>
+                  <div class="nm">${item.name}</div>` + (sub?`<div class="sub">${sub}</div>`:"");
+  el.addEventListener("click", onClick);
+  return el;
+}
+
+function renderLeather(){
+  const tabsWrap = document.getElementById("leather-tabs");
+  [...tabsWrap.children].forEach(b => b.classList.toggle("on", b.dataset.brand===state.brand));
+  const wrap = document.getElementById("leather-sw");
+  wrap.innerHTML = "";
+  LEATHER[state.brand].colors.forEach((c,i)=>{
+    wrap.appendChild(makeSwatch(c, null, "leather", i===state.leatherIdx, ()=>{ state.leatherIdx=i; update(); }));
+  });
+}
+function renderThread(){
+  const wrap = document.getElementById("thread-sw");
+  wrap.innerHTML = "";
+  THREAD.forEach((c,i)=>{
+    wrap.appendChild(makeSwatch(c, null, "thread", i===state.threadIdx, ()=>{ state.threadIdx=i; update(); }));
+  });
+}
+function renderEdge(){
+  const wrap = document.getElementById("edge-sw");
+  wrap.innerHTML = "";
+  EDGE.forEach((c,i)=>{
+    wrap.appendChild(makeSwatch(c, null, "edge", i===state.edgeIdx, ()=>{ state.edgeIdx=i; update(); }));
+  });
+}
+
+function current(){
+  const brand = LEATHER[state.brand];
+  return {
+    leather: brand.colors[state.leatherIdx],
+    brandLabel: brand.label,
+    thread: THREAD[state.threadIdx],
+    edge: EDGE[state.edgeIdx],
+  };
+}
+
+function update(){
+  renderLeather(); renderThread(); renderEdge();
+  const c = current();
+
+  // 미리보기 SVG
+  document.getElementById("leather-rect").setAttribute("fill", c.leather.hex);
+  document.getElementById("edge-rect").setAttribute("stroke", c.edge.hex);
+  document.getElementById("stitch-rect").setAttribute("stroke", c.thread.hex);
+
+  // 선택 표시
+  document.getElementById("pick-leather").textContent = `${c.brandLabel} · ${c.leather.name}`;
+  document.getElementById("pick-thread").textContent  = `비니모 ${c.thread.name}`;
+  document.getElementById("pick-edge").textContent    = `페니체 ${c.edge.name}`;
+
+  // 요약
+  document.getElementById("sum-leather").innerHTML = `${c.leather.name} <small>${c.brandLabel}</small>`;
+  document.getElementById("sum-thread").innerHTML  = `${c.thread.name} <small>비니모</small>`;
+  document.getElementById("sum-edge").innerHTML    = `${c.edge.name} <small>페니체</small>`;
+  document.getElementById("sum-leather-dot").style.background = c.leather.hex;
+  document.getElementById("sum-thread-dot").style.background  = c.thread.hex;
+  document.getElementById("sum-edge-dot").style.background    = c.edge.hex;
+}
+
+/* 브랜드 탭 */
+document.getElementById("leather-tabs").addEventListener("click", e=>{
+  const b = e.target.closest("button"); if(!b) return;
+  if(state.brand===b.dataset.brand) return;
+  state.brand = b.dataset.brand;
+  state.leatherIdx = Math.min(state.leatherIdx, LEATHER[state.brand].colors.length-1);
+  update();
+});
+
+/* 랜덤 */
+const rnd = n => Math.floor(Math.random()*n);
+document.getElementById("btn-random").addEventListener("click", ()=>{
+  state.brand = Math.random()<0.5 ? "crispe":"pueblo";
+  state.leatherIdx = rnd(LEATHER[state.brand].colors.length);
+  state.threadIdx = rnd(THREAD.length);
+  state.edgeIdx = rnd(EDGE.length);
+  update();
+});
+
+/* 복사 */
+function toast(msg){
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("show");
+  clearTimeout(t._t); t._t = setTimeout(()=>t.classList.remove("show"), 1800);
+}
+document.getElementById("btn-copy").addEventListener("click", ()=>{
+  const c = current();
+  const txt = `가죽: ${c.brandLabel} ${c.leather.name} / 실: 비니모 ${c.thread.name} / 엣지코트: 페니체 ${c.edge.name}`;
+  (navigator.clipboard?.writeText(txt) ?? Promise.reject())
+    .then(()=>toast("조합을 복사했어요 ✓"))
+    .catch(()=>toast(txt));
+});
+
+update();
+</script>
+</body>
+</html>
