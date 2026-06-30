@@ -144,17 +144,17 @@
                                    diffuseConstant="1.15" lighting-color="#fff" result="emboss">
                   <feDistantLight azimuth="235" elevation="58"/>
                 </feDiffuseLighting>
-                <!-- 그레인 명암을 본체 색에 곱하기 -->
+                <!-- 그레인 명암을 본체 색에 곱하기(발색은 최대한 보존) -->
                 <feComposite in="emboss" in2="SourceGraphic" operator="arithmetic"
-                             k1="1.18" k2="0" k3="0" k4="-0.07" result="lit"/>
+                             k1="1.34" k2="0" k3="0" k4="-0.05" result="lit"/>
                 <feComposite in="lit" in2="SourceGraphic" operator="in"/>
               </filter>
 
               <!-- 부드러운 풀업 하이라이트(가운데 밝게) -->
               <radialGradient id="pullup" cx="42%" cy="34%" r="72%">
-                <stop offset="0%"  stop-color="#fff" stop-opacity=".26"/>
-                <stop offset="45%" stop-color="#fff" stop-opacity=".05"/>
-                <stop offset="100%" stop-color="#000" stop-opacity=".22"/>
+                <stop offset="0%"  stop-color="#fff" stop-opacity=".22"/>
+                <stop offset="48%" stop-color="#fff" stop-opacity=".04"/>
+                <stop offset="100%" stop-color="#000" stop-opacity=".15"/>
               </radialGradient>
               <!-- 엣지 광택(위 밝고 아래 어둡게) -->
               <linearGradient id="edgeGloss" x1="0" y1="0" x2="0" y2="1">
@@ -235,7 +235,7 @@
         <button class="btn primary" id="btn-copy">조합 복사</button>
       </div>
 
-      <p class="note">※ 화면 색상은 실제 가죽/실/엣지코트의 색감과 차이가 있을 수 있습니다. 모니터 환경, 가죽 무두질 편차, 도색 두께에 따라 달라지니 참고용으로만 활용하세요.</p>
+      <p class="note">※ 실은 <b>비니모 색번</b>, 엣지코트는 <b>페니체 코드</b> 기준입니다. 화면 색상은 색상표를 참고한 근사값으로 실제 색감과 차이가 있을 수 있으니(모니터·무두질 편차·도색 두께) 참고용으로만 활용하세요.</p>
     </div>
   </div>
 </div>
@@ -262,60 +262,75 @@ const LEATHER = {
       {name:"네이비",  hex:"#2c3a55"},
     ],
   },
+  /* 푸에블로(Badalassi Carlo Pueblo) — 빈티지 무광 톤 */
   pueblo: {
     label:"푸에블로",
     colors:[
-      {name:"라떼",      hex:"#cdab7e"},
-      {name:"타바코",    hex:"#9b6a3c"},
-      {name:"카스타냐",  hex:"#7a4a2b"},
-      {name:"치오콜라또",hex:"#4a3122"},
-      {name:"네로",      hex:"#23201e"},
-      {name:"로쏘",      hex:"#7e2e2c"},
-      {name:"아란치오",  hex:"#bf5d2a"},
-      {name:"세나페",    hex:"#b88a2e"},
-      {name:"베르데",    hex:"#3f5440"},
-      {name:"코발토",    hex:"#2f4a6b"},
+      {name:"라떼",        sub:"Latte",      hex:"#cdb088"},
+      {name:"타바코",      sub:"Tabacco",    hex:"#9a6a3a"},
+      {name:"올모",        sub:"Olmo",       hex:"#8a7647"},
+      {name:"카스타냐",    sub:"Castagna",   hex:"#7c4d2c"},
+      {name:"치오콜라또",  sub:"Cioccolato", hex:"#46301f"},
+      {name:"네로",        sub:"Nero",       hex:"#221f1a"},
+      {name:"치리에지아",  sub:"Ciliegia",   hex:"#7e2e2c"},
+      {name:"아란치오",    sub:"Arancio",    hex:"#bd5a28"},
+      {name:"세나페",      sub:"Senape",     hex:"#b5862c"},
+      {name:"베르데",      sub:"Verde",      hex:"#3f5440"},
+      {name:"코발토",      sub:"Cobalto",    hex:"#2f4a6b"},
+      {name:"아메티스타",  sub:"Ametista",   hex:"#4f3a52"},
+      {name:"그리지오",    sub:"Grigio",     hex:"#6f6a60"},
+      {name:"루지네",      sub:"Ruggine",    hex:"#9a4a2a"},
     ],
   },
 };
 
-/* 비니모(Vinymo MBT) — 대표 색번 */
+/* 비니모(Vinymo MBT) — 색상표 색번(흰색·생성·검정 + 4~40) · 색상은 근사값 */
 const THREAD = [
-  {name:"#1 화이트",   hex:"#f3efe7"},
-  {name:"#20 내추럴",  hex:"#e2d4b8"},
-  {name:"#46 베이지",  hex:"#c8a877"},
-  {name:"#9 탄",       hex:"#a9743f"},
-  {name:"#13 브라운",  hex:"#6e4a2c"},
-  {name:"#5 블랙",     hex:"#222020"},
-  {name:"#214 레드",   hex:"#a83232"},
-  {name:"#264 오렌지", hex:"#cf6a2a"},
-  {name:"#147 옐로우", hex:"#dab43a"},
-  {name:"#48 그린",    hex:"#3f6347"},
-  {name:"#116 네이비", hex:"#314463"},
-  {name:"#42 그레이",  hex:"#9a9892"},
+  {name:"흰색",   hex:"#f4f1ea"}, {name:"생성", hex:"#e7ddc6"}, {name:"검정", hex:"#201e1d"},
+  {name:"4",  hex:"#cdd2d6"}, {name:"5",  hex:"#98a2aa"}, {name:"6",  hex:"#f0c9d2"},
+  {name:"7",  hex:"#e59aab"}, {name:"8",  hex:"#d97068"}, {name:"9",  hex:"#c0392f"},
+  {name:"10", hex:"#9e2b25"}, {name:"11", hex:"#6e2a2c"}, {name:"12", hex:"#e7d2a8"},
+  {name:"13", hex:"#d2b483"}, {name:"14", hex:"#c2954f"}, {name:"15", hex:"#a9743f"},
+  {name:"16", hex:"#8a5a32"}, {name:"17", hex:"#6f4a2c"}, {name:"18", hex:"#553720"},
+  {name:"19", hex:"#3f2a1c"}, {name:"20", hex:"#2c241d"}, {name:"21", hex:"#d9b15a"},
+  {name:"22", hex:"#e2c044"}, {name:"23", hex:"#d77a2c"}, {name:"24", hex:"#8fae5d"},
+  {name:"25", hex:"#4f7d44"}, {name:"26", hex:"#2f6b54"}, {name:"27", hex:"#274536"},
+  {name:"28", hex:"#6f7468"}, {name:"29", hex:"#8c8c86"}, {name:"30", hex:"#b6b4ac"},
+  {name:"31", hex:"#9a8d76"}, {name:"32", hex:"#cabfa9"}, {name:"33", hex:"#7d756a"},
+  {name:"34", hex:"#d8c9b0"}, {name:"35", hex:"#ece4d4"}, {name:"36", hex:"#efe9dd"},
+  {name:"37", hex:"#6f9ec9"}, {name:"38", hex:"#2f6fb0"}, {name:"39", hex:"#28406a"},
+  {name:"40", hex:"#1f2d4a"},
 ];
 
-/* 페니체(Fenice) 엣지코트 — 대표 색상 */
+/* 페니체(Fenice) 엣지코트 — 색상표 코드 · 색상은 근사값 */
 const EDGE = [
-  {name:"네로(블랙)",   hex:"#1d1b19"},
-  {name:"비앙코(화이트)",hex:"#f0ece3"},
-  {name:"마로네(브라운)",hex:"#5a3a22"},
-  {name:"테스타디모로", hex:"#3a2519"},
-  {name:"쿠오이오",     hex:"#9c6b3e"},
-  {name:"베이지",       hex:"#caa978"},
-  {name:"로쏘(레드)",   hex:"#922b27"},
-  {name:"보르도",       hex:"#5e2230"},
-  {name:"아란치오",     hex:"#c65f27"},
-  {name:"잘로(옐로우)", hex:"#d6a82f"},
-  {name:"베르데",       hex:"#3c5740"},
-  {name:"블루",         hex:"#2b3f63"},
-  {name:"그리지오",     hex:"#8e8c87"},
+  {name:"501",  sub:"그레이지", hex:"#d9d4c6"}, {name:"502", sub:"아이보리", hex:"#e8e0cf"},
+  {name:"1230", sub:"이토프 라이트", hex:"#8f8474"}, {name:"126", sub:"이토프 다크", hex:"#5f574a"},
+  {name:"1078", sub:"카라멜", hex:"#b07b45"}, {name:"6467", sub:"브라운", hex:"#8a5a30"},
+  {name:"596",  sub:"브라운", hex:"#7a4f2c"}, {name:"597", sub:"브라운", hex:"#6b4527"},
+  {name:"600",  sub:"다크초코", hex:"#4a2f1d"}, {name:"6477", sub:"다크브라운", hex:"#3e291b"},
+  {name:"50",   sub:"블랙브라운", hex:"#2f2019"}, {name:"611", sub:"다크", hex:"#33241a"},
+  {name:"6476", sub:"블랙브라운", hex:"#281b14"}, {name:"2266", sub:"오렌지레드", hex:"#c0492a"},
+  {name:"1204", sub:"오렌지", hex:"#cf6f2a"}, {name:"539", sub:"앰버", hex:"#c98a3e"},
+  {name:"6471", sub:"레드", hex:"#9e2722"}, {name:"544", sub:"다크레드", hex:"#5f2026"},
+  {name:"144",  sub:"라이트블루", hex:"#7fa6c8"}, {name:"233", sub:"블루", hex:"#3f6fae"},
+  {name:"819",  sub:"인디고", hex:"#2c3f74"}, {name:"625", sub:"다크그린", hex:"#234b34"},
+  {name:"636",  sub:"그린", hex:"#3a6b46"}, {name:"6453", sub:"딥그린", hex:"#1f3d2c"},
+  {name:"647",  sub:"슬레이트", hex:"#5d6f7a"}, {name:"661", sub:"블루", hex:"#2f63a8"},
+  {name:"652",  sub:"네이비", hex:"#283b63"}, {name:"1234", sub:"다크네이비", hex:"#1f2c4a"},
+  {name:"6485", sub:"블랙네이비", hex:"#161d2e"}, {name:"666", sub:"보르도", hex:"#5e2330"},
+  {name:"671",  sub:"그레이", hex:"#8d8b85"}, {name:"6499", sub:"무광 블랙", hex:"#1c1a18"},
+  {name:"6369", sub:"유광 블랙", hex:"#161412"}, {name:"6451", sub:"화이트", hex:"#f0ece2"},
+  {name:"6455", sub:"옐로우", hex:"#e0b330"}, {name:"1116", sub:"레드브라운", hex:"#6e3a2a"},
+  {name:"2501", sub:"형광 옐로우", hex:"#d8e84a"}, {name:"2503", sub:"형광 오렌지", hex:"#f06a2a"},
+  {name:"2505", sub:"형광 블루", hex:"#2aa0e8"}, {name:"2510", sub:"형광 핑크", hex:"#e8479a"},
+  {name:"HS5799", sub:"베이스 블랙", hex:"#14110f"},
 ];
 
 /* ============================================================
    상태
    ============================================================ */
-const state = { brand:"crispe", leatherIdx:1, threadIdx:1, edgeIdx:2 };
+const state = { brand:"crispe", leatherIdx:1, threadIdx:1, edgeIdx:5 };
 
 /* ============================================================
    렌더링 헬퍼
@@ -335,7 +350,7 @@ function renderLeather(){
   const wrap = document.getElementById("leather-sw");
   wrap.innerHTML = "";
   LEATHER[state.brand].colors.forEach((c,i)=>{
-    wrap.appendChild(makeSwatch(c, null, "leather", i===state.leatherIdx, ()=>{ state.leatherIdx=i; update(); }));
+    wrap.appendChild(makeSwatch(c, c.sub||null, "leather", i===state.leatherIdx, ()=>{ state.leatherIdx=i; update(); }));
   });
 }
 function renderThread(){
@@ -349,7 +364,7 @@ function renderEdge(){
   const wrap = document.getElementById("edge-sw");
   wrap.innerHTML = "";
   EDGE.forEach((c,i)=>{
-    wrap.appendChild(makeSwatch(c, null, "edge", i===state.edgeIdx, ()=>{ state.edgeIdx=i; update(); }));
+    wrap.appendChild(makeSwatch(c, c.sub||null, "edge", i===state.edgeIdx, ()=>{ state.edgeIdx=i; update(); }));
   });
 }
 
@@ -392,11 +407,25 @@ function stitchRoundRect(x,y,w,h,r,gap){
   svg.removeChild(tmp);
   return out;
 }
+/* 같은 ＼방향 실밥이 코너에서 겹치는 것 방지: 스티치 진행 수직축 기준 최소간격 유지 */
+function thinByPerp(pts, angleDeg, minPerp, closed){
+  const a=angleDeg*Math.PI/180, nx=-Math.sin(a), ny=Math.cos(a);
+  const out=[]; let last=null;
+  for(const p of pts){
+    const proj=p.x*nx+p.y*ny;
+    if(last===null || Math.abs(proj-last)>=minPerp){ out.push(p); last=proj; }
+  }
+  if(closed && out.length>2){
+    const f=out[0].x*nx+out[0].y*ny;
+    if(Math.abs(last-f)<minPerp) out.pop();
+  }
+  return out;
+}
 function buildStitches(){
   const g=document.getElementById("stitches"); g.innerHTML="";
   const gap=10.5;
   const seams=[
-    ...stitchRoundRect(68,82,224,154,9,gap),  // 바깥 둘레(모서리까지 균등)
+    ...thinByPerp(stitchRoundRect(68,82,224,154,9,gap), STITCH_ANGLE, 4.6, true),  // 바깥 둘레
     ...stitchAlong(89,142,271,142,gap),       // 포켓 입구(양옆 솔기와 겹치지 않게 안쪽)
   ];
   const L=9.5, W=3.3;   // 실밥 길이/두께 (가로로 그린 뒤 회전)
@@ -420,11 +449,13 @@ function applyGrain(){
   const t=document.getElementById("leatherTurb");
   const l=document.getElementById("leatherLight");
   if(state.brand==="pueblo"){
-    t.setAttribute("baseFrequency","0.045 0.09"); t.setAttribute("numOctaves","5");
-    l.setAttribute("surfaceScale","2.3");
+    // 푸에블로: 솔질한 듯 얼룩진 풀업 — 큰 구름결 + 약한 미세결
+    t.setAttribute("baseFrequency","0.04 0.08"); t.setAttribute("numOctaves","5");
+    l.setAttribute("surfaceScale","1.7");
   }else{
-    t.setAttribute("baseFrequency","0.7 0.7"); t.setAttribute("numOctaves","3");
-    l.setAttribute("surfaceScale","1.1");
+    // 크리스페: 곱고 매끈한 풀그레인 — 미세 모공
+    t.setAttribute("baseFrequency","0.95 1.0"); t.setAttribute("numOctaves","2");
+    l.setAttribute("surfaceScale","0.7");
   }
 }
 
@@ -440,14 +471,16 @@ function update(){
   applyGrain();
 
   // 선택 표시
-  document.getElementById("pick-leather").textContent = `${c.brandLabel} · ${c.leather.name}`;
+  const lsub = c.leather.sub ? ` (${c.leather.sub})` : "";
+  const esub = c.edge.sub ? ` ${c.edge.sub}` : "";
+  document.getElementById("pick-leather").textContent = `${c.brandLabel} · ${c.leather.name}${lsub}`;
   document.getElementById("pick-thread").textContent  = `비니모 ${c.thread.name}`;
-  document.getElementById("pick-edge").textContent    = `페니체 ${c.edge.name}`;
+  document.getElementById("pick-edge").textContent    = `페니체 ${c.edge.name}${esub}`;
 
   // 요약
   document.getElementById("sum-leather").innerHTML = `${c.leather.name} <small>${c.brandLabel}</small>`;
-  document.getElementById("sum-thread").innerHTML  = `${c.thread.name} <small>비니모</small>`;
-  document.getElementById("sum-edge").innerHTML    = `${c.edge.name} <small>페니체</small>`;
+  document.getElementById("sum-thread").innerHTML  = `비니모 ${c.thread.name} <small>실</small>`;
+  document.getElementById("sum-edge").innerHTML    = `${c.edge.name}${c.edge.sub?` `+c.edge.sub:""} <small>페니체</small>`;
   document.getElementById("sum-leather-dot").style.background = c.leather.hex;
   document.getElementById("sum-thread-dot").style.background  = c.thread.hex;
   document.getElementById("sum-edge-dot").style.background    = c.edge.hex;
@@ -480,7 +513,7 @@ function toast(msg){
 }
 document.getElementById("btn-copy").addEventListener("click", ()=>{
   const c = current();
-  const txt = `가죽: ${c.brandLabel} ${c.leather.name} / 실: 비니모 ${c.thread.name} / 엣지코트: 페니체 ${c.edge.name}`;
+  const txt = `가죽: ${c.brandLabel} ${c.leather.name}${c.leather.sub?`(${c.leather.sub})`:""} / 실: 비니모 ${c.thread.name} / 엣지코트: 페니체 ${c.edge.name}${c.edge.sub?` ${c.edge.sub}`:""}`;
   (navigator.clipboard?.writeText(txt) ?? Promise.reject())
     .then(()=>toast("조합을 복사했어요 ✓"))
     .catch(()=>toast(txt));
