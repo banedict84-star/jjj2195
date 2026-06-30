@@ -375,17 +375,31 @@ function stitchAlong(x1,y1,x2,y2,gap){
   for(let i=0;i<=n;i++){ out.push({x:x1+ux*step*i, y:y1+uy*step*i}); }
   return out;
 }
+/* 둥근 사각형 경로를 따라 균등 간격으로 좌표 산출(모서리 자연스럽게) */
+function stitchRoundRect(x,y,w,h,r,gap){
+  const svg=document.getElementById("preview-svg");
+  const tmp=document.createElementNS(SVGNS,"path");
+  tmp.setAttribute("d",
+    `M${x+r} ${y} H${x+w-r} A${r} ${r} 0 0 1 ${x+w} ${y+r} `+
+    `V${y+h-r} A${r} ${r} 0 0 1 ${x+w-r} ${y+h} `+
+    `H${x+r} A${r} ${r} 0 0 1 ${x} ${y+h-r} `+
+    `V${y+r} A${r} ${r} 0 0 1 ${x+r} ${y} Z`);
+  svg.appendChild(tmp);
+  const total=tmp.getTotalLength();
+  const n=Math.max(8,Math.round(total/gap)); const step=total/n;
+  const out=[];
+  for(let i=0;i<n;i++){ const p=tmp.getPointAtLength(i*step); out.push({x:p.x,y:p.y}); }
+  svg.removeChild(tmp);
+  return out;
+}
 function buildStitches(){
   const g=document.getElementById("stitches"); g.innerHTML="";
-  // 바깥 둘레(라운드 사각형의 4변, 모서리 라운드는 비움) + 포켓 입구
+  const gap=10.5;
   const seams=[
-    ...stitchAlong(77,82,283,82,11),     // 윗변
-    ...stitchAlong(292,91,292,227,11),   // 오른변
-    ...stitchAlong(283,236,77,236,11),   // 아랫변
-    ...stitchAlong(68,227,68,91,11),     // 왼변
-    ...stitchAlong(73,142,287,142,11),   // 포켓 입구
+    ...stitchRoundRect(68,82,224,154,9,gap),  // 바깥 둘레(모서리까지 균등)
+    ...stitchAlong(89,142,271,142,gap),       // 포켓 입구(양옆 솔기와 겹치지 않게 안쪽)
   ];
-  const L=10, W=3.3;   // 실밥 길이/두께 (가로로 그린 뒤 회전)
+  const L=9.5, W=3.3;   // 실밥 길이/두께 (가로로 그린 뒤 회전)
   seams.forEach(s=>{
     const grp=document.createElementNS(SVGNS,"g");
     grp.setAttribute("transform",`translate(${s.x.toFixed(1)} ${s.y.toFixed(1)}) rotate(${STITCH_ANGLE})`);
