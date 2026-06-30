@@ -84,6 +84,9 @@
   .btn:hover{ background:var(--line-soft); color:var(--ink); }
   .btn.primary{ background:var(--primary); color:#fff; border-color:var(--primary); }
   .btn.primary:hover{ filter:brightness(1.06); color:#fff; }
+  .cafe-btn{ display:inline-flex; align-items:center; gap:8px; margin-top:14px; padding:11px 18px; border-radius:11px; background:#03c75a; color:#fff; font-size:14px; font-weight:700; text-decoration:none; box-shadow:0 4px 12px rgba(3,199,90,.28); transition:filter .14s, transform .14s; }
+  .cafe-btn:hover{ filter:brightness(1.04); transform:translateY(-1px); }
+  .cafe-btn svg{ flex-shrink:0; }
   .toast{ position:fixed; left:50%; bottom:32px; transform:translateX(-50%) translateY(20px); background:var(--ink); color:#fff; font-size:13px; font-weight:600; padding:11px 18px; border-radius:11px; box-shadow:var(--shadow-float); opacity:0; pointer-events:none; transition:all .25s; }
   .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
 </style>
@@ -98,6 +101,11 @@
       베네딕의 가죽조합 시뮬레이터
     </h1>
     <p>가죽 · 실 · 엣지코트 색상을 골라 조합을 미리 확인해 보세요. 실은 <b>비니모</b>, 엣지코트는 <b>페니체</b> 색상을 기준으로 합니다.</p>
+    <a class="cafe-btn" href="https://cafe.naver.com/chipleather" target="_blank" rel="noopener noreferrer">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3h18v18H3V3zm5.4 4.2v9.6h2.1v-5.3l3.3 5.3h2.7V7.2h-2.1v5.3L11.1 7.2H8.4z"/></svg>
+      굿엔레더 카페 바로가기
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+    </a>
   </header>
 
   <div class="grid">
