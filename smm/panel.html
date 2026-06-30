@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>대시보드 · SMM 패널</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand"><span class="dot"></span> SMM 패널</div>
+    <div class="nav">
+      <span class="bal">잔액 <b id="balance">$0.0000</b></span>
+      <a id="adminLink" class="hide" href="admin.html">관리자</a>
+      <a href="#" onclick="logout();return false;">로그아웃</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="grid cols-2">
+      <!-- 주문하기 -->
+      <div class="card">
+        <h2>새 주문</h2>
+        <label>카테고리</label>
+        <select id="category" onchange="renderServices()"></select>
+
+        <label>서비스</label>
+        <select id="service" onchange="updateEstimate()"></select>
+
+        <label>링크 (대상 URL)</label>
+        <input id="link" type="text" placeholder="https://instagram.com/p/..." />
+
+        <label>수량 <span id="minmax" class="muted"></span></label>
+        <input id="quantity" type="number" min="1" oninput="updateEstimate()" placeholder="예: 1000" />
+
+        <div class="estimate">
+          예상 결제액: <b id="estimate">$0.0000</b>
+          <span class="muted" id="rateInfo"></span>
+        </div>
+
+        <button class="btn" id="orderBtn" onclick="placeOrder()">주문하기</button>
+        <div class="msg" id="orderMsg"></div>
+      </div>
+
+      <!-- 잔액/안내 -->
+      <div class="card">
+        <h2>내 잔액</h2>
+        <div class="stat">
+          <div class="k">사용 가능 잔액 (USD)</div>
+          <div class="v" id="balanceBig">$0.0000</div>
+        </div>
+        <p class="muted" style="margin-top:14px;font-size:13px;line-height:1.6">
+          충전이 필요하면 관리자에게 입금 후 잔액 충전을 요청하세요.
+          주문 시 잔액에서 자동 차감되며, 공급처 주문이 실패하면 자동 환불됩니다.
+        </p>
+        <button class="btn ghost" onclick="loadAll()">새로고침</button>
+      </div>
+    </div>
+
+    <!-- 주문 내역 -->
+    <div class="card" style="margin-top:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <h2 style="margin:0">주문 내역</h2>
+        <button class="btn ghost sm" onclick="loadOrders()">새로고침</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr><th>주문일</th><th>서비스</th><th>링크</th><th>수량</th><th>금액</th><th>상태</th><th></th></tr>
+          </thead>
+          <tbody id="orders"><tr><td colspan="7" class="muted">불러오는 중...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-functions-compat.js"></script>
+  <script src="app.js"></script>
+  <script>
+    let SERVICES = [];
+    let CATEGORIES = [];
+
+    async function init() {
+      await requireLogin();
+      await loadAll();
+    }
+
+    async function loadAll() {
+      await Promise.all([loadMe(), loadServices(), loadOrders()]);
+    }
+
+    async function loadMe() {
+      try {
+        const me = await call("smmMe");
+        setBalance(me.balance);
+        if (me.role === "admin") document.getElementById("adminLink").classList.remove("hide");
+      } catch (e) { /* ensureUser 가 아직이면 무시 */ }
+    }
+
+    function setBalance(b) {
+      document.getElementById("balance").textContent = "$" + fmt(b);
+      document.getElementById("balanceBig").textContent = "$" + fmt(b);
+    }
+
+    async function loadServices() {
+      const sel = document.getElementById("category");
+      sel.innerHTML = "<option>불러오는 중...</option>";
+      try {
+        SERVICES = await call("smmServices");
+        CATEGORIES = [...new Set(SERVICES.map((s) => s.category))].sort();
+        sel.innerHTML = CATEGORIES.map((c) => `<option>${esc(c)}</option>`).join("");
+        renderServices();
+      } catch (e) {
+        sel.innerHTML = "<option>불러오기 실패</option>";
+        document.getElementById("orderMsg").textContent = e.message;
+        document.getElementById("orderMsg").className = "msg err";
+      }
+    }
+
+    function renderServices() {
+      const cat = document.getElementById("category").value;
+      const sel = document.getElementById("service");
+      const list = SERVICES.filter((s) => s.category === cat);
+      sel.innerHTML = list
+        .map((s) => `<option value="${esc(s.service)}">${esc(s.name)} — $${fmt(s.rate, 3)}/1k</option>`)
+        .join("");
+      updateEstimate();
+    }
+
+    function selectedService() {
+      const id = document.getElementById("service").value;
+      return SERVICES.find((s) => String(s.service) === String(id));
+    }
+
+    function updateEstimate() {
+      const svc = selectedService();
+      const qty = parseInt(document.getElementById("quantity").value, 10) || 0;
+      const mm = document.getElementById("minmax");
+      const rateInfo = document.getElementById("rateInfo");
+      if (!svc) { mm.textContent = ""; rateInfo.textContent = ""; document.getElementById("estimate").textContent = "$0.0000"; return; }
+      mm.textContent = `(최소 ${svc.min} ~ 최대 ${svc.max})`;
+      rateInfo.textContent = ` · 단가 $${fmt(svc.rate, 3)}/1000`;
+      const charge = (parseFloat(svc.rate) * qty) / 1000;
+      document.getElementById("estimate").textContent = "$" + fmt(charge);
+    }
+
+    async function placeOrder() {
+      const svc = selectedService();
+      const link = document.getElementById("link").value.trim();
+      const quantity = parseInt(document.getElementById("quantity").value, 10);
+      const m = document.getElementById("orderMsg");
+      const btn = document.getElementById("orderBtn");
+      if (!svc) return setMsg(m, "서비스를 선택하세요.");
+      if (!link) return setMsg(m, "링크를 입력하세요.");
+      if (!(quantity > 0)) return setMsg(m, "수량을 입력하세요.");
+      btn.disabled = true; setMsg(m, "주문 처리 중...", true);
+      try {
+        const r = await call("smmPlaceOrder", { service: svc.service, link, quantity });
+        setBalance(r.balance);
+        setMsg(m, `주문 완료! 주문번호 #${r.providerOrder}`, true);
+        document.getElementById("link").value = "";
+        document.getElementById("quantity").value = "";
+        updateEstimate();
+        loadOrders();
+      } catch (e) {
+        setMsg(m, e.message);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function setMsg(el, t, ok) { el.textContent = t; el.className = "msg " + (ok ? "ok" : "err"); }
+
+    async function loadOrders() {
+      const tb = document.getElementById("orders");
+      try {
+        const orders = await call("smmMyOrders");
+        if (!orders.length) { tb.innerHTML = '<tr><td colspan="7" class="muted">주문 내역이 없습니다.</td></tr>'; return; }
+        tb.innerHTML = orders.map((o) => `
+          <tr>
+            <td>${new Date(o.createdAt).toLocaleDateString("ko-KR")}</td>
+            <td>${esc(o.serviceName || o.service)}</td>
+            <td><a href="${esc(o.link)}" target="_blank" rel="noopener">링크</a></td>
+            <td>${esc(o.quantity)}</td>
+            <td>$${fmt(o.charge)}</td>
+            <td><span class="badge ${statusClass(o.status)}">${esc(o.status)}</span></td>
+            <td><button class="btn ghost sm" onclick="refresh('${o.id}', this)">상태확인</button></td>
+          </tr>`).join("");
+      } catch (e) {
+        tb.innerHTML = `<tr><td colspan="7" class="msg err">${esc(e.message)}</td></tr>`;
+      }
+    }
+
+    async function refresh(id, btn) {
+      btn.disabled = true;
+      try { await call("smmRefreshStatus", { id }); await loadOrders(); }
+      catch (e) { btn.disabled = false; alert(e.message); }
+    }
+
+    init();
+  </script>
+</body>
+</html>
