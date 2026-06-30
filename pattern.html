@@ -111,7 +111,12 @@
   .seg button i{ font-style:normal; font-size:10px; font-weight:800; color:var(--ink-3); border:1px solid var(--line); border-radius:4px; padding:0 4px; }
   .seg button.on i{ color:var(--primary); border-color:#c7c3f5; }
   .tool-hint{ font-size:12px; color:var(--ink-3); font-weight:600; }
+  .zoomctl{ margin-left:auto; display:flex; align-items:center; gap:5px; }
+  .zoomctl button{ width:30px; height:30px; border:1px solid var(--line); background:var(--surface); border-radius:8px; cursor:pointer; font-size:15px; font-weight:700; color:var(--ink-2); font-family:inherit; }
+  .zoomctl button:hover{ background:var(--line-soft); color:var(--ink); }
+  .zoomctl .fit{ width:auto; padding:0 11px; font-size:12.5px; font-weight:600; }
   .stage-svg{ flex:1; min-height:0; }
+  .hud{ position:absolute; left:14px; bottom:64px; background:rgba(21,24,42,.82); color:#fff; font-size:12px; font-weight:600; padding:6px 11px; border-radius:8px; pointer-events:none; display:none; letter-spacing:0; z-index:5; }
   #canvas{ width:100%; height:100%; display:block; }
   #canvas.point-mode{ cursor:crosshair; }
   #canvas.guide-mode{ cursor:cell; }
@@ -262,8 +267,14 @@
           <button data-mode="select">⬚ 선택·삭제 <i>V</i></button>
         </div>
         <span class="tool-hint" id="toolHint">블록 모드 — 왼쪽에서 방향·길이를 눌러 선을 이어요</span>
+        <div class="zoomctl">
+          <button id="zoomOut" title="축소">−</button>
+          <button id="zoomIn" title="확대">＋</button>
+          <button class="fit" id="zoomFit" title="전체 보기 (F / 더블클릭)">맞춤</button>
+        </div>
       </div>
       <div class="stage-svg"><svg id="canvas" preserveAspectRatio="xMidYMid meet"></svg></div>
+      <div class="hud" id="hud"></div>
       <div class="stat-bar">
         <div class="stat"><span class="k">조각 길이</span><span class="v" id="stTotal">0 <small>cm</small></span></div>
         <div class="stat"><span class="k">선</span><span class="v" id="stSeg">0 <small>개</small></span></div>
@@ -298,7 +309,11 @@
   let selectedG = new Set();   // selected guide indices
   let marquee = null;          // {x1,y1,x2,y2} drag-select box
   let dragSel = false;
-  let T = {scale:1, offX:0, offY:0};  // last render transform (world->viewBox)
+  let view = {scale:1, offX:0, offY:0};  // persistent world->viewBox transform (zoom/pan)
+  let viewInit = false;
+  let hover = null;                      // world coords under cursor
+  let panning = false, panLast = null;
+  let raf = 0;
   let pieceSeq = 1;
 
   function newPiece(x,y,idx){ return { pts:[{x,y}], closed:false, mirror:false, fresh:true, kind:null, name:'조각 '+(idx+1) }; }
@@ -420,6 +435,9 @@
     render();
   }
   document.querySelectorAll('#modeSeg button').forEach(b=> b.addEventListener('click', ()=> setMode(b.dataset.mode)));
+  document.getElementById('zoomIn').addEventListener('click', ()=> zoomBy(1.25));
+  document.getElementById('zoomOut').addEventListener('click', ()=> zoomBy(0.8));
+  document.getElementById('zoomFit').addEventListener('click', ()=> fitView());
 
   /* ---------- options ---------- */
   document.getElementById('mirrorChk').addEventListener('change', e=>{ AP().mirror=e.target.checked; render(); });
@@ -434,7 +452,7 @@
   document.getElementById('btnNewPiece').addEventListener('click', ()=>{
     const x0 = Math.ceil((contentMaxX()+3)/snapCm)*snapCm;
     pieces.push(newPiece(x0, 0, pieceSeq++)); active=pieces.length-1;
-    syncPieceUI(); render();
+    syncPieceUI(); fitView();
   });
   function selectPiece(i){ active=i; syncPieceUI(); render(); }
   function deletePiece(i){
@@ -455,7 +473,7 @@
   }
   function clearAll(){
     if((AP().pts.length>1||guides.length) && !confirm('전체를 지울까요?')) return;
-    pieces=[newPiece(0,0,0)]; active=0; pieceSeq=1; guides=[]; clickTmp=null; syncPieceUI(); render();
+    pieces=[newPiece(0,0,0)]; active=0; pieceSeq=1; guides=[]; clickTmp=null; selectedP=new Set(); selectedG=new Set(); syncPieceUI(); fitView();
   }
   function toggleClose(){ const pc=AP(); if(pc.pts.length<3) return; pc.closed=!pc.closed; render(); }
   document.getElementById('btnUndo').addEventListener('click', undo);
@@ -500,7 +518,8 @@
     return a;  // note: clickTmp/marquee excluded so the view stays stable mid-operation
   }
 
-  function render(){
+  function requestRender(){ if(raf) return; raf=requestAnimationFrame(()=>{ raf=0; render(); }); }
+  function fitView(){
     const pall=allPoints();
     let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
     for(const p of pall){ minX=Math.min(minX,p.x);maxX=Math.max(maxX,p.x);minY=Math.min(minY,p.y);maxY=Math.max(maxY,p.y); }
@@ -509,13 +528,24 @@
     else { const mx=Math.max(bw,bh)*0.14+0.5; minX-=mx;maxX+=mx;minY-=mx;maxY+=mx; }
     bw=maxX-minX; bh=maxY-minY;
     const scale=Math.min((VBW-2*PAD)/bw,(VBH-2*PAD)/bh);
-    const offX=(VBW-bw*scale)/2-minX*scale, offY=(VBH-bh*scale)/2-minY*scale;
-    T={scale,offX,offY};
+    view={ scale, offX:(VBW-bw*scale)/2-minX*scale, offY:(VBH-bh*scale)/2-minY*scale };
+    viewInit=true; render();
+  }
+  function zoomBy(k, vbx, vby){
+    if(vbx===undefined){ vbx=VBW/2; vby=VBH/2; }
+    const wx=(vbx-view.offX)/view.scale, wy=(vby-view.offY)/view.scale;
+    view.scale=Math.max(0.4, Math.min(6000, view.scale*k));
+    view.offX=vbx-wx*view.scale; view.offY=vby-wy*view.scale; requestRender();
+  }
+  function render(){
+    if(!viewInit){ fitView(); return; }
+    const scale=view.scale, offX=view.offX, offY=view.offY;
     const X=x=>offX+x*scale, Y=y=>offY+y*scale;
+    const minX=(0-offX)/scale, maxX=(VBW-offX)/scale, minY=(0-offY)/scale, maxY=(VBH-offY)/scale;
 
     let g='';
     // grid
-    const extent=Math.max(bw,bh);
+    const extent=Math.max(maxX-minX, maxY-minY);
     let minor = snapGrid ? snapCm : niceStep(extent/35);
     if(extent/minor>70) minor=niceStep(extent/40);
     const major=minor*5;
@@ -578,10 +608,44 @@
       }
     });
 
+    // ---- crosshair + live preview (CAD feel) ----
+    if(hover && !panning){
+      const sh = (mode==='block') ? null : snapAny(hover);
+      const hx=X(hover.x), hy=Y(hover.y);
+      g+=`<line x1="0" y1="${hy.toFixed(1)}" x2="${VBW}" y2="${hy.toFixed(1)}" stroke="#9aa3b8" stroke-width="0.8" stroke-dasharray="4 4" opacity=".7"/>`;
+      g+=`<line x1="${hx.toFixed(1)}" y1="0" x2="${hx.toFixed(1)}" y2="${VBH}" stroke="#9aa3b8" stroke-width="0.8" stroke-dasharray="4 4" opacity=".7"/>`;
+      if(sh){
+        const px=X(sh.x), py=Y(sh.y);
+        // preview geometry
+        const pc=AP();
+        if(mode==='line' && pc.pts.length>=1 && !(pc.pts.length===1 && pc.fresh)){
+          const lp=pc.pts[pc.pts.length-1];
+          g+=`<line x1="${X(lp.x).toFixed(1)}" y1="${Y(lp.y).toFixed(1)}" x2="${px.toFixed(1)}" y2="${py.toFixed(1)}" stroke="#4f46e5" stroke-width="1.6" stroke-dasharray="6 4"/>`;
+        } else if(mode==='guide' && clickTmp){
+          g+=`<line x1="${X(clickTmp.x).toFixed(1)}" y1="${Y(clickTmp.y).toFixed(1)}" x2="${px.toFixed(1)}" y2="${py.toFixed(1)}" stroke="#94a3b8" stroke-width="1.4" stroke-dasharray="6 4"/>`;
+        } else if(mode==='rect' && clickTmp){
+          const ax=X(clickTmp.x),ay=Y(clickTmp.y);
+          g+=`<rect x="${Math.min(ax,px).toFixed(1)}" y="${Math.min(ay,py).toFixed(1)}" width="${Math.abs(px-ax).toFixed(1)}" height="${Math.abs(py-ay).toFixed(1)}" fill="rgba(79,70,229,.06)" stroke="#4f46e5" stroke-width="1.6" stroke-dasharray="6 4"/>`;
+        } else if(mode==='circle' && clickTmp){
+          const r=Math.hypot(px-X(clickTmp.x), py-Y(clickTmp.y));
+          g+=`<circle cx="${X(clickTmp.x).toFixed(1)}" cy="${Y(clickTmp.y).toFixed(1)}" r="${r.toFixed(1)}" fill="rgba(79,70,229,.06)" stroke="#4f46e5" stroke-width="1.6" stroke-dasharray="6 4"/>`;
+        }
+        // snap indicator
+        g+=`<rect x="${(px-4).toFixed(1)}" y="${(py-4).toFixed(1)}" width="8" height="8" fill="none" stroke="#4f46e5" stroke-width="1.6"/>`;
+      }
+    }
+
     canvas.innerHTML=g;
     updateStats();
     renderPieces();
     renderBlocks();
+  }
+  function updateHUD(){
+    const el=document.getElementById('hud'); if(!el) return;
+    if(!hover){ el.style.display='none'; return; }
+    el.style.display='block';
+    const zoom=Math.round(view.scale/ ( (VBW-2*PAD)/10 ) *100); // 100% ≈ 10cm-fit baseline
+    el.textContent = `X ${fmt(hover.x)}  Y ${fmt(-hover.y)} cm · 줌 ${zoom}%`;
   }
 
   function updateStats(){
@@ -644,11 +708,14 @@
   }
 
   /* ---------- canvas click (point / guide) ---------- */
-  function worldFromEvent(e){
+  function eventToVB(e){
     const pt=canvas.createSVGPoint(); pt.x=e.clientX; pt.y=e.clientY;
     const ctm=canvas.getScreenCTM(); if(!ctm) return null;
-    const vp=pt.matrixTransform(ctm.inverse());
-    return { x:(vp.x-T.offX)/T.scale, y:(vp.y-T.offY)/T.scale };
+    return pt.matrixTransform(ctm.inverse());
+  }
+  function worldFromEvent(e){
+    const vp=eventToVB(e); if(!vp) return null;
+    return { x:(vp.x-view.offX)/view.scale, y:(vp.y-view.offY)/view.scale };
   }
   function snapAny(w){
     let best=null, bd=snapCm*0.9;
@@ -690,10 +757,21 @@
     active=Math.min(active, pieces.length-1);
     selectedP=new Set(); selectedG=new Set(); syncPieceUI(); render(); return true;
   }
-  canvas.addEventListener('pointerdown', e=>{ if(mode!=='select') return; dragSel=true; canvas.setPointerCapture(e.pointerId);
-    const w=worldFromEvent(e); marquee={x1:w.x,y1:w.y,x2:w.x,y2:w.y}; selectedP=new Set(); selectedG=new Set(); render(); });
-  canvas.addEventListener('pointermove', e=>{ if(!dragSel) return; const w=worldFromEvent(e); marquee.x2=w.x; marquee.y2=w.y; computeSel(); render(); });
-  canvas.addEventListener('pointerup', ()=>{ if(!dragSel) return; dragSel=false; computeSel(); marquee=null; render(); });
+  canvas.addEventListener('contextmenu', e=> e.preventDefault());
+  canvas.addEventListener('pointerdown', e=>{
+    if(e.button===1 || e.button===2){ panning=true; panLast=eventToVB(e); canvas.setPointerCapture(e.pointerId); e.preventDefault(); return; } // 중간/오른쪽 드래그 = 이동
+    if(mode==='select' && e.button===0){ dragSel=true; canvas.setPointerCapture(e.pointerId);
+      const w=worldFromEvent(e); marquee={x1:w.x,y1:w.y,x2:w.x,y2:w.y}; selectedP=new Set(); selectedG=new Set(); render(); }
+  });
+  canvas.addEventListener('pointermove', e=>{
+    if(panning){ const vb=eventToVB(e); if(vb&&panLast){ view.offX+=vb.x-panLast.x; view.offY+=vb.y-panLast.y; panLast=vb; } requestRender(); return; }
+    if(dragSel){ const w=worldFromEvent(e); marquee.x2=w.x; marquee.y2=w.y; computeSel(); requestRender(); return; }
+    hover=worldFromEvent(e); updateHUD(); requestRender();
+  });
+  canvas.addEventListener('pointerup', ()=>{ if(panning){ panning=false; return; } if(dragSel){ dragSel=false; computeSel(); marquee=null; render(); } });
+  canvas.addEventListener('pointerleave', ()=>{ hover=null; updateHUD(); requestRender(); });
+  canvas.addEventListener('wheel', e=>{ e.preventDefault(); const vb=eventToVB(e); if(!vb) return; zoomBy(Math.exp(-e.deltaY*0.0015), vb.x, vb.y); }, {passive:false});
+  canvas.addEventListener('dblclick', e=>{ if(mode==='select'||mode==='block') fitView(); });
 
   function startOrReuse(){
     if(AP().pts.length===1 && AP().fresh) return AP();
@@ -773,6 +851,7 @@
     else if(k==='Escape'){ clickTmp=null; marquee=null; selectedP=new Set(); selectedG=new Set(); render(); }
     else if(k==='+'||k==='='){ rotateBy(1); }
     else if(k==='-'){ rotateBy(-1); }
+    else if(k==='f'||k==='F'||k==='Home'){ fitView(); }
     else { const map={b:'block',l:'line',o:'offset',c:'circle',r:'rect',g:'guide',v:'select'}, m2=map[k.toLowerCase()]; if(m2) setMode(m2); }
   });
 
@@ -805,7 +884,7 @@
   document.getElementById('btnLoad').addEventListener('click', ()=>{
     const v=document.getElementById('saveList').value; if(v==='') return; const p=getSaved()[+v]; if(!p) return;
     pieces=JSON.parse(JSON.stringify(p.pieces||[newPiece(0,0,0)])); guides=JSON.parse(JSON.stringify(p.guides||[]));
-    active=0; clickTmp=null; pieceSeq=pieces.length; syncPieceUI(); render();
+    active=0; clickTmp=null; pieceSeq=pieces.length; syncPieceUI(); fitView();
   });
   document.getElementById('btnDelSave').addEventListener('click', ()=>{ const v=document.getElementById('saveList').value; if(v==='') return; const list=getSaved(); list.splice(+v,1); setSaved(list); refreshSaveList(); });
 
@@ -902,8 +981,7 @@
     const has = pieces.length>1 || AP().pts.length>1 || guides.length;
     const replace = has ? confirm('기존 패턴을 지우고 가져올까요?\n확인=교체, 취소=기존에 추가') : true;
     pieces = replace ? np : pieces.concat(np);
-    active=pieces.length-1; pieceSeq=pieces.length; clickTmp=null; selectedP=new Set(); selectedG=new Set(); syncPieceUI(); render();
-    setMode('block');
+    active=pieces.length-1; pieceSeq=pieces.length; clickTmp=null; selectedP=new Set(); selectedG=new Set(); syncPieceUI(); setMode('block'); fitView();
   }
 
   /* ---------- init ---------- */
