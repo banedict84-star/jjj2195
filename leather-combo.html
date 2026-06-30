@@ -40,15 +40,19 @@
   }
   .wrap{ max-width:1080px; margin:0 auto; }
 
-  header.page{ margin-bottom:30px; text-align:center; }
-  header.page h1{ font-family:var(--serif); font-size:38px; font-weight:700; letter-spacing:.005em; color:var(--ink); line-height:1.12; }
-  header.page .h1-sub{ display:block; font-family:"Pretendard Variable",Pretendard,sans-serif; font-size:12px; font-weight:600; letter-spacing:.42em; text-transform:uppercase; color:var(--gold); margin-bottom:10px; }
-  header.page p{ color:var(--ink-2); font-size:14px; margin-top:12px; line-height:1.7; }
-  /* 금색 디바이더 */
-  .gold-rule{ display:flex; align-items:center; justify-content:center; gap:12px; margin:16px auto 2px; }
-  .gold-rule::before,.gold-rule::after{ content:""; height:1px; width:54px; background:linear-gradient(90deg, transparent, var(--gold)); }
-  .gold-rule::after{ background:linear-gradient(90deg, var(--gold), transparent); }
-  .gold-rule i{ width:6px; height:6px; transform:rotate(45deg); background:var(--gold); display:inline-block; }
+  header.page{ margin-bottom:30px; }
+  .topbar{ display:flex; align-items:center; justify-content:space-between; gap:18px; flex-wrap:wrap; }
+  .brand{ display:flex; align-items:center; gap:14px; }
+  .mark{ width:52px; height:52px; border-radius:15px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(150deg,#322b21 0%,#1c1813 100%);
+    border:1px solid rgba(189,154,82,.5);
+    box-shadow:0 8px 20px rgba(40,28,12,.32), inset 0 1px 0 rgba(255,255,255,.08); }
+  .titles{ display:flex; flex-direction:column; }
+  header.page h1{ font-family:var(--serif); font-size:30px; font-weight:700; letter-spacing:.005em; color:var(--ink); line-height:1.1; }
+  header.page .h1-sub{ display:block; font-family:"Pretendard Variable",Pretendard,sans-serif; font-size:10.5px; font-weight:600; letter-spacing:.34em; text-transform:uppercase; color:var(--gold); margin-bottom:5px; }
+  header.page p{ color:var(--ink-2); font-size:14px; margin-top:16px; line-height:1.7; }
+  .topbar .cafe-btn{ margin-top:0; }
+  @media (max-width:560px){ .topbar{ gap:14px; } header.page h1{ font-size:25px; } }
 
   .grid{ display:grid; grid-template-columns:1fr 420px; gap:24px; align-items:start; }
   @media (max-width:900px){ .grid{ grid-template-columns:1fr; } }
@@ -107,19 +111,6 @@
   .cafe-btn{ display:inline-flex; align-items:center; gap:8px; margin-top:18px; padding:12px 22px; border-radius:12px; background:#03c75a; color:#fff; font-size:14px; font-weight:700; text-decoration:none; box-shadow:0 6px 16px rgba(3,199,90,.3); transition:filter .14s, transform .14s; }
   .cafe-btn:hover{ filter:brightness(1.04); transform:translateY(-1px); }
   .cafe-btn svg{ flex-shrink:0; }
-  /* GOOD N LEATHER 나무판 금장 로고 */
-  .brand-plaque{ display:inline-block; padding:16px 34px 18px; border-radius:12px; margin-bottom:18px; text-align:center;
-    background:linear-gradient(180deg,#b88451 0%,#a9794a 30%,#8a5f36 72%,#74502e 100%);
-    box-shadow:0 12px 30px rgba(110,74,40,.34), inset 0 1px 0 rgba(255,255,255,.24), inset 0 -2px 4px rgba(0,0,0,.2);
-    position:relative; overflow:hidden; }
-  .brand-plaque::before{ content:""; position:absolute; inset:6px; border-radius:8px; border:1px solid rgba(241,214,139,.45); pointer-events:none; z-index:1; }
-  .brand-plaque::after{ content:""; position:absolute; inset:0; opacity:.5; pointer-events:none;
-    background:repeating-linear-gradient(91deg, rgba(0,0,0,.06) 0 3px, rgba(255,255,255,.04) 3px 10px); }
-  .brand-plaque .gnl{ position:relative; z-index:2; font-family:"Playfair Display","Georgia",serif; font-weight:800; font-size:30px; letter-spacing:.07em; color:#f4dc97;
-    text-shadow:0 1px 1px rgba(55,28,8,.6), 0 -1px 0 rgba(255,255,255,.18); }
-  .brand-plaque .gnl-tag{ position:relative; z-index:2; font-family:var(--serif); font-style:italic; font-size:13px; letter-spacing:.03em; color:#ecce82; margin-top:5px;
-    text-shadow:0 1px 1px rgba(55,28,8,.5); }
-  @media (max-width:520px){ .brand-plaque .gnl{ font-size:22px; } header.page h1{ font-size:30px; } }
   .toast{ position:fixed; left:50%; bottom:32px; transform:translateX(-50%) translateY(20px); background:var(--ink); color:#fff; font-size:13px; font-weight:600; padding:11px 18px; border-radius:11px; box-shadow:var(--shadow-float); opacity:0; pointer-events:none; transition:all .25s; }
   .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
 </style>
@@ -127,18 +118,25 @@
 <body>
 <div class="wrap">
   <header class="page">
-    <div class="brand-plaque">
-      <div class="gnl">GOOD N LEATHER</div>
-      <div class="gnl-tag">Do it professional, make it Awesome :)</div>
+    <div class="topbar">
+      <div class="brand">
+        <span class="mark" aria-hidden="true">
+          <svg width="27" height="27" viewBox="0 0 28 28" fill="none" stroke="#d9b463" stroke-width="2.4" stroke-linecap="round">
+            <path d="M5 19 L11 9"/><path d="M11 19 L17 9"/><path d="M17 19 L23 9"/>
+          </svg>
+        </span>
+        <div class="titles">
+          <span class="h1-sub">Leather Combination Studio</span>
+          <h1>베네딕의 가죽조합 시뮬레이터</h1>
+        </div>
+      </div>
+      <a class="cafe-btn" href="https://cafe.naver.com/chipleather" target="_blank" rel="noopener noreferrer">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3h18v18H3V3zm5.4 4.2v9.6h2.1v-5.3l3.3 5.3h2.7V7.2h-2.1v5.3L11.1 7.2H8.4z"/></svg>
+        굿엔레더 카페 바로가기
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+      </a>
     </div>
-    <h1><span class="h1-sub">Leather Combination Studio</span>베네딕의 가죽조합 시뮬레이터</h1>
-    <div class="gold-rule"><i></i></div>
     <p>가죽 · 실 · 엣지코트 색상을 골라 조합을 미리 확인해 보세요. 실은 <b>비니모</b>, 엣지코트는 <b>페니체</b> 색상을 기준으로 합니다.</p>
-    <a class="cafe-btn" href="https://cafe.naver.com/chipleather" target="_blank" rel="noopener noreferrer">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3h18v18H3V3zm5.4 4.2v9.6h2.1v-5.3l3.3 5.3h2.7V7.2h-2.1v5.3L11.1 7.2H8.4z"/></svg>
-      굿엔레더 카페 바로가기
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
-    </a>
   </header>
 
   <div class="grid">
