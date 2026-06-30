@@ -188,18 +188,8 @@
               <rect x="56" y="70" width="248" height="178" rx="15" fill="var(--leather)" filter="url(#leatherFx)"/>
               <rect x="56" y="70" width="248" height="178" rx="15" fill="url(#pullup)"/>
 
-              <!-- 카드(앞 포켓에 꽂혀 위로 살짝 보임) -->
-              <g>
-                <rect x="86" y="48" width="188" height="118" rx="9" fill="url(#cardg)" stroke="#c4c9d4" stroke-width="1"/>
-                <rect x="100" y="65" width="34" height="25" rx="4.5" fill="url(#chipg)" stroke="#9c7c2e" stroke-width="0.6"/>
-                <path d="M117 65v25 M100 77h34" stroke="#9c7c2e" stroke-width="0.8" opacity=".55"/>
-                <rect x="100" y="104" width="150" height="7" rx="3.5" fill="#b3b9c6"/>
-                <rect x="100" y="118" width="96" height="6" rx="3" fill="#c8cdd8"/>
-                <rect x="86" y="48" width="188" height="48" rx="9" fill="#fff" opacity=".10"/>
-              </g>
-
-              <!-- 카드가 포켓에 들어가는 곳의 음영 -->
-              <rect x="58" y="125" width="244" height="14" fill="#000" opacity=".14"/>
+              <!-- 포켓 안쪽 음영(입구 위쪽) -->
+              <rect x="64" y="78" width="232" height="56" rx="8" fill="#000" opacity=".12"/>
 
               <!-- 앞 포켓(가죽) : 위는 직선 컷, 아래는 본체 곡률 -->
               <path d="M56 132 L304 132 L304 233 Q304 248 289 248 L71 248 Q56 248 56 233 Z"
@@ -377,12 +367,12 @@ function current(){
    새들 스티치 생성 — 사선으로 박힌 실땀을 사실적으로 그림
    ============================================================ */
 const SVGNS = "http://www.w3.org/2000/svg";
+const STITCH_ANGLE = 38;   // 실밥 기울기: 왼쪽 위 → 오른쪽 아래(시계방향 38°)
 function stitchAlong(x1,y1,x2,y2,gap){
   const out=[]; const dx=x2-x1, dy=y2-y1, len=Math.hypot(dx,dy);
   const ux=dx/len, uy=dy/len;
-  const ang=Math.atan2(dy,dx)*180/Math.PI + 32;   // 실밥은 솔기 방향에서 약간 기운다
   const n=Math.max(1,Math.round(len/gap)); const step=len/n;
-  for(let i=0;i<=n;i++){ out.push({x:x1+ux*step*i, y:y1+uy*step*i, a:ang}); }
+  for(let i=0;i<=n;i++){ out.push({x:x1+ux*step*i, y:y1+uy*step*i}); }
   return out;
 }
 function buildStitches(){
@@ -395,17 +385,17 @@ function buildStitches(){
     ...stitchAlong(68,227,68,91,11),     // 왼변
     ...stitchAlong(73,142,287,142,11),   // 포켓 입구
   ];
-  const L=9, W=3.3;   // 실밥 길이/두께
+  const L=10, W=3.3;   // 실밥 길이/두께 (가로로 그린 뒤 회전)
   seams.forEach(s=>{
     const grp=document.createElementNS(SVGNS,"g");
-    grp.setAttribute("transform",`translate(${s.x.toFixed(1)} ${s.y.toFixed(1)}) rotate(${s.a.toFixed(1)})`);
-    const body=document.createElementNS(SVGNS,"rect");
-    body.setAttribute("x",(-W/2).toFixed(2)); body.setAttribute("y",(-L/2).toFixed(2));
-    body.setAttribute("width",W); body.setAttribute("height",L);
+    grp.setAttribute("transform",`translate(${s.x.toFixed(1)} ${s.y.toFixed(1)}) rotate(${STITCH_ANGLE})`);
+    const body=document.createElementNS(SVGNS,"rect");   // 가로 막대 → 회전 시 ＼ 방향
+    body.setAttribute("x",(-L/2).toFixed(2)); body.setAttribute("y",(-W/2).toFixed(2));
+    body.setAttribute("width",L); body.setAttribute("height",W);
     body.setAttribute("rx",(W/2).toFixed(2)); body.setAttribute("fill","var(--thread)");
-    const sheen=document.createElementNS(SVGNS,"rect");   // 실 꼬임 광택
-    sheen.setAttribute("x",(-W/2+0.4).toFixed(2)); sheen.setAttribute("y",(-L/2+1).toFixed(2));
-    sheen.setAttribute("width",(W*0.34).toFixed(2)); sheen.setAttribute("height",(L-2).toFixed(2));
+    const sheen=document.createElementNS(SVGNS,"rect");   // 실 꼬임 광택(윗면)
+    sheen.setAttribute("x",(-L/2+1).toFixed(2)); sheen.setAttribute("y",(-W/2+0.4).toFixed(2));
+    sheen.setAttribute("width",(L-2).toFixed(2)); sheen.setAttribute("height",(W*0.34).toFixed(2));
     sheen.setAttribute("rx",(W*0.17).toFixed(2)); sheen.setAttribute("fill","#fff"); sheen.setAttribute("opacity",".30");
     grp.appendChild(body); grp.appendChild(sheen); g.appendChild(grp);
   });
