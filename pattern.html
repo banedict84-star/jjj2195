@@ -328,8 +328,9 @@
   const rad = d => d * Math.PI / 180;
   const ARROWS = ['→','↗','↑','↖','←','↙','↓','↘'];
   const arrowFor = a => ARROWS[(Math.round(norm(a)/45)) % 8];
-  const fmt = n => (Math.round(n*100)/100).toString();
+  const fmt = n => (Math.round(n*1000)/1000).toString();  // up to 3 decimals
   const snapVal = v => Math.round(v/snapCm)*snapCm;
+  const round3 = v => Math.round(v*1000)/1000;
   const dist = (a,b) => Math.hypot(a.x-b.x, a.y-b.y);
 
   /* ---------- direction dial ---------- */
@@ -732,7 +733,7 @@
     let best=null, bd=snapCm*0.9;
     pieces.forEach(pc=>pc.pts.forEach(p=>{ const d=dist(p,w); if(d<bd){bd=d;best={x:p.x,y:p.y};} }));
     if(best) return best;
-    return snapGrid ? {x:snapVal(w.x), y:snapVal(w.y)} : w;
+    return snapGrid ? {x:snapVal(w.x), y:snapVal(w.y)} : {x:round3(w.x), y:round3(w.y)};
   }
   // ---- line tool: direction(mouse) + distance(typed) ----
   function lineAnchor(){ if(lineNew) return null; const pc=AP(); if(pc.kind!=='line'||pc.closed) return null; return pc.pts[pc.pts.length-1]; }
