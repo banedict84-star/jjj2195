@@ -382,15 +382,16 @@ function current(){
    새들 스티치 생성 — 사선으로 박힌 실땀을 사실적으로 그림
    ============================================================ */
 const SVGNS = "http://www.w3.org/2000/svg";
-const STITCH_ANGLE = 38;   // 실밥 기울기: 왼쪽 위 → 오른쪽 아래(시계방향 38°)
+const STITCH_TILT = 38;   // 실밥 기울기(솔기 방향 기준 +38°): 윗변에서 왼쪽위→오른쪽아래(＼)
 function stitchAlong(x1,y1,x2,y2,gap){
   const out=[]; const dx=x2-x1, dy=y2-y1, len=Math.hypot(dx,dy);
   const ux=dx/len, uy=dy/len;
+  const ang=Math.atan2(dy,dx)*180/Math.PI;
   const n=Math.max(1,Math.round(len/gap)); const step=len/n;
-  for(let i=0;i<=n;i++){ out.push({x:x1+ux*step*i, y:y1+uy*step*i}); }
+  for(let i=0;i<=n;i++){ out.push({x:x1+ux*step*i, y:y1+uy*step*i, a:ang}); }
   return out;
 }
-/* 둥근 사각형 경로를 따라 균등 간격으로 좌표 산출(모서리 자연스럽게) */
+/* 둥근 사각형 경로를 따라 균등 간격 + 각 점의 진행 방향(접선) 산출 → 끊김/겹침 없이 모서리까지 이어짐 */
 function stitchRoundRect(x,y,w,h,r,gap){
   const svg=document.getElementById("preview-svg");
   const tmp=document.createElementNS(SVGNS,"path");
@@ -403,35 +404,27 @@ function stitchRoundRect(x,y,w,h,r,gap){
   const total=tmp.getTotalLength();
   const n=Math.max(8,Math.round(total/gap)); const step=total/n;
   const out=[];
-  for(let i=0;i<n;i++){ const p=tmp.getPointAtLength(i*step); out.push({x:p.x,y:p.y}); }
+  for(let i=0;i<n;i++){
+    const len=i*step;
+    const p=tmp.getPointAtLength(len);
+    const p2=tmp.getPointAtLength((len+1.5)%total);
+    const a=Math.atan2(p2.y-p.y, p2.x-p.x)*180/Math.PI;  // 진행 접선각
+    out.push({x:p.x, y:p.y, a});
+  }
   svg.removeChild(tmp);
-  return out;
-}
-/* 같은 ＼방향 실밥이 코너에서 겹치는 것 방지: 스티치 진행 수직축 기준 최소간격 유지 */
-function thinByPerp(pts, angleDeg, minPerp, closed){
-  const a=angleDeg*Math.PI/180, nx=-Math.sin(a), ny=Math.cos(a);
-  const out=[]; let last=null;
-  for(const p of pts){
-    const proj=p.x*nx+p.y*ny;
-    if(last===null || Math.abs(proj-last)>=minPerp){ out.push(p); last=proj; }
-  }
-  if(closed && out.length>2){
-    const f=out[0].x*nx+out[0].y*ny;
-    if(Math.abs(last-f)<minPerp) out.pop();
-  }
   return out;
 }
 function buildStitches(){
   const g=document.getElementById("stitches"); g.innerHTML="";
-  const gap=10.5;
+  const gap=9.8;
   const seams=[
-    ...thinByPerp(stitchRoundRect(68,82,224,154,9,gap), STITCH_ANGLE, 4.6, true),  // 바깥 둘레
-    ...stitchAlong(89,142,271,142,gap),       // 포켓 입구(양옆 솔기와 겹치지 않게 안쪽)
+    ...stitchRoundRect(68,82,224,154,9,gap),  // 바깥 둘레(접선 따라 균등 → 끊김 없음)
+    ...stitchAlong(90,142,270,142,gap),       // 포켓 입구
   ];
-  const L=9.5, W=3.3;   // 실밥 길이/두께 (가로로 그린 뒤 회전)
+  const L=10.5, W=3.3;   // 실밥 길이/두께 (가로로 그린 뒤 회전)
   seams.forEach(s=>{
     const grp=document.createElementNS(SVGNS,"g");
-    grp.setAttribute("transform",`translate(${s.x.toFixed(1)} ${s.y.toFixed(1)}) rotate(${STITCH_ANGLE})`);
+    grp.setAttribute("transform",`translate(${s.x.toFixed(1)} ${s.y.toFixed(1)}) rotate(${(s.a+STITCH_TILT).toFixed(1)})`);
     const body=document.createElementNS(SVGNS,"rect");   // 가로 막대 → 회전 시 ＼ 방향
     body.setAttribute("x",(-L/2).toFixed(2)); body.setAttribute("y",(-W/2).toFixed(2));
     body.setAttribute("width",L); body.setAttribute("height",W);
