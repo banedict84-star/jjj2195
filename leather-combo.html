@@ -97,7 +97,7 @@
       </span>
       가죽 조합 시뮬레이터
     </h1>
-    <p>가죽 · 실 · 엣지코트 색상을 골라 조합을 미리 확인해 보세요. 가죽은 <b>크리스페 / 푸에블로</b>, 실은 <b>비니모</b>, 엣지코트는 <b>페니체</b> 색상을 기준으로 합니다.</p>
+    <p>가죽 · 실 · 엣지코트 색상을 골라 조합을 미리 확인해 보세요. 실은 <b>비니모</b>, 엣지코트는 <b>페니체</b> 색상을 기준으로 합니다.</p>
   </header>
 
   <div class="grid">
@@ -108,8 +108,8 @@
         <h2>LEATHER <span class="ko">가죽</span></h2>
         <div class="pick">선택: <b id="pick-leather">—</b></div>
         <div class="tabs" id="leather-tabs">
-          <button data-brand="crispe" class="on">크리스페</button>
-          <button data-brand="pueblo">푸에블로</button>
+          <button data-brand="crispe" class="on">가죽 1</button>
+          <button data-brand="pueblo">가죽 2</button>
         </div>
         <div class="swatches" id="leather-sw"></div>
       </div>
@@ -466,12 +466,12 @@ function update(){
   // 선택 표시
   const lsub = c.leather.sub ? ` (${c.leather.sub})` : "";
   const esub = c.edge.sub ? ` ${c.edge.sub}` : "";
-  document.getElementById("pick-leather").textContent = `${c.brandLabel} · ${c.leather.name}${lsub}`;
+  document.getElementById("pick-leather").textContent = `${c.leather.name}${lsub}`;
   document.getElementById("pick-thread").textContent  = `비니모 ${c.thread.name}`;
   document.getElementById("pick-edge").textContent    = `페니체 ${c.edge.name}${esub}`;
 
   // 요약
-  document.getElementById("sum-leather").innerHTML = `${c.leather.name} <small>${c.brandLabel}</small>`;
+  document.getElementById("sum-leather").innerHTML = `${c.leather.name}${lsub} <small>가죽</small>`;
   document.getElementById("sum-thread").innerHTML  = `비니모 ${c.thread.name} <small>실</small>`;
   document.getElementById("sum-edge").innerHTML    = `${c.edge.name}${c.edge.sub?` `+c.edge.sub:""} <small>페니체</small>`;
   document.getElementById("sum-leather-dot").style.background = c.leather.hex;
@@ -506,7 +506,7 @@ function toast(msg){
 }
 document.getElementById("btn-copy").addEventListener("click", ()=>{
   const c = current();
-  const txt = `가죽: ${c.brandLabel} ${c.leather.name}${c.leather.sub?`(${c.leather.sub})`:""} / 실: 비니모 ${c.thread.name} / 엣지코트: 페니체 ${c.edge.name}${c.edge.sub?` ${c.edge.sub}`:""}`;
+  const txt = `가죽: ${c.leather.name}${c.leather.sub?`(${c.leather.sub})`:""} / 실: 비니모 ${c.thread.name} / 엣지코트: 페니체 ${c.edge.name}${c.edge.sub?` ${c.edge.sub}`:""}`;
   (navigator.clipboard?.writeText(txt) ?? Promise.reject())
     .then(()=>toast("조합을 복사했어요 ✓"))
     .catch(()=>toast(txt));
