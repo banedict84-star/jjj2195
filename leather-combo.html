@@ -132,29 +132,75 @@
     <div class="preview">
       <div class="panel">
         <div class="stage">
-          <svg viewBox="0 0 360 300" xmlns="http://www.w3.org/2000/svg" aria-label="가죽 조합 미리보기">
+          <svg id="preview-svg" viewBox="0 0 360 300" xmlns="http://www.w3.org/2000/svg"
+               aria-label="가죽 카드지갑 미리보기"
+               style="--leather:#8a5a32; --edge:#222; --thread:#efe9df;">
             <defs>
-              <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" result="n"/><feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .05 0"/><feComposite operator="over" in2="SourceGraphic"/></filter>
-              <linearGradient id="sheen" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stop-color="#fff" stop-opacity=".18"/>
-                <stop offset="45%" stop-color="#fff" stop-opacity="0"/>
-                <stop offset="100%" stop-color="#000" stop-opacity=".10"/>
+              <!-- 가죽 광택 -->
+              <linearGradient id="sheen" x1="0" y1="0" x2="0.65" y2="1">
+                <stop offset="0%"   stop-color="#fff" stop-opacity=".22"/>
+                <stop offset="42%"  stop-color="#fff" stop-opacity="0"/>
+                <stop offset="100%" stop-color="#000" stop-opacity=".16"/>
               </linearGradient>
+              <!-- 앞 포켓 광택(살짝 다르게) -->
+              <linearGradient id="sheen2" x1="0" y1="0" x2="0.5" y2="1">
+                <stop offset="0%"   stop-color="#fff" stop-opacity=".16"/>
+                <stop offset="55%"  stop-color="#fff" stop-opacity="0"/>
+                <stop offset="100%" stop-color="#000" stop-opacity=".18"/>
+              </linearGradient>
+              <!-- 카드 -->
+              <linearGradient id="cardg" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%"   stop-color="#f6f8fc"/>
+                <stop offset="100%" stop-color="#d6dbe5"/>
+              </linearGradient>
+              <linearGradient id="chipg" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#f0d27a"/>
+                <stop offset="100%" stop-color="#c8a23f"/>
+              </linearGradient>
+              <filter id="drop" x="-30%" y="-25%" width="160%" height="170%">
+                <feDropShadow dx="0" dy="11" stdDeviation="11" flood-color="#1c2030" flood-opacity="0.20"/>
+              </filter>
             </defs>
 
-            <!-- 엣지코트(테두리 도색) -->
-            <rect id="edge-rect" x="30" y="35" width="300" height="230" rx="20"
-                  fill="none" stroke="#222" stroke-width="11"/>
-            <!-- 가죽 본체 -->
-            <rect id="leather-rect" x="35.5" y="40.5" width="289" height="219" rx="15.5"
-                  fill="#8a5a32"/>
-            <rect x="35.5" y="40.5" width="289" height="219" rx="15.5" fill="url(#sheen)"/>
-            <rect x="35.5" y="40.5" width="289" height="219" rx="15.5" fill="#000" opacity="0" filter="url(#grain)"/>
+            <!-- ===== 카드지갑 ===== -->
+            <g filter="url(#drop)">
 
-            <!-- 새들 스티치(실) -->
-            <rect id="stitch-rect" x="58" y="63" width="244" height="174" rx="9"
-                  fill="none" stroke="#efe9df" stroke-width="3.4"
-                  stroke-linecap="round" stroke-dasharray="9 8"/>
+              <!-- 뒷판(가죽 본체) -->
+              <rect x="56" y="70" width="248" height="178" rx="15" fill="var(--leather)"/>
+              <rect x="56" y="70" width="248" height="178" rx="15" fill="url(#sheen)"/>
+
+              <!-- 카드(앞 포켓에 꽂혀 위로 살짝 보임) -->
+              <g>
+                <rect x="86" y="48" width="188" height="120" rx="9" fill="url(#cardg)" stroke="#c4c9d4" stroke-width="1"/>
+                <rect x="100" y="66" width="34" height="25" rx="4.5" fill="url(#chipg)"/>
+                <path d="M117 66v25 M100 78h34" stroke="#a9842f" stroke-width="1" opacity=".5"/>
+                <rect x="100" y="104" width="150" height="7" rx="3.5" fill="#b3b9c6"/>
+                <rect x="100" y="118" width="96" height="6" rx="3" fill="#c8cdd8"/>
+              </g>
+
+              <!-- 카드가 포켓에 들어가는 곳의 음영 -->
+              <rect x="56" y="126" width="248" height="12" fill="#000" opacity=".10"/>
+
+              <!-- 앞 포켓(가죽) : 위는 직선 컷, 아래는 본체 곡률 -->
+              <path d="M56 132 L304 132 L304 233 Q304 248 289 248 L71 248 Q56 248 56 233 Z"
+                    fill="var(--leather)"/>
+              <path d="M56 132 L304 132 L304 233 Q304 248 289 248 L71 248 Q56 248 56 233 Z"
+                    fill="url(#sheen2)"/>
+
+              <!-- 포켓 입구 엣지코트(도색된 컷면) -->
+              <line x1="56" y1="132" x2="304" y2="132" stroke="var(--edge)" stroke-width="6.5"/>
+              <!-- 포켓 입구 새들 스티치 -->
+              <line x1="72" y1="142" x2="288" y2="142" stroke="var(--thread)" stroke-width="3.2"
+                    stroke-linecap="round" stroke-dasharray="9 7"/>
+
+              <!-- 바깥 둘레 엣지코트(도색된 컷면) -->
+              <rect x="56" y="70" width="248" height="178" rx="15" fill="none"
+                    stroke="var(--edge)" stroke-width="7"/>
+              <!-- 바깥 둘레 새들 스티치 -->
+              <rect x="68" y="82" width="224" height="154" rx="9" fill="none"
+                    stroke="var(--thread)" stroke-width="3.2"
+                    stroke-linecap="round" stroke-dasharray="9 7"/>
+            </g>
           </svg>
         </div>
         <div class="summary">
@@ -313,10 +359,11 @@ function update(){
   renderLeather(); renderThread(); renderEdge();
   const c = current();
 
-  // 미리보기 SVG
-  document.getElementById("leather-rect").setAttribute("fill", c.leather.hex);
-  document.getElementById("edge-rect").setAttribute("stroke", c.edge.hex);
-  document.getElementById("stitch-rect").setAttribute("stroke", c.thread.hex);
+  // 미리보기 SVG (가죽/실/엣지코트 색을 CSS 변수로 일괄 반영)
+  const svg = document.getElementById("preview-svg");
+  svg.style.setProperty("--leather", c.leather.hex);
+  svg.style.setProperty("--thread", c.thread.hex);
+  svg.style.setProperty("--edge", c.edge.hex);
 
   // 선택 표시
   document.getElementById("pick-leather").textContent = `${c.brandLabel} · ${c.leather.name}`;
