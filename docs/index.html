@@ -245,7 +245,7 @@
           <svg class="stitch-strip" id="stitchStrip" viewBox="0 0 360 54" preserveAspectRatio="xMidYMid meet" aria-hidden="true"></svg>
           <div class="result-hero">
             <div class="cap">필요한 실 길이</div>
-            <div class="big" id="outMain">—<small>mm</small></div>
+            <div class="big" id="outMain">—<small>cm</small></div>
             <div class="alt" id="outAlt"></div>
           </div>
         </div>
@@ -283,6 +283,7 @@
   const spiToMm = spi => 25.4 / spi;
   const getPitchMm = () => pitchMode==='spi' ? spiToMm(parseFloat($('spi').value)||6.6) : (parseFloat($('pitch').value)||0);
   const mmv = v => Math.round(v).toLocaleString('en-US');   // mm · 천단위 콤마
+  const cmv = v => (v/10).toFixed(1);                       // cm · 소수 1자리
 
   /* 결과를 반영한 새들 스티치 미리보기 (땀 간격에 비례, 개수는 표시용 제한) */
   const SVGNS = "http://www.w3.org/2000/svg";
@@ -322,7 +323,7 @@
     const safety = (parseFloat($('safety').value)||0) / 100;
 
     if(seamMm<=0 || pitch<=0){
-      $('outMain').innerHTML = '—<small>mm</small>'; $('outAlt').textContent='';
+      $('outMain').innerHTML = '—<small>cm</small>'; $('outAlt').textContent='';
       ['outHoles','outGaps','outSurf','outThru','outFactor'].forEach(i=>$(i).textContent='—');
       drawStrip(8); return;
     }
@@ -340,7 +341,7 @@
     const thruTotal = throughPerNeedle*2*(1+safety);
     const ratio = total/seamMm;
 
-    $('outMain').innerHTML = mmv(total) + '<small>mm</small>';
+    $('outMain').innerHTML = cmv(total) + '<small>cm</small>';
     $('outAlt').innerHTML  = '한 가닥으로 자를 길이 · <b>새들 스티치</b> 기준';
     $('outHoles').innerHTML= holes + '<small>개</small>';
     $('outGaps').innerHTML = gaps + '<small>땀</small>';
