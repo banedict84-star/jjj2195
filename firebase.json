@@ -1,15 +1,5 @@
 {
   "functions": {
     "source": "functions"
-  },
-  "hosting": {
-    "public": ".",
-    "ignore": [
-      "firebase.json",
-      ".firebaserc",
-      "**/.*",
-      "**/node_modules/**",
-      "functions/**"
-    ]
   }
 }
