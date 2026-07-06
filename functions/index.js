@@ -7,6 +7,25 @@ const cheerio = require("cheerio");
 admin.initializeApp();
 const db = admin.firestore();
 
+// 카카오톡 개인비서 → 구글 캘린더 일정 등록 웹훅
+exports.kakaoSkill = require("./kakaoCalendar").kakaoSkill;
+
+// 멀티유저: 사용자별 구글 캘린더 연동(OAuth)
+exports.googleAuthStart = require("./googleAuth").googleAuthStart;
+exports.googleAuthCallback = require("./googleAuth").googleAuthCallback;
+
+// 능동형 알림: 아침 브리핑 (카카오 나에게 보내기) — 매일 07:00
+exports.morningBriefing = require("./kakaoNotify").morningBriefing;
+// 카카오 전송 동기 테스트 (디버그용 HTTP)
+exports.testKakao = require("./kakaoNotify").testKakao;
+// 30분 전 리마인더는 보류 (원하면 주석 해제)
+// exports.eventReminder = require("./kakaoNotify").eventReminder;
+
+// 행사 웹자보 자동 생성: 콜백 워커 + 폴백 이미지 서빙 + 디자인 미리보기
+exports.posterWorker = require("./poster").posterWorker;
+exports.posterImage = require("./poster").posterImage;
+exports.testPoster = require("./poster").testPoster;
+
 const BASE_URL = "https://theminjoo.kr";
 const LIST_URL = BASE_URL + "/main/sub/news/list.php?brd=1";
 
