@@ -475,6 +475,19 @@
   }
 
   // ---- main calc ----
+  // ── 봇 관제탑에 활동 신호 보내기 (실패해도 무시) ──
+  const PING_URL = "https://asia-northeast3-jjj2195-1bd15.cloudfunctions.net/botPing";
+  let _lastPing = 0;
+  function pingBot(kind, event){
+    try{
+      const now = Date.now();
+      if(kind==='calc'){ if(now-_lastPing < 60000) return; _lastPing = now; }
+      const u = PING_URL + '?bot=leather-cost&kind=' + encodeURIComponent(kind) +
+                (event ? '&event=' + encodeURIComponent(event) : '');
+      fetch(u, {mode:'cors', keepalive:true}).catch(()=>{});
+    }catch(_){}
+  }
+
   function calc(){
     const qty = Math.max(1, parseFloat($('qty').value)||1);
     const lossRate = (parseFloat($('lossRate').value)||0)/100;
@@ -555,6 +568,7 @@
     ], totalCost);
 
     persist();
+    if(totalCost > 0) pingBot('calc', '원가계산');
   }
 
   function drawBar(parts, total){
@@ -616,9 +630,10 @@
   $('addLeather').addEventListener('click', ()=>{ addRow('leather'); calc(); });
   $('addPart').addEventListener('click', ()=>{ addRow('part'); calc(); });
   $('addSupp').addEventListener('click', ()=>{ addRow('supp'); calc(); });
-  $('btnPrint').addEventListener('click', ()=> window.print());
+  $('btnPrint').addEventListener('click', ()=>{ pingBot('calc','견적 인쇄'); window.print(); });
   $('btnSave').addEventListener('click', ()=>{
     persist();
+    pingBot('calc','견적 저장');
     const b=$('btnSave'); const t=b.textContent; b.textContent='저장됨 ✓';
     setTimeout(()=> b.textContent=t, 1200);
   });

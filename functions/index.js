@@ -26,6 +26,10 @@ exports.posterWorker = require("./poster").posterWorker;
 exports.posterImage = require("./poster").posterImage;
 exports.testPoster = require("./poster").testPoster;
 
+// 봇 관제탑: 대시보드 페이지/데이터 + 정적 봇용 활동 신호 수신
+exports.dashboard = require("./dashboard").dashboard;
+exports.botPing = require("./dashboard").botPing;
+
 const BASE_URL = "https://theminjoo.kr";
 const LIST_URL = BASE_URL + "/main/sub/news/list.php?brd=1";
 

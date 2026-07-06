@@ -10,6 +10,7 @@ const { Resvg } = require("@resvg/resvg-js");
 const sharp = require("sharp");
 const puppeteer = require("puppeteer-core");
 const chromium = require("@sparticuz/chromium");
+const { report } = require("./botReport");
 
 // 정식 Storage 버킷(없으면 Firestore 폴백). create_bucket 워크플로우로 1회 생성.
 const STORAGE_BUCKET_NAME = "jjj2195-1bd15-moida";
@@ -961,6 +962,8 @@ exports.posterWorker = onRequest(
           openaiKey: optionalSecret(OPENAI_API_KEY),
         }
       );
+
+      await report("moida-schedule", { kind: "poster", event: "웹자보 생성" });
 
       const skillResponse = {
         version: "2.0",

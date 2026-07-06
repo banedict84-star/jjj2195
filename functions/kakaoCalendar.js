@@ -4,6 +4,7 @@ const Anthropic = require("@anthropic-ai/sdk");
 const { google } = require("googleapis");
 const admin = require("firebase-admin");
 const axios = require("axios");
+const { report } = require("./botReport");
 
 if (!admin.apps.length) admin.initializeApp();
 
@@ -905,6 +906,7 @@ exports.kakaoSkill = onRequest(
       // 조회: 날짜 없으면 오늘 기준 (is_schedule 체크 전에 처리)
       if (intent === "list") {
         const items = await listEvents(parsed, creds);
+        await report("moida-schedule", { kind: "list", event: "일정 조회" });
         return res.json(kakaoText(listText(parsed, items)));
       }
 
@@ -921,10 +923,12 @@ exports.kakaoSkill = onRequest(
       // 2) 삭제 또는 등록
       if (intent === "delete") {
         const deleted = await deleteEvents(parsed, creds);
+        await report("moida-schedule", { kind: "delete", event: "일정 삭제" });
         return res.json(kakaoText(deleteText(parsed, deleted)));
       }
 
       const eventData = await createEvent(parsed, creds);
+      await report("moida-schedule", { kind: "create", event: "일정 등록" });
       return res.json(kakaoText(confirmText(parsed, eventData)));
     } catch (e) {
       console.error("kakaoSkill error:", e);

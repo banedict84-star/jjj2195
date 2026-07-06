@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>봇 관제탑</title>
+<style>
+  :root{
+    --bg:#080C15; --panel:#111A2B; --panel-2:#0E1626;
+    --line:#1C2942; --line-2:#27395a;
+    --txt:#E7EEFA; --muted:#7488A6; --dim:#47597a;
+    --accent:#33E6C3; --accent-dim:#1c7d6c;
+    --blue:#4C9BFF; --tan:#D6A263; --violet:#9E7BFF;
+    --good:#3FE08F; --warn:#F5B63F; --crit:#FF5F6E;
+    --sans:"Pretendard","Apple SD Gothic Neo","Malgun Gothic","맑은 고딕",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Cascadia Code",monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--txt);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+  body{min-height:100vh;position:relative;
+    background:
+      radial-gradient(1100px 600px at 82% -8%, rgba(51,230,195,.08), transparent 60%),
+      radial-gradient(900px 500px at 5% 4%, rgba(76,155,255,.08), transparent 55%),
+      linear-gradient(180deg,#080C15,#070A11);}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.5;
+    background-image:linear-gradient(rgba(38,57,90,.10) 1px,transparent 1px),linear-gradient(90deg,rgba(38,57,90,.10) 1px,transparent 1px);
+    background-size:44px 44px;
+    -webkit-mask-image:radial-gradient(120% 80% at 50% 0%,#000 40%,transparent 100%);mask-image:radial-gradient(120% 80% at 50% 0%,#000 40%,transparent 100%);}
+  .wrap{position:relative;z-index:1;max-width:1320px;margin:0 auto;padding:22px 22px 60px}
+
+  .topbar{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:14px 18px;
+    background:linear-gradient(180deg,rgba(20,30,50,.7),rgba(14,22,38,.55));border:1px solid var(--line);border-radius:16px}
+  .brand{display:flex;align-items:center;gap:12px;min-width:0}
+  .logo{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-size:19px;
+    background:radial-gradient(circle at 30% 25%,rgba(51,230,195,.35),rgba(51,230,195,.06));
+    border:1px solid rgba(51,230,195,.4);box-shadow:0 0 22px rgba(51,230,195,.25)}
+  .brand h1{font-size:16px;letter-spacing:.5px;font-weight:800}
+  .brand .sub{font-family:var(--mono);font-size:10.5px;letter-spacing:2px;color:var(--accent);text-transform:uppercase;margin-top:2px}
+  .spacer{flex:1}
+  .refresh{font-family:var(--mono);font-size:10.5px;letter-spacing:1px;color:var(--dim);display:flex;align-items:center;gap:7px}
+  .refresh .rd{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent)}
+  .flash{animation:flash .6s ease}
+  @keyframes flash{0%{opacity:.2;transform:scale(.6)}100%{opacity:1;transform:scale(1)}}
+  .clock{font-family:var(--mono);font-size:12.5px;color:var(--muted);letter-spacing:1px;font-variant-numeric:tabular-nums}
+  .live{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;letter-spacing:1.5px;color:var(--good);
+    text-transform:uppercase;padding:7px 12px;border:1px solid rgba(63,224,143,.3);border-radius:999px;background:rgba(63,224,143,.06)}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--good);box-shadow:0 0 10px var(--good)}
+  .pulse{animation:pulse 1.8s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.75)}}
+
+  .kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-top:16px}
+  .kpi{background:linear-gradient(180deg,var(--panel),var(--panel-2));border:1px solid var(--line);border-radius:14px;padding:14px 15px;position:relative;overflow:hidden}
+  .kpi::after{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--k,var(--accent));opacity:.85}
+  .kpi .lab{font-family:var(--mono);font-size:10px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase}
+  .kpi .val{font-family:var(--mono);font-size:27px;font-weight:700;margin-top:8px;line-height:1;font-variant-numeric:tabular-nums}
+  .kpi .delta{font-family:var(--mono);font-size:10.5px;margin-top:7px;color:var(--muted)}
+
+  .layout{display:grid;grid-template-columns:210px 1fr 300px;gap:16px;margin-top:16px;align-items:start}
+  .card{background:linear-gradient(180deg,var(--panel),var(--panel-2));border:1px solid var(--line);border-radius:16px}
+  .card > .hd{display:flex;align-items:center;gap:8px;padding:13px 15px;border-bottom:1px solid var(--line)}
+  .card > .hd h2{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;font-family:var(--mono);color:var(--muted);font-weight:600}
+  .card > .hd .cnt{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--dim)}
+
+  .rail{position:sticky;top:16px}
+  .team-row{display:flex;align-items:center;gap:10px;padding:11px 14px;border-left:2px solid transparent}
+  .team-row.on{border-left-color:var(--tc);background:linear-gradient(90deg,color-mix(in srgb,var(--tc) 14%,transparent),transparent)}
+  .team-row .swatch{width:9px;height:9px;border-radius:3px;background:var(--tc);box-shadow:0 0 8px var(--tc)}
+  .team-row .nm{font-size:13px;font-weight:600}
+  .team-row .n{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .rail .add{padding:11px 14px;font-size:12px;color:var(--dim);font-family:var(--mono);border-top:1px dashed var(--line)}
+
+  .content{display:flex;flex-direction:column;gap:20px;min-width:0}
+  .team-hd{display:flex;align-items:center;gap:11px;margin-bottom:11px;padding-left:2px}
+  .team-hd .bar{width:4px;height:20px;border-radius:2px;background:var(--tc);box-shadow:0 0 12px var(--tc)}
+  .team-hd h3{font-size:15px;font-weight:800;letter-spacing:.3px}
+  .team-hd .tag{font-family:var(--mono);font-size:10px;letter-spacing:1.5px;color:var(--tc);text-transform:uppercase;border:1px solid color-mix(in srgb,var(--tc) 40%,transparent);padding:3px 8px;border-radius:6px}
+  .team-hd .meta{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--muted)}
+  .bots{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+
+  .bot{background:linear-gradient(180deg,var(--panel),var(--panel-2));border:1px solid var(--line);border-radius:15px;padding:16px;position:relative;overflow:hidden;transition:border-color .15s}
+  .bot::before{content:"";position:absolute;right:-40px;top:-40px;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--tc) 22%,transparent),transparent 70%);pointer-events:none}
+  .bot.act{border-color:color-mix(in srgb,var(--good) 40%,var(--line))}
+  .bot .top{display:flex;align-items:flex-start;gap:11px}
+  .bot .ic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;font-size:20px;flex:none;background:color-mix(in srgb,var(--tc) 14%,transparent);border:1px solid color-mix(in srgb,var(--tc) 35%,transparent)}
+  .bot .nm{font-size:15px;font-weight:800;letter-spacing:.2px}
+  .bot .desc{font-size:11.5px;color:var(--muted);margin-top:3px}
+  .status{margin-left:auto;flex:none;display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:5px 9px;border-radius:999px}
+  .status.active{color:var(--good);border:1px solid rgba(63,224,143,.4);background:rgba(63,224,143,.08)}
+  .status.idle{color:var(--muted);border:1px solid var(--line-2);background:rgba(255,255,255,.02)}
+  .status.stale{color:var(--crit);border:1px solid rgba(255,95,110,.4);background:rgba(255,95,110,.08)}
+  .status .sd{width:7px;height:7px;border-radius:50%;background:currentColor}
+
+  .lastact{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:12px;display:flex;align-items:center;gap:7px}
+  .lastact .ld{width:6px;height:6px;border-radius:50%;background:var(--muted)}
+  .lastact.on .ld{background:var(--good);box-shadow:0 0 8px var(--good)}
+  .lastact.off .ld{background:var(--crit)}
+
+  .metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:13px}
+  .metric .m-lab{font-family:var(--mono);font-size:9.5px;letter-spacing:1px;color:var(--muted);text-transform:uppercase}
+  .metric .m-val{font-family:var(--mono);font-size:19px;font-weight:700;margin-top:5px;font-variant-numeric:tabular-nums}
+  .metric .m-val.err{color:var(--warn)}
+  .chips{margin-top:13px;display:flex;flex-wrap:wrap;gap:6px}
+  .chip{font-family:var(--mono);font-size:10px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:3px 7px;font-variant-numeric:tabular-nums}
+  .chip b{color:var(--txt)}
+
+  .bot.add{border-style:dashed;display:grid;place-items:center;min-height:150px;color:var(--dim)}
+  .bot.add .plus{font-size:26px;margin-bottom:6px}
+  .bot.add .t{font-family:var(--mono);font-size:11px;letter-spacing:1px}
+
+  .feed{position:sticky;top:16px;display:flex;flex-direction:column;gap:16px}
+  .events{padding:6px 0;max-height:360px;overflow:auto}
+  .ev{display:flex;gap:11px;padding:9px 15px;align-items:flex-start}
+  .ev .ed{width:7px;height:7px;border-radius:50%;margin-top:5px;flex:none;background:var(--tc);box-shadow:0 0 7px var(--tc)}
+  .ev .etx{font-size:12px;line-height:1.4}
+  .ev .emeta{font-family:var(--mono);font-size:10px;color:var(--dim);margin-top:2px;letter-spacing:.3px}
+  .ev .ewhen{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--dim);white-space:nowrap;flex:none}
+  .empty{padding:26px 15px;text-align:center;color:var(--dim);font-family:var(--mono);font-size:11px}
+
+  .foot{margin-top:26px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.5px;line-height:1.8}
+  .foot b{color:var(--muted)}
+
+  @media (max-width:1080px){.layout{grid-template-columns:1fr}.rail,.feed{position:static}.kpis{grid-template-columns:repeat(3,1fr)}}
+  @media (max-width:640px){.kpis{grid-template-columns:repeat(2,1fr)}.bots{grid-template-columns:1fr}}
+  @media (prefers-reduced-motion:reduce){.pulse,.flash{animation:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">🛰️</div>
+      <div><h1>봇 관제탑</h1><div class="sub">Bot Mission Control</div></div>
+    </div>
+    <div class="spacer"></div>
+    <div class="refresh"><span class="rd" id="rdot"></span><span id="rtxt">연결 중…</span></div>
+    <div class="clock" id="clock">--:--:--</div>
+    <div class="live"><span class="dot pulse"></span> System Live</div>
+  </header>
+
+  <section class="kpis" id="kpis"></section>
+
+  <div class="layout">
+    <aside class="card rail">
+      <div class="hd"><h2>팀 필터</h2><span class="cnt" id="teamCount"></span></div>
+      <div id="teamList"></div>
+      <div class="add">＋ 새 팀 추가</div>
+    </aside>
+    <main class="content" id="content"></main>
+    <aside class="feed">
+      <div class="card">
+        <div class="hd"><h2>실시간 활동</h2><span class="cnt">최근</span></div>
+        <div class="events" id="events"></div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="foot">
+    <b>봇 관제탑</b> · 각 봇이 활동할 때마다 신호를 보내 여기에 표시됩니다 · 4초마다 자동 갱신<br>
+    새 봇은 관제탑에 "보고"만 시작하면 자동으로 나타납니다.
+  </div>
+</div>
+
+<script>
+const KIND_LABEL={create:"등록",list:"조회",delete:"삭제",poster:"웹자보",link:"연동",briefing:"브리핑",calc:"계산",error:"오류",use:"활동"};
+const el=(t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e;};
+const esc=s=>String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+function rel(ms,now){
+  if(!ms) return "기록 없음";
+  const s=Math.max(0,Math.round((now-ms)/1000));
+  if(s<5) return "방금";
+  if(s<60) return s+"초 전";
+  const m=Math.floor(s/60); if(m<60) return m+"분 전";
+  const h=Math.floor(m/60); if(h<24) return h+"시간 전";
+  return Math.floor(h/24)+"일 전";
+}
+function statusText(st){return st==="active"?"작동중":st==="stale"?"응답없음":"대기";}
+
+let teamColor={};
+function render(data){
+  const now=data.now||Date.now();
+  teamColor={}; data.teams.forEach(t=>teamColor[t.id]=t.color);
+  const botTeam={}; data.bots.forEach(b=>botTeam[b.id]=b.team);
+
+  // KPI
+  const activeNow=data.bots.filter(b=>b.status==="active").length;
+  const totalToday=data.bots.reduce((a,b)=>a+(b.today.total||0),0);
+  const errs=data.bots.reduce((a,b)=>a+(b.today.error||0),0);
+  const users=data.bots.reduce((a,b)=>a+(b.users||0),0);
+  const KPIS=[
+    {lab:"전체 봇",val:data.bots.length,delta:data.teams.length+"개 팀",k:"var(--accent)"},
+    {lab:"지금 작동중",val:activeNow,delta:"2분 내 활동 기준",k:"var(--good)"},
+    {lab:"오늘 사용",val:totalToday,delta:"전 봇 합계",k:"var(--blue)"},
+    {lab:"활성 사용자",val:users,delta:"연동 계정 합계",k:"var(--violet)"},
+    {lab:"오류 (오늘)",val:errs,delta:errs?"확인 필요":"이상 없음",k:errs?"var(--warn)":"var(--good)"},
+    {lab:"업데이트",val:"LIVE",delta:"4초마다 갱신",k:"var(--accent)"},
+  ];
+  const kw=document.getElementById("kpis");kw.innerHTML="";
+  KPIS.forEach(k=>{const c=el("div","kpi");c.style.setProperty("--k",k.k);
+    c.innerHTML=`<div class="lab">${k.lab}</div><div class="val">${k.val}</div><div class="delta">${k.delta}</div>`;kw.appendChild(c);});
+
+  // rail
+  const tl=document.getElementById("teamList");tl.innerHTML="";
+  document.getElementById("teamCount").textContent=data.teams.length+"개";
+  data.teams.forEach((t,i)=>{
+    const active=data.bots.filter(b=>b.team===t.id).length;
+    const r=el("div","team-row"+(i===0?" on":""));r.style.setProperty("--tc",t.color);
+    r.innerHTML=`<span class="swatch"></span><span class="nm">${esc(t.name)}</span><span class="n">${active}</span>`;
+    tl.appendChild(r);
+  });
+
+  // teams + bots
+  const content=document.getElementById("content");content.innerHTML="";
+  data.teams.forEach(t=>{
+    const block=el("section","team-block");block.style.setProperty("--tc",t.color);
+    const list=data.bots.filter(b=>b.team===t.id);
+    const act=list.filter(b=>b.status==="active").length;
+    block.appendChild(el("div","team-hd",
+      `<span class="bar"></span><h3>${esc(t.name)}</h3><span class="tag">Team</span><span class="meta">봇 ${list.length} · 작동중 ${act}</span>`));
+    const grid=el("div","bots");
+    list.forEach(b=>grid.appendChild(botCard(b,now)));
+    const add=el("div","bot add");add.innerHTML=`<div class="plus">＋</div><div class="t">봇 추가</div>`;
+    grid.appendChild(add);
+    block.appendChild(grid);content.appendChild(block);
+  });
+
+  // events
+  const ew=document.getElementById("events");ew.innerHTML="";
+  if(!data.events.length){ew.appendChild(el("div","empty","아직 기록된 활동이 없어요.<br>봇을 한 번 써보면 여기 나타납니다."));}
+  data.events.forEach(e=>{
+    const row=el("div","ev");row.style.setProperty("--tc",teamColor[botTeam[e.botId]]||"#7488A6");
+    const label=KIND_LABEL[e.kind]||e.kind;
+    row.innerHTML=`<span class="ed"></span><div style="min-width:0"><div class="etx">${esc(e.text||label)}</div>
+      <div class="emeta">${esc(e.botId)}</div></div><span class="ewhen">${rel(e.at,now)}</span>`;
+    ew.appendChild(row);
+  });
+
+  // refresh indicator
+  const rd=document.getElementById("rdot");rd.classList.remove("flash");void rd.offsetWidth;rd.classList.add("flash");
+  document.getElementById("rtxt").textContent="업데이트 "+new Date().toLocaleTimeString("ko-KR",{hour12:false});
+}
+
+function botCard(b,now){
+  const card=el("div","bot"+(b.status==="active"?" act":""));
+  card.style.setProperty("--tc",teamColor[b.team]||"#7488A6");
+  const stDot=b.status==="active"?'<span class="sd pulse"></span>':'<span class="sd"></span>';
+  const laCls=b.status==="active"?"on":(b.status==="stale"?"off":"");
+  const t=b.today;
+  const chips=[["create","등록"],["list","조회"],["delete","삭제"],["poster","웹자보"],["link","연동"],["briefing","브리핑"],["calc","계산"]]
+    .filter(k=>t[k[0]]>0).map(k=>`<span class="chip">${k[1]} <b>${t[k[0]]}</b></span>`).join("");
+  card.innerHTML=`
+    <div class="top">
+      <div class="ic">${b.icon||"🤖"}</div>
+      <div style="min-width:0"><div class="nm">${esc(b.name)}</div><div class="desc">${esc(b.desc||"")}</div></div>
+      <span class="status ${b.status}">${stDot}${statusText(b.status)}</span>
+    </div>
+    <div class="metrics">
+      <div class="metric"><div class="m-lab">사용자</div><div class="m-val">${b.users!=null?b.users:"—"}</div></div>
+      <div class="metric"><div class="m-lab">오늘 처리</div><div class="m-val">${t.total||0}</div></div>
+      <div class="metric"><div class="m-lab">오류</div><div class="m-val ${t.error?"err":""}">${t.error||0}</div></div>
+    </div>
+    ${chips?`<div class="chips">${chips}</div>`:""}
+    <div class="lastact ${laCls}"><span class="ld"></span>마지막 활동 · ${rel(b.lastActiveAt,now)}</div>`;
+  return card;
+}
+
+async function poll(){
+  try{
+    const base=window.location.href.split("?")[0];
+    const r=await fetch(base+"?data=1",{cache:"no-store"});
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    render(await r.json());
+    document.getElementById("rdot").style.background="var(--accent)";
+  }catch(e){
+    document.getElementById("rtxt").textContent="연결 오류 · 재시도 중";
+    document.getElementById("rdot").style.background="var(--crit)";
+  }
+}
+function tick(){
+  const now=new Date();
+  const s=now.toLocaleString("ko-KR",{timeZone:"Asia/Seoul",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false});
+  const d=now.toLocaleString("ko-KR",{timeZone:"Asia/Seoul",month:"2-digit",day:"2-digit",weekday:"short"});
+  document.getElementById("clock").textContent=d+" · "+s+" KST";
+}
+tick();setInterval(tick,1000);
+poll();setInterval(poll,4000);
+</script>
+</body>
+</html>

@@ -3,6 +3,7 @@ const { defineSecret } = require("firebase-functions/params");
 const admin = require("firebase-admin");
 const { google } = require("googleapis");
 const { redirectOrBridge } = require("./inAppBridge");
+const { report } = require("./botReport");
 
 if (!admin.apps.length) admin.initializeApp();
 
@@ -77,6 +78,7 @@ exports.googleAuthCallback = onRequest(opts, async (req, res) => {
         },
         { merge: true }
       );
+    await report("moida-schedule", { kind: "link", event: "새 사용자 캘린더 연동" });
     res.send(
       `<html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head>` +
         `<body style="font-family:sans-serif;text-align:center;padding:60px 20px">` +

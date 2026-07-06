@@ -4,6 +4,7 @@ const { defineSecret } = require("firebase-functions/params");
 const admin = require("firebase-admin");
 const axios = require("axios");
 const { getEventsForDate, eventTimeLabel } = require("./kakaoCalendar");
+const { report } = require("./botReport");
 
 if (!admin.apps.length) admin.initializeApp();
 
@@ -163,6 +164,7 @@ exports.morningBriefing = onSchedule(
     }
     try {
       await sendKakaoMemo(text);
+      await report("moida-schedule", { kind: "briefing", event: "아침 브리핑 발송" });
       console.log("morningBriefing sent:", items.length, "events");
     } catch (e) {
       const detail = e.response ? JSON.stringify(e.response.data) : e.message;
