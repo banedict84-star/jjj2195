@@ -18,6 +18,18 @@ const REGISTRY = {
   ],
 };
 
+// 활동 1건당 대략 추정 비용(원). ※ 실제 청구액이 아니라 사용량 기반 추정치.
+//   규칙기반 처리(등록/조회/삭제 등)는 AI를 안 써서 거의 0, 웹자보만 AI로 비용 발생.
+const UNIT_COST_KRW = {
+  create: 1, list: 1, delete: 1, link: 1, briefing: 1, use: 1, calc: 0, error: 0,
+  poster: 120, // GPT 문구 + 이미지 생성 + 렌더링 대략
+};
+function estCost(today) {
+  let sum = 0;
+  for (const k in UNIT_COST_KRW) sum += (today[k] || 0) * UNIT_COST_KRW[k];
+  return Math.round(sum);
+}
+
 // 활동 시각 → 상태 판정
 function statusOf(secs) {
   if (secs === null) return "idle";
@@ -76,6 +88,7 @@ async function buildData() {
         error: today.error || 0,
       },
       costToday: today.cost || 0,
+      costEst: today.cost ? Math.round(today.cost) : estCost(today),
       lastActiveAt: last,
       secondsSinceActive: secs,
       status: statusOf(secs),
