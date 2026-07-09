@@ -2,12 +2,13 @@
 # 문서: https://firebase.google.com/docs/app-hosting/configure
 
 runConfig:
-  # 의원실 내부용 트래픽 규모 — 비용 절감을 위해 최대 인스턴스 제한
+  # 의원실 내부용. minInstances:1 로 항상 1대 켜두어 cold start('not available
+  # yet' 503) 를 방지한다. memory 는 Next.js 서버 여유분 확보.
   maxInstances: 2
-  minInstances: 0
+  minInstances: 1
   concurrency: 80
   cpu: 1
-  memoryMiB: 512
+  memoryMiB: 1024
 
 env:
   # 사용할 OpenAI 모델 (빌드/런타임 모두 노출)
