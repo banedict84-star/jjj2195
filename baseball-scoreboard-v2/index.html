@@ -19,7 +19,7 @@ let g=JSON.parse(localStorage.getItem('ansan-live')||'null')||{away:'ansan',home
 let history=[];
 const T=id=>teams.find(x=>x.id===id)||teams[0];
 function snapshot(){history.push(JSON.stringify(g));if(history.length>30)history.shift()}
-function save(){localStorage.setItem('ansan-live',JSON.stringify(g));localStorage.setItem('ansan-teams',JSON.stringify(teams));render()}
+function save(){localStorage.setItem('ansan-live',JSON.stringify(g));localStorage.setItem('ansan-teams',JSON.stringify(teams));try{new BroadcastChannel('ansan-live').postMessage({g,teams})}catch(e){}render()}
 function act(fn){snapshot();fn();save()} function undo(){if(history.length){g=JSON.parse(history.pop());save()}}
 function show(x){document.querySelectorAll('.page').forEach(e=>e.classList.remove('show'));document.getElementById(x).classList.add('show');if(x==='teams')renderTeam()}
 function score(k,d){act(()=>g[k]=Math.max(0,g[k]+d))}function changeInn(d){act(()=>g.i=Math.max(1,Math.min(12,g.i+d)))}function toggleHalf(){act(()=>g.half=g.half==='초'?'말':'초')}
@@ -35,5 +35,5 @@ function renderTeam(){let t=T(teamPick.value||teams[0].id);teamPick.value=t.id;t
 function addTeam(){let name=prompt('팀 이름');if(!name)return;let id='t'+Date.now();teams.push({id,name,players:[]});save();teamPick.value=id;renderTeam()}
 function delPlayer(i){let t=T(teamPick.value);t.players.splice(i,1);save();renderTeam()}
 function addPlayer(){let t=T(teamPick.value),file=pimg.files[0];let done=img=>{t.players.push([pn.value||0,pname.value||'선수',ppos.value||'',img||'']);pn.value=pname.value=ppos.value='';pimg.value='';save();renderTeam()};if(file){let r=new FileReader();r.onload=()=>done(r.result);r.readAsDataURL(file)}else done('')}
-render();
+try{const bc=new BroadcastChannel('ansan-live');bc.onmessage=e=>{if(e.data?.g){g=e.data.g;teams=e.data.teams||teams;render()}}}catch(e){}window.addEventListener('storage',e=>{if(e.key==='ansan-live'&&e.newValue){g=JSON.parse(e.newValue);render()}});render();
 </script></body></html>
