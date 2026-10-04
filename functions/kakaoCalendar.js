@@ -5,6 +5,7 @@ const { google } = require("googleapis");
 const admin = require("firebase-admin");
 const axios = require("axios");
 const { report } = require("./botReport");
+const { flowConfigForUser, createFlowSchedule } = require("./flowCalendar");
 
 if (!admin.apps.length) admin.initializeApp();
 
@@ -29,6 +30,8 @@ const GOOGLE_CLIENT_ID = defineSecret("GOOGLE_CLIENT_ID");
 const GOOGLE_CLIENT_SECRET = defineSecret("GOOGLE_CLIENT_SECRET");
 const GOOGLE_REFRESH_TOKEN = defineSecret("GOOGLE_REFRESH_TOKEN");
 const GOOGLE_CALENDAR_ID = defineSecret("GOOGLE_CALENDAR_ID");
+
+const FLOW_SCHEDULE_CONFIG = defineSecret("FLOW_SCHEDULE_CONFIG");
 
 const TIMEZONE = "Asia/Seoul";
 
@@ -710,6 +713,7 @@ exports.kakaoSkill = onRequest(
       GOOGLE_CLIENT_SECRET,
       GOOGLE_REFRESH_TOKEN,
       GOOGLE_CALENDAR_ID,
+      FLOW_SCHEDULE_CONFIG,
     ],
   },
   async (req, res) => {
@@ -875,7 +879,8 @@ exports.kakaoSkill = onRequest(
         return res.json(menuReply());
       }
 
-      if (!userToken || !userToken.refreshToken) {
+      const flowConfig = flowConfigForUser(optionalSecret(FLOW_SCHEDULE_CONFIG), uid);
+      if (!flowConfig && (!userToken || !userToken.refreshToken)) {
         const linkUrl = `${AUTH_BASE}/googleAuthStart?uid=${encodeURIComponent(uid)}`;
         return res.json(
           kakaoLinkCard(
@@ -895,6 +900,29 @@ exports.kakaoSkill = onRequest(
 
       // 의도 판별 (AI 경로엔 intent가 없을 수 있어 보강)
       const intent = parsed.intent || detectIntent(utterance);
+
+      // Only explicitly configured Kakao users may write to the shared project.
+      // Flow is the sole write destination for them; never silently fall back to Google.
+      if (flowConfig) {
+        if (intent === "list" || intent === "delete") {
+          return res.json(kakaoText(
+            "플로우에 등록한 일정의 조회·삭제는 플로우 ‘경기도의원 일정’ 프로젝트에서 해주세요."
+          ));
+        }
+        if (!parsed.is_schedule) {
+          return res.json(kakaoText("등록할 날짜와 일정을 알려주세요. 예) 내일 오후 3시 회의"));
+        }
+        try {
+          await createFlowSchedule(parsed, flowConfig);
+        } catch (error) {
+          // Do not log HTTP request objects: they contain the API key.
+          console.error("Flow schedule failed", { code: error.code || "FLOW_ERROR" });
+          return res.json(kakaoText(error.code === "FLOW_UNKNOWN"
+            ? "플로우 등록 결과를 확인하지 못했어요. 중복 등록을 막기 위해 프로젝트 캘린더를 먼저 확인해주세요."
+            : "플로우 일정 등록에 실패했어요. 관리자에게 API 연결 상태 확인을 요청해주세요."));
+        }
+        return res.json(kakaoText(confirmText(parsed) + "\n\n📁 플로우 · 경기도의원 일정에 등록했어요."));
+      }
 
       const creds = {
         clientId: GOOGLE_CLIENT_ID.value(),
