@@ -99,7 +99,7 @@ function restoreBackup(data){
  const updates={'ansan-teams-v4':JSON.stringify(data.teams),'ansan-leagues-v4':JSON.stringify(data.leagues),'ansan-eight-teams-v1':'true'};
  if(full)Object.assign(updates,{'ansan-match-v5':JSON.stringify(data.game),'ansan-archive-v5':JSON.stringify(data.archive),'ansan-association-logo':data.associationLogo});
  const previous=Object.fromEntries(Object.keys(updates).map(k=>[k,localStorage.getItem(k)]));
- try{for(const [k,v] of Object.entries(updates)){if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v)}}catch(e){for(const [k,v] of Object.entries(previous)){if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v)}toast('저장 공간이 부족하여 복원을 취소했습니다. 기존 데이터는 유지됩니다.');return false}
+ try{for(const [k,v] of Object.entries(updates)){if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v)}}catch(e){for(const k of Object.keys(previous))localStorage.removeItem(k);for(const [k,v] of Object.entries(previous)){if(v!==null)localStorage.setItem(k,v)}toast('저장 공간이 부족하여 복원을 취소했습니다. 기존 데이터는 유지됩니다.');return false}
  teams=clone(data.teams);leagues=clone(data.leagues);draft=null;undoStack=[];
  if(full){game=clone(data.game);archive=clone(data.archive);channel?.postMessage({type:'match-v5',game})}
  location.reload();return true;
